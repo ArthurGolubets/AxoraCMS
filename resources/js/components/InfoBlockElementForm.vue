@@ -210,7 +210,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ThemeButton from './ThemeButton.vue';
 import ToggleSwitch from './ToggleSwitch.vue';
@@ -230,6 +230,7 @@ const isEdit = computed(() => !!elementId.value);
 const infoBlock = ref(null);
 const fields = ref([]);
 const saving = ref(false);
+const codeManuallyEdited = ref(false);
 
 const form = ref({
   name: '',
@@ -237,6 +238,35 @@ const form = ref({
   sort: 500,
   is_active: true,
   properties: {}
+});
+
+// Auto-generate code from name
+const generateCode = (name) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-zа-яё0-9\s]/gi, '')
+    .replace(/[а-яё]/gi, (char) => {
+      const ru = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+      const en = ['a','b','v','g','d','e','yo','zh','z','i','y','k','l','m','n','o','p','r','s','t','u','f','h','ts','ch','sh','sch','','y','','e','yu','ya'];
+      const index = ru.indexOf(char);
+      return index >= 0 ? en[index] : char;
+    })
+    .trim()
+    .replace(/\s+/g, '_');
+};
+
+// Watch name field and auto-generate code
+watch(() => form.value.name, (newName) => {
+  if (!isEdit.value && !codeManuallyEdited.value) {
+    form.value.code = generateCode(newName);
+  }
+});
+
+// Track manual code edits
+watch(() => form.value.code, () => {
+  if (!isEdit.value && form.value.code !== generateCode(form.value.name)) {
+    codeManuallyEdited.value = true;
+  }
 });
 
 const loadInfoBlock = async () => {
