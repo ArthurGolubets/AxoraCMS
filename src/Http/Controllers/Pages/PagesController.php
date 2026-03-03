@@ -63,6 +63,8 @@ class PagesController extends Controller
             'meta_keywords' => 'nullable|string',
             'is_active' => 'boolean',
             'sort' => 'nullable|integer',
+            'header_template' => 'nullable|string',
+            'footer_template' => 'nullable|string',
         ]);
 
         // Generate slug if not provided
@@ -103,6 +105,8 @@ class PagesController extends Controller
             'meta_keywords' => 'nullable|string',
             'is_active' => 'boolean',
             'sort' => 'nullable|integer',
+            'header_template' => 'nullable|string',
+            'footer_template' => 'nullable|string',
         ]);
 
         // Regenerate slug if changed

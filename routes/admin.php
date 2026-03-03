@@ -52,6 +52,8 @@ Route::middleware(['admin.auth'])->group(function () {
 
         Route::get('settings', [SettingsController::class, 'index']);
         Route::post('settings', [SettingsController::class, 'update']);
+        Route::post('settings/upload-logo', [SettingsController::class, 'uploadLogo']);
+        Route::delete('settings/logo', [SettingsController::class, 'deleteLogo']);
 
         Route::get('environment', [EnvironmentController::class, 'index']);
         Route::post('environment', [EnvironmentController::class, 'update']);
@@ -253,6 +255,31 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('page-block-types/create-template', [$pageBlockTypesController, 'createTemplate']);
             Route::delete('page-block-types/{id}/template', [$pageBlockTypesController, 'deleteTemplate']);
         }
+
+        // Menus routes - use app controllers if they exist
+        $menusController = class_exists(\App\Http\Controllers\MenusController::class)
+            ? \App\Http\Controllers\MenusController::class
+            : \HolartWeb\HolartCMS\Http\Controllers\Menus\MenusController::class;
+        $menuItemsController = class_exists(\App\Http\Controllers\MenuItemsController::class)
+            ? \App\Http\Controllers\MenuItemsController::class
+            : \HolartWeb\HolartCMS\Http\Controllers\Menus\MenuItemsController::class;
+
+        // Menus routes
+        Route::get('menus', [$menusController, 'index']);
+        Route::get('menus/{id}', [$menusController, 'show']);
+        Route::post('menus', [$menusController, 'store']);
+        Route::put('menus/{id}', [$menusController, 'update']);
+        Route::delete('menus/{id}', [$menusController, 'destroy']);
+        Route::post('menus/{id}/toggle-active', [$menusController, 'toggleActive']);
+        Route::post('menus/generate-code', [$menusController, 'generateCode']);
+
+        // Menu Items routes
+        Route::get('menus/{menuId}/items', [$menuItemsController, 'index']);
+        Route::post('menu-items', [$menuItemsController, 'store']);
+        Route::put('menu-items/{id}', [$menuItemsController, 'update']);
+        Route::delete('menu-items/{id}', [$menuItemsController, 'destroy']);
+        Route::post('menu-items/reorder', [$menuItemsController, 'reorder']);
+        Route::post('menu-items/{id}/toggle-active', [$menuItemsController, 'toggleActive']);
     });
 
     // SPA route - catch all for Vue Router

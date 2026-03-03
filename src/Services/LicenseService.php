@@ -19,7 +19,7 @@ class LicenseService
                 'action' => $action,
             ]);
 
-            if (!$response->successful()) {
+            if (!$response->successful()) {      
                 return false;
             }
 

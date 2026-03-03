@@ -2,6 +2,7 @@
 
 namespace HolartWeb\HolartCMS\Http\Controllers;
 
+use HolartWeb\HolartCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -111,6 +112,10 @@ class CatalogImportExportController extends Controller
         // Write to temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'catalog_export_');
         $writer->save($tempFile);
+
+        // Log activity
+        TAdminAction::log('exported', 'catalog', null,
+            'Экспорт категорий (количество: ' . count($catalogs) . ')');
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
@@ -254,6 +259,10 @@ class CatalogImportExportController extends Controller
                 $errors[] = "Ошибка в строке {$item['row']}: " . $e->getMessage();
             }
         }
+
+        // Log activity
+        TAdminAction::log('imported', 'catalog', null,
+            'Импорт категорий (создано: ' . $created . ', обновлено: ' . $updated . ')');
 
         return response()->json([
             'success' => true,

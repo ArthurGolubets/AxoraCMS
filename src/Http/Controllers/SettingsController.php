@@ -5,6 +5,7 @@ namespace HolartWeb\HolartCMS\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use HolartWeb\HolartCMS\Models\TPanelSettings;
 use HolartWeb\HolartCMS\Models\TAdminAction;
 
@@ -65,12 +66,74 @@ class SettingsController extends Controller
     }
 
     /**
+     * Upload logo.
+     */
+    public function uploadLogo(Request $request)
+    {
+        $user = Auth::guard('admin')->user();
+
+        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+            return response()->json(['message' => 'Доступ запрещен'], 403);
+        }
+
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        // Delete old logo if exists
+        $oldLogo = TPanelSettings::get('logo_path');
+        if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
+            Storage::disk('public')->delete($oldLogo);
+        }
+
+        // Store new logo
+        $path = $request->file('logo')->store('logos', 'public');
+
+        // Save to settings
+        TPanelSettings::set('logo_path', $path, 'string');
+
+        // Log activity
+        TAdminAction::log('uploaded', 'logo', null, 'Загружен новый логотип');
+
+        return response()->json([
+            'message' => 'Логотип загружен',
+            'path' => $path,
+            'url' => Storage::disk('public')->url($path)
+        ]);
+    }
+
+    /**
+     * Delete logo.
+     */
+    public function deleteLogo()
+    {
+        $user = Auth::guard('admin')->user();
+
+        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+            return response()->json(['message' => 'Доступ запрещен'], 403);
+        }
+
+        $oldLogo = TPanelSettings::get('logo_path');
+        if ($oldLogo && Storage::disk('public')->exists($oldLogo)) {
+            Storage::disk('public')->delete($oldLogo);
+        }
+
+        TPanelSettings::set('logo_path', '', 'string');
+
+        // Log activity
+        TAdminAction::log('deleted', 'logo', null, 'Удален логотип');
+
+        return response()->json(['message' => 'Логотип удален']);
+    }
+
+    /**
      * Get type for setting key.
      */
     protected function getType(string $key): string
     {
         return match ($key) {
             'phones', 'addresses' => 'array',
+            'logo_width', 'logo_height' => 'integer',
             default => 'string',
         };
     }

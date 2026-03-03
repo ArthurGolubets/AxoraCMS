@@ -37,21 +37,35 @@ class TAdminAction extends Model
      */
     public static function log(string $action, ?string $entityType = null, ?int $entityId = null, ?string $description = null, array $data = [])
     {
+        // Check if table exists and logs module is installed
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('t_admin_actions')) {
+                return null;
+            }
+        } catch (\Exception $e) {
+            return null;
+        }
+
         $admin = auth()->guard('admin')->user();
 
         if (!$admin) {
             return null;
         }
 
-        return static::create([
-            'admin_id' => $admin->id,
-            'action' => $action,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'description' => $description,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-            'data' => $data,
-        ]);
+        try {
+            return static::create([
+                'admin_id' => $admin->id,
+                'action' => $action,
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
+                'description' => $description,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            // Silently fail if logging fails
+            return null;
+        }
     }
 }

@@ -19,6 +19,8 @@ class TPage extends Model
         'meta_keywords',
         'is_active',
         'sort',
+        'header_template',
+        'footer_template',
     ];
 
     protected $casts = [

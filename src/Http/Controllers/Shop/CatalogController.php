@@ -3,6 +3,7 @@
 namespace HolartWeb\HolartCMS\Http\Controllers\Shop;
 
 use App\Models\TCatalog;
+use HolartWeb\HolartCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
@@ -93,6 +94,10 @@ class CatalogController extends Controller
 
         $catalog = TCatalog::create($validated);
 
+        // Log activity
+        TAdminAction::log('created', 'catalog', $catalog->id,
+            'Создана категория "' . $catalog->name . '"');
+
         return response()->json($catalog, 201);
     }
 
@@ -118,7 +123,15 @@ class CatalogController extends Controller
             return response()->json(['message' => 'Категория не может быть родителем самой себя'], 422);
         }
 
+        $oldData = $catalog->getOriginal();
         $catalog->update($validated);
+
+        // Log activity
+        TAdminAction::log('updated', 'catalog', $catalog->id,
+            'Обновлена категория "' . $catalog->name . '"', [
+            'old' => $oldData,
+            'new' => $catalog->getAttributes()
+        ]);
 
         return response()->json($catalog);
     }
@@ -129,6 +142,7 @@ class CatalogController extends Controller
     public function destroy($id): JsonResponse
     {
         $catalog = TCatalog::findOrFail($id);
+        $catalogName = $catalog->name;
 
         // Check if has products
         if ($catalog->products()->exists()) {
@@ -145,6 +159,10 @@ class CatalogController extends Controller
         }
 
         $catalog->delete();
+
+        // Log activity
+        TAdminAction::log('deleted', 'catalog', $id,
+            'Удалена категория "' . $catalogName . '"');
 
         return response()->json(['message' => 'Категория удалена']);
     }

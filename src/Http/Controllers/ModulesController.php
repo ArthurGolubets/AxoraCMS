@@ -300,10 +300,14 @@ class ModulesController extends Controller
     private function isPagesModuleInstalled()
     {
         return file_exists(app_path('Http/Controllers/PagesController.php')) &&
+               file_exists(app_path('Http/Controllers/MenusController.php')) &&
                file_exists(app_path('Models/TPage.php')) &&
+               file_exists(app_path('Models/TMenu.php')) &&
                Schema::hasTable('t_pages') &&
                Schema::hasTable('t_page_blocks') &&
-               Schema::hasTable('t_page_block_types');
+               Schema::hasTable('t_page_block_types') &&
+               Schema::hasTable('t_menus') &&
+               Schema::hasTable('t_menu_items');
     }
 
     /**

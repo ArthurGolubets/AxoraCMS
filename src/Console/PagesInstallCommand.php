@@ -25,10 +25,11 @@ class PagesInstallCommand extends Command
             $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
-        // Step 1: Copy Pages Models
-        $this->info('Step 1: Copying pages models...');
+        // Step 1: Copy Pages and Menus Models
+        $this->info('Step 1: Copying pages and menus models...');
         $appModelsPath = app_path('Models');
 
+        // Copy Pages models
         $models = ['TPage.php', 'TPageBlock.php', 'TPageBlockType.php'];
         foreach ($models as $model) {
             $source = $packagePath . '/src/Models/Pages/' . $model;
@@ -48,12 +49,34 @@ class PagesInstallCommand extends Command
                 $this->warn("⚠ Source file not found: {$source}");
             }
         }
+
+        // Copy Menus models
+        $menuModels = ['TMenu.php', 'TMenuItem.php'];
+        foreach ($menuModels as $model) {
+            $source = $packagePath . '/src/Models/Menus/' . $model;
+            $destination = $appModelsPath . '/' . $model;
+
+            if (file_exists($source)) {
+                $content = file_get_contents($source);
+                // Update namespace from package to app
+                $content = str_replace(
+                    'namespace HolartWeb\HolartCMS\Models\Menus;',
+                    'namespace App\Models;',
+                    $content
+                );
+                file_put_contents($destination, $content);
+                $this->info("✓ Copied {$model}");
+            } else {
+                $this->warn("⚠ Source file not found: {$source}");
+            }
+        }
         $this->newLine();
 
-        // Step 2: Copy Pages Controllers
-        $this->info('Step 2: Copying pages controllers...');
+        // Step 2: Copy Pages and Menus Controllers
+        $this->info('Step 2: Copying pages and menus controllers...');
         $appControllersPath = app_path('Http/Controllers');
 
+        // Copy Pages controllers
         $controllers = [
             'PagesController.php',
             'PageBlocksController.php',
@@ -90,6 +113,46 @@ class PagesInstallCommand extends Command
                 $content = str_replace(
                     'use HolartWeb\HolartCMS\Models\Pages\TPageBlockType;',
                     'use App\Models\TPageBlockType;',
+                    $content
+                );
+                file_put_contents($destination, $content);
+                $this->info("✓ Copied {$controller}");
+            } else {
+                $this->warn("⚠ Source file not found: {$source}");
+            }
+        }
+
+        // Copy Menus controllers
+        $menuControllers = [
+            'MenusController.php',
+            'MenuItemsController.php'
+        ];
+
+        foreach ($menuControllers as $controller) {
+            $source = $packagePath . '/src/Http/Controllers/Menus/' . $controller;
+            $destination = $appControllersPath . '/' . $controller;
+
+            if (file_exists($source)) {
+                $content = file_get_contents($source);
+                // Update namespace from package to app
+                $content = str_replace(
+                    'namespace HolartWeb\HolartCMS\Http\Controllers\Menus;',
+                    'namespace App\Http\Controllers;',
+                    $content
+                );
+                $content = str_replace(
+                    'use Illuminate\Routing\Controller;',
+                    '',
+                    $content
+                );
+                $content = str_replace(
+                    'use HolartWeb\HolartCMS\Models\Menus\TMenu;',
+                    'use App\Models\TMenu;',
+                    $content
+                );
+                $content = str_replace(
+                    'use HolartWeb\HolartCMS\Models\Menus\TMenuItem;',
+                    'use App\Models\TMenuItem;',
                     $content
                 );
                 file_put_contents($destination, $content);
@@ -145,6 +208,69 @@ class PagesInstallCommand extends Command
                 $this->warn("⚠ Source file not found: {$source}");
             }
         }
+
+        // Copy header templates
+        $headersSource = $packagePath . '/resources/views/layouts/headers';
+        $headersDestination = resource_path('views/layouts/headers');
+
+        if (!file_exists($headersDestination)) {
+            mkdir($headersDestination, 0755, true);
+        }
+
+        $headerFiles = ['header1.blade.php', 'header2.blade.php', 'header3.blade.php'];
+        foreach ($headerFiles as $file) {
+            $source = $headersSource . '/' . $file;
+            $destination = $headersDestination . '/' . $file;
+
+            if (file_exists($source)) {
+                copy($source, $destination);
+                $this->info("✓ Copied {$file}");
+            } else {
+                $this->warn("⚠ Source file not found: {$source}");
+            }
+        }
+
+        // Copy footer templates
+        $footersSource = $packagePath . '/resources/views/layouts/footers';
+        $footersDestination = resource_path('views/layouts/footers');
+
+        if (!file_exists($footersDestination)) {
+            mkdir($footersDestination, 0755, true);
+        }
+
+        $footerFiles = ['footer1.blade.php', 'footer2.blade.php', 'footer3.blade.php'];
+        foreach ($footerFiles as $file) {
+            $source = $footersSource . '/' . $file;
+            $destination = $footersDestination . '/' . $file;
+
+            if (file_exists($source)) {
+                copy($source, $destination);
+                $this->info("✓ Copied {$file}");
+            } else {
+                $this->warn("⚠ Source file not found: {$source}");
+            }
+        }
+
+        // Copy main layout files
+        $layoutsSource = $packagePath . '/resources/views/layouts';
+        $layoutsDestination = resource_path('views/layouts');
+
+        if (!file_exists($layoutsDestination)) {
+            mkdir($layoutsDestination, 0755, true);
+        }
+
+        $layoutFiles = ['app.blade.php', 'simple.blade.php'];
+        foreach ($layoutFiles as $file) {
+            $source = $layoutsSource . '/' . $file;
+            $destination = $layoutsDestination . '/' . $file;
+
+            if (file_exists($source)) {
+                copy($source, $destination);
+                $this->info("✓ Copied {$file}");
+            } else {
+                $this->warn("⚠ Source file not found: {$source}");
+            }
+        }
         $this->newLine();
 
         // Step 4: Copy and Run Migrations
@@ -155,8 +281,10 @@ class PagesInstallCommand extends Command
                        Schema::hasTable('t_page_blocks') &&
                        Schema::hasTable('t_page_block_types');
 
+        $menusTablesExist = Schema::hasTable('t_menus') && Schema::hasTable('t_menu_items');
+
         if ($tablesExist) {
-            $this->warn('⚠ Tables already exist. Running update migrations only...');
+            $this->warn('⚠ Pages tables already exist. Running update migrations only...');
 
             // Copy and run update migration
             $updateMigrationFile = '2026_03_02_000053_update_pages_add_container_support.php';
@@ -177,8 +305,8 @@ class PagesInstallCommand extends Command
                     $this->warn('⚠ Update migration warning: ' . $e->getMessage());
                 }
             }
-            $this->newLine();
         } else {
+            // Copy and run pages migrations
             $migrationFiles = [
                 '2026_03_02_000050_create_t_pages_table.php',
                 '2026_03_02_000051_create_t_page_block_types_table.php',
@@ -212,13 +340,56 @@ class PagesInstallCommand extends Command
                         ]);
                     }
                 }
-                $this->info('✓ Migrations completed successfully');
+                $this->info('✓ Pages migrations completed successfully');
             } catch (\Exception $e) {
-                $this->error('❌ Migration failed: ' . $e->getMessage());
+                $this->error('❌ Pages migration failed: ' . $e->getMessage());
                 return self::FAILURE;
             }
-            $this->newLine();
         }
+
+        // Copy and run menus migrations
+        if (!$menusTablesExist) {
+            $this->info('Installing menus tables...');
+            $menuMigrationFiles = [
+                '2026_03_03_000060_create_t_menus_table.php',
+                '2026_03_03_000061_create_t_menu_items_table.php',
+            ];
+
+            $menuMigrationsSource = $packagePath . '/database/migrations/menus/';
+
+            foreach ($menuMigrationFiles as $file) {
+                $source = $menuMigrationsSource . str_replace('2026_03_03_000060_', '2026_03_03_',
+                    str_replace('2026_03_03_000061_', '2026_03_03_', $file));
+                $destination = database_path('migrations/' . $file);
+
+                if (file_exists($source)) {
+                    copy($source, $destination);
+                    $this->info("✓ Copied migration {$file}");
+                } else {
+                    $this->warn("⚠ Source migration not found: {$source}");
+                }
+            }
+
+            try {
+                // Run menus migrations
+                foreach ($menuMigrationFiles as $file) {
+                    $migrationPath = database_path('migrations/' . $file);
+                    if (file_exists($migrationPath)) {
+                        Artisan::call('migrate', [
+                            '--path' => 'database/migrations/' . $file,
+                            '--force' => true
+                        ]);
+                    }
+                }
+                $this->info('✓ Menus migrations completed successfully');
+            } catch (\Exception $e) {
+                $this->error('❌ Menus migration failed: ' . $e->getMessage());
+                return self::FAILURE;
+            }
+        } else {
+            $this->info('✓ Menus tables already exist, skipping menus migrations');
+        }
+        $this->newLine();
 
         // Step 5: Seed Default Block Types
         $this->info('Step 5: Creating default block types...');

@@ -66,8 +66,30 @@ class PagesUninstallCommand extends Command
                     }
                 }
 
-                // Now drop tables
-                $this->info('Dropping tables...');
+                // Drop foreign keys from t_menu_items
+                if (Schema::hasTable('t_menu_items')) {
+                    $this->info('Dropping foreign keys from t_menu_items...');
+
+                    $foreignKeys = DB::select("
+                        SELECT CONSTRAINT_NAME
+                        FROM information_schema.KEY_COLUMN_USAGE
+                        WHERE TABLE_SCHEMA = ?
+                        AND TABLE_NAME = 't_menu_items'
+                        AND REFERENCED_TABLE_NAME IS NOT NULL
+                    ", [$dbName]);
+
+                    foreach ($foreignKeys as $fk) {
+                        try {
+                            DB::statement("ALTER TABLE t_menu_items DROP FOREIGN KEY {$fk->CONSTRAINT_NAME}");
+                            $this->info("✓ Dropped foreign key: {$fk->CONSTRAINT_NAME}");
+                        } catch (\Exception $e) {
+                            $this->warn("⚠ Could not drop foreign key {$fk->CONSTRAINT_NAME}: " . $e->getMessage());
+                        }
+                    }
+                }
+
+                // Now drop pages tables
+                $this->info('Dropping pages tables...');
                 Schema::dropIfExists('t_page_blocks');
                 $this->info('✓ Dropped t_page_blocks');
 
@@ -76,6 +98,14 @@ class PagesUninstallCommand extends Command
 
                 Schema::dropIfExists('t_pages');
                 $this->info('✓ Dropped t_pages');
+
+                // Drop menus tables
+                $this->info('Dropping menus tables...');
+                Schema::dropIfExists('t_menu_items');
+                $this->info('✓ Dropped t_menu_items');
+
+                Schema::dropIfExists('t_menus');
+                $this->info('✓ Dropped t_menus');
 
                 // Re-enable foreign key checks
                 DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -105,6 +135,8 @@ class PagesUninstallCommand extends Command
             '2026_03_02_000051_create_t_page_block_types_table.php',
             '2026_03_02_000052_create_t_page_blocks_table.php',
             '2026_03_02_000053_update_pages_add_container_support.php',
+            '2026_03_03_000060_create_t_menus_table.php',
+            '2026_03_03_000061_create_t_menu_items_table.php',
         ];
 
         foreach ($migrationFiles as $file) {
@@ -128,7 +160,7 @@ class PagesUninstallCommand extends Command
 
         // Step 3: Remove models
         $this->info('Step 3: Removing models...');
-        $models = ['TPage.php', 'TPageBlock.php', 'TPageBlockType.php'];
+        $models = ['TPage.php', 'TPageBlock.php', 'TPageBlockType.php', 'TMenu.php', 'TMenuItem.php'];
         foreach ($models as $model) {
             $modelPath = app_path('Models/' . $model);
             if (file_exists($modelPath)) {
@@ -143,7 +175,9 @@ class PagesUninstallCommand extends Command
         $controllers = [
             'PagesController.php',
             'PageBlocksController.php',
-            'PageBlockTypesController.php'
+            'PageBlockTypesController.php',
+            'MenusController.php',
+            'MenuItemsController.php'
         ];
 
         foreach ($controllers as $controller) {

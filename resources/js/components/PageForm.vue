@@ -171,6 +171,47 @@
         </div>
       </div>
 
+      <!-- Page Appearance -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Внешний вид</h3>
+
+        <div class="space-y-4">
+          <!-- Header Template -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Шаблон шапки
+            </label>
+            <select
+              v-model="form.header_template"
+              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+            >
+              <option value="">По умолчанию (из настроек)</option>
+              <option value="header1">Шаблон 1 - Классический (логотип сверху, меню снизу)</option>
+              <option value="header2">Шаблон 2 - Горизонтальный (логотип слева, меню справа)</option>
+              <option value="header3">Шаблон 3 - Темный (современный темный стиль)</option>
+            </select>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Оставьте пустым для использования шаблона из настроек</p>
+          </div>
+
+          <!-- Footer Template -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Шаблон футера
+            </label>
+            <select
+              v-model="form.footer_template"
+              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+            >
+              <option value="">По умолчанию (из настроек)</option>
+              <option value="footer1">Шаблон 1 - Простой (центрированное меню)</option>
+              <option value="footer2">Шаблон 2 - Многоколоночный (логотип, меню, контакты)</option>
+              <option value="footer3">Шаблон 3 - Минималистичный (с социальными сетями)</option>
+            </select>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Оставьте пустым для использования шаблона из настроек</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Error Message -->
       <div v-if="errorMessage" class="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
         <p class="text-red-800 dark:text-red-400">{{ errorMessage }}</p>
@@ -223,6 +264,8 @@ const form = ref({
   meta_keywords: '',
   is_active: true,
   sort: 500,
+  header_template: '',
+  footer_template: '',
 });
 
 const saving = ref(false);

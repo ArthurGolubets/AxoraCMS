@@ -36,6 +36,11 @@ import PageForm from './components/PageForm.vue';
 import PageBuilder from './components/PageBuilder.vue';
 import PageBlockTypesList from './components/PageBlockTypesList.vue';
 import PagesSettings from './components/PagesSettings.vue';
+import MenusList from './components/MenusList.vue';
+import MenuView from './components/MenuView.vue';
+import MenuCreate from './components/MenuCreate.vue';
+import MenuEdit from './components/MenuEdit.vue';
+import MenuBuilder from './components/MenuBuilder.vue';
 import Error403 from './components/Error403.vue';
 import Error404 from './components/Error404.vue';
 import './style.css';
@@ -243,6 +248,31 @@ const router = createRouter({
             path: '/pages-settings',
             name: 'pages-settings',
             component: PagesSettings
+        },
+        {
+            path: '/menus',
+            name: 'menus',
+            component: MenusList
+        },
+        {
+            path: '/menus/create',
+            name: 'menu-create',
+            component: MenuCreate
+        },
+        {
+            path: '/menus/:id',
+            name: 'menu-view',
+            component: MenuView
+        },
+        {
+            path: '/menus/:id/edit',
+            name: 'menu-edit',
+            component: MenuEdit
+        },
+        {
+            path: '/menus/:id/builder',
+            name: 'menu-builder',
+            component: MenuBuilder
         },
         {
             path: '/403',

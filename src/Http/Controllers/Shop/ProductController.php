@@ -4,6 +4,7 @@ namespace HolartWeb\HolartCMS\Http\Controllers\Shop;
 
 use App\Models\TProduct;
 use App\Models\TProductVariant;
+use HolartWeb\HolartCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
@@ -110,6 +111,10 @@ class ProductController extends Controller
             $product->variants()->create($variantData);
         }
 
+        // Log activity
+        TAdminAction::log('created', 'product', $product->id,
+            'Создан товар "' . $product->name . '" (SKU: ' . $product->sku . ')');
+
         return response()->json($product->load('variants'), 201);
     }
 
@@ -153,7 +158,15 @@ class ProductController extends Controller
             }
         }
 
+        $oldData = $product->getOriginal();
         $product->update($validated);
+
+        // Log activity
+        TAdminAction::log('updated', 'product', $product->id,
+            'Обновлен товар "' . $product->name . '" (SKU: ' . $product->sku . ')', [
+            'old' => $oldData,
+            'new' => $product->getAttributes()
+        ]);
 
         return response()->json($product->load('variants'));
     }
@@ -164,7 +177,14 @@ class ProductController extends Controller
     public function destroy($id): JsonResponse
     {
         $product = TProduct::findOrFail($id);
+        $productName = $product->name;
+        $productSku = $product->sku;
+
         $product->delete();
+
+        // Log activity
+        TAdminAction::log('deleted', 'product', $id,
+            'Удален товар "' . $productName . '" (SKU: ' . $productSku . ')');
 
         return response()->json(['message' => 'Товар удален']);
     }
@@ -179,7 +199,12 @@ class ProductController extends Controller
             'ids.*' => 'exists:t_products,id',
         ]);
 
+        $count = count($validated['ids']);
         TProduct::whereIn('id', $validated['ids'])->delete();
+
+        // Log activity
+        TAdminAction::log('deleted', 'product', null,
+            'Массовое удаление товаров (количество: ' . $count . ')');
 
         return response()->json(['message' => 'Товары удалены']);
     }
