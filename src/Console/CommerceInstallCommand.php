@@ -138,31 +138,45 @@ class CommerceInstallCommand extends Command
             }
         }
 
-        // Remove migration records from database
-        try {
-            \DB::table('migrations')->whereIn('migration', array_map(function($file) {
-                return str_replace('.php', '', $file);
-            }, $migrationFiles))->delete();
-            $this->info('✓ Cleaned migration records');
-        } catch (\Exception $e) {
-            $this->warn('⚠ Could not clean migration records: ' . $e->getMessage());
+        // Check if tables already exist
+        $tables = ['t_orders', 't_order_items', 't_promocodes', 't_payment_transactions', 't_orders_data'];
+        $existingTables = [];
+        foreach ($tables as $table) {
+            if (Schema::hasTable($table)) {
+                $existingTables[] = $table;
+            }
         }
 
-        try {
-            // Run only commerce module migrations
-            foreach ($migrationFiles as $file) {
-                $migrationPath = database_path('migrations/' . $file);
-                if (file_exists($migrationPath)) {
-                    Artisan::call('migrate', [
-                        '--path' => 'database/migrations/' . $file,
-                        '--force' => true
-                    ]);
-                }
+        if (!empty($existingTables)) {
+            $this->info('✓ Tables already exist: ' . implode(', ', $existingTables));
+            $this->info('✓ Skipping migrations (database already configured)');
+        } else {
+            // Remove migration records from database
+            try {
+                \DB::table('migrations')->whereIn('migration', array_map(function($file) {
+                    return str_replace('.php', '', $file);
+                }, $migrationFiles))->delete();
+                $this->info('✓ Cleaned migration records');
+            } catch (\Exception $e) {
+                $this->warn('⚠ Could not clean migration records: ' . $e->getMessage());
             }
-            $this->info('✓ Migrations completed successfully');
-        } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
-            return self::FAILURE;
+
+            try {
+                // Run only commerce module migrations
+                foreach ($migrationFiles as $file) {
+                    $migrationPath = database_path('migrations/' . $file);
+                    if (file_exists($migrationPath)) {
+                        Artisan::call('migrate', [
+                            '--path' => 'database/migrations/' . $file,
+                            '--force' => true
+                        ]);
+                    }
+                }
+                $this->info('✓ Migrations completed successfully');
+            } catch (\Exception $e) {
+                $this->error('❌ Migration failed: ' . $e->getMessage());
+                return self::FAILURE;
+            }
         }
         $this->newLine();
 

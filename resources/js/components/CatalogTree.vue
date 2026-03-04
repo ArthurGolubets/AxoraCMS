@@ -136,6 +136,12 @@ watch(viewMode, () => {
 });
 
 const flatCatalogs = computed(() => {
+  // If in list mode, data is already flat with parent loaded
+  if (viewMode.value === 'list') {
+    return catalogs.value;
+  }
+
+  // For tree mode, flatten recursively
   const flatten = (items, parent = null) => {
     let result = [];
     for (const item of items) {
@@ -205,7 +211,14 @@ const handleToggleCatalogActive = async (catalog) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        ...catalog,
+        parent_id: catalog.parent_id,
+        name: catalog.name,
+        slug: catalog.slug,
+        title: catalog.title || '',
+        description: catalog.description || '',
+        keywords: catalog.keywords || '',
+        image: catalog.image || '',
+        content: catalog.content || '',
         is_active: !catalog.is_active
       })
     });
@@ -315,8 +328,23 @@ const handleToggleProductActive = async (product) => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        ...product,
-        is_active: !product.is_active
+        catalog_id: product.catalog_id,
+        name: product.name,
+        slug: product.slug,
+        title: product.title || '',
+        description: product.description || '',
+        keywords: product.keywords || '',
+        price: product.price,
+        old_price: product.old_price || null,
+        sku: product.sku,
+        tags: product.tags || [],
+        is_new: product.is_new || false,
+        is_hot: product.is_hot || false,
+        is_recommended: product.is_recommended || false,
+        is_active: !product.is_active,
+        content: product.content || '',
+        gallery: product.gallery || [],
+        variants: product.variants || []
       })
     });
 

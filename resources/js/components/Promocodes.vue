@@ -37,9 +37,9 @@
             <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ promo.current_usage }}</td>
             <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ promo.max_usage > 0 ? promo.max_usage : 'Без ограничений' }}</td>
             <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-              <div v-if="promo.start_date || promo.end_date">
-                <div v-if="promo.start_date">С: {{ formatDate(promo.start_date) }}</div>
-                <div v-if="promo.end_date">До: {{ formatDate(promo.end_date) }}</div>
+              <div v-if="promo.date_active_from || promo.date_active_to">
+                <div v-if="promo.date_active_from">С: {{ formatDate(promo.date_active_from) }}</div>
+                <div v-if="promo.date_active_to">До: {{ formatDate(promo.date_active_to) }}</div>
               </div>
               <span v-else class="text-gray-400">Без ограничений</span>
             </td>
@@ -89,11 +89,11 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Дата начала (опционально)</label>
-              <input v-model="form.start_date" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+              <input v-model="form.date_active_from" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Дата окончания (опционально)</label>
-              <input v-model="form.end_date" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+              <input v-model="form.date_active_to" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
             </div>
           </div>
         </div>
@@ -126,8 +126,8 @@ const form = ref({
   type: 'fiat',
   value: 0,
   max_usage: 0,
-  start_date: '',
-  end_date: ''
+  date_active_from: '',
+  date_active_to: ''
 });
 
 const loadPromocodes = async () => {
@@ -148,6 +148,21 @@ const loadPromocodes = async () => {
   }
 };
 
+const formatDateForInput = (dateString) => {
+  if (!dateString) return '';
+
+  // Handle datetime string (YYYY-MM-DD HH:MM:SS or YYYY-MM-DDTHH:MM:SS.000000Z)
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+
+  // Format to YYYY-MM-DD for input type="date"
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
 const editPromocode = (promo) => {
   editingId.value = promo.id;
   form.value = {
@@ -156,8 +171,8 @@ const editPromocode = (promo) => {
     type: promo.type,
     value: promo.value,
     max_usage: promo.max_usage,
-    start_date: promo.start_date || '',
-    end_date: promo.end_date || ''
+    date_active_from: formatDateForInput(promo.date_active_from),
+    date_active_to: formatDateForInput(promo.date_active_to)
   };
   showEditModal.value = true;
 };
@@ -227,8 +242,8 @@ const closeModal = () => {
     type: 'fiat',
     value: 0,
     max_usage: 0,
-    start_date: '',
-    end_date: ''
+    date_active_from: '',
+    date_active_to: ''
   };
 };
 

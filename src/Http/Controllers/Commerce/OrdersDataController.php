@@ -15,6 +15,21 @@ class OrdersDataController extends Controller
             return [$item->key => $item->getTypedValue()];
         });
 
+        // Add available payment providers based on installed modules
+        $availableProviders = ['transfer'];
+
+        // Check if Yookassa module is installed
+        if (class_exists('\App\Services\YookassaService')) {
+            $availableProviders[] = 'yookassa';
+        }
+
+        // Check if Sberbank module is installed
+        if (class_exists('\App\Services\SberbankService')) {
+            $availableProviders[] = 'sberbank';
+        }
+
+        $settings['available_providers'] = $availableProviders;
+
         return response()->json($settings);
     }
 
@@ -32,6 +47,10 @@ class OrdersDataController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'settings' => 'required|array',
+            'delivery_zones' => 'nullable|array',
+            'delivery_zones.*.name' => 'required|string',
+            'delivery_zones.*.code' => 'required|string',
+            'delivery_zones.*.price' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -44,6 +63,11 @@ class OrdersDataController extends Controller
         foreach ($request->settings as $key => $value) {
             $type = $this->detectType($value);
             TOrdersData::setValue($key, $value, $type);
+        }
+
+        // Save delivery zones if provided
+        if ($request->has('delivery_zones')) {
+            TOrdersData::setValue('delivery_zones', $request->delivery_zones, TOrdersData::TYPE_JSON);
         }
 
         return response()->json([

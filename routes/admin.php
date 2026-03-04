@@ -12,6 +12,7 @@ use HolartWeb\HolartCMS\Http\Controllers\ProductImportExportController;
 use HolartWeb\HolartCMS\Http\Controllers\LogsController;
 use HolartWeb\HolartCMS\Http\Controllers\ModulesController;
 use HolartWeb\HolartCMS\Http\Controllers\EnvironmentController;
+use HolartWeb\HolartCMS\Http\Controllers\ImageUploadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,10 @@ Route::middleware(['admin.auth'])->group(function () {
     Route::prefix('api')->group(function () {
         Route::get('me', [DashboardController::class, 'me']);
         Route::get('search', [SearchController::class, 'search']);
+
+        // Image upload routes
+        Route::post('upload/image', [ImageUploadController::class, 'upload']);
+        Route::delete('upload/image', [ImageUploadController::class, 'delete']);
 
         Route::get('administrators', [AdministratorController::class, 'index']);
         Route::post('administrators', [AdministratorController::class, 'store']);
@@ -90,6 +95,7 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::get('catalogs/export', [CatalogImportExportController::class, 'export']);
             Route::post('catalogs/import-preview', [CatalogImportExportController::class, 'previewImport']);
             Route::post('catalogs/import', [CatalogImportExportController::class, 'import']);
+            Route::get('catalogs/import-progress/{importId}', [CatalogImportExportController::class, 'checkProgress']);
             Route::get('catalogs/tree', [$catalogController, 'tree']);
             Route::get('catalogs/list', [$catalogController, 'list']);
 
@@ -98,6 +104,7 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::get('products/export', [ProductImportExportController::class, 'export']);
             Route::post('products/import-preview', [ProductImportExportController::class, 'previewImport']);
             Route::post('products/import', [ProductImportExportController::class, 'import']);
+            Route::get('products/import-progress/{importId}', [ProductImportExportController::class, 'checkProgress']);
             Route::post('products/bulk-delete', [$productController, 'bulkDestroy']);
 
             // Catalog generic routes

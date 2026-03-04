@@ -18,15 +18,15 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-6">
         <!-- Main Image and Gallery -->
-        <div v-if="product.image || (product.gallery && product.gallery.length > 0)" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <div v-if="product.main_image || (product.gallery && product.gallery.length > 0)" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Изображения</h3>
-          <div v-if="product.image" class="mb-4">
+          <div v-if="product.main_image" class="mb-4">
             <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Главное изображение</h4>
-            <img :src="getImageUrl(product.image)" :alt="product.name" class="w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700">
+            <img :src="getImageUrl(product.main_image)" :alt="product.name" class="w-full max-w-md h-80 object-contain rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           </div>
           <div v-if="product.gallery && product.gallery.length > 0">
             <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Галерея</h4>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <img v-for="(img, index) in product.gallery" :key="index" :src="getImageUrl(img)" :alt="`${product.name} ${index + 1}`" class="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700">
             </div>
           </div>
@@ -53,9 +53,23 @@
           </div>
         </div>
 
+        <div v-if="assignedFilters && assignedFilters.length > 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Примененные фильтры</h3>
+          <div class="space-y-4">
+            <div v-for="filter in assignedFilters" :key="filter.filter.id" class="border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0">
+              <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ filter.filter.name }}</h4>
+              <div class="flex flex-wrap gap-2">
+                <span v-for="value in filter.values" :key="value.id" class="px-3 py-1 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
+                  {{ value.value }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Описание</h3>
-          <div class="prose dark:prose-invert max-w-none" v-html="product.content || 'Нет описания'"></div>
+          <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="product.content || '<p class=\'text-gray-500 dark:text-gray-400\'>Нет описания</p>'"></div>
         </div>
       </div>
 
@@ -83,6 +97,7 @@ const { error } = useModal();
 const { buttonStyle } = useTheme();
 const route = useRoute();
 const product = ref(null);
+const assignedFilters = ref([]);
 
 const getImageUrl = (imageString) => {
   if (!imageString) return '';
@@ -103,7 +118,9 @@ const getImageUrl = (imageString) => {
 const loadProduct = async () => {
   try {
     const response = await fetch(`/admin/api/products/${route.params.id}`);
-    product.value = await response.json();
+    const data = await response.json();
+    product.value = data.product || data;
+    assignedFilters.value = data.assigned_filters || [];
   } catch (err) {
     console.error('Error loading product:', err);
     await error('Ошибка при загрузке товара');

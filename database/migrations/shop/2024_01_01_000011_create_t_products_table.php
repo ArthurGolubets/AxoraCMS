@@ -23,6 +23,7 @@ return new class extends Migration
             $table->boolean('is_new')->default(false);
             $table->boolean('is_hot')->default(false);
             $table->boolean('is_recommended')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->longText('content')->nullable();
             $table->json('gallery')->nullable();
             $table->timestamps();

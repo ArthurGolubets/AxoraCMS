@@ -13,15 +13,18 @@ class TCatalog extends Model
     protected $fillable = [
         'parent_id',
         'name',
+        'slug',
         'title',
         'description',
         'keywords',
         'image',
         'content',
+        'is_active',
     ];
 
     protected $casts = [
         'parent_id' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     /**

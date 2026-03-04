@@ -20,10 +20,12 @@ class TProduct extends Model
         'price',
         'old_price',
         'sku',
+        'main_image',
         'tags',
         'is_new',
         'is_hot',
         'is_recommended',
+        'is_active',
         'content',
         'gallery',
     ];
@@ -35,6 +37,7 @@ class TProduct extends Model
         'is_new' => 'boolean',
         'is_hot' => 'boolean',
         'is_recommended' => 'boolean',
+        'is_active' => 'boolean',
         'tags' => 'array',
         'gallery' => 'array',
     ];
@@ -103,7 +106,20 @@ class TProduct extends Model
      */
     public function syncFilterValues(array $filterValueIds)
     {
-        $this->filterValues()->sync($filterValueIds);
+        // Get filter_id for each filter_value_id
+        if (class_exists('HolartWeb\HolartCMS\Models\Shop\TFilterValue')) {
+            $filterValueClass = 'HolartWeb\HolartCMS\Models\Shop\TFilterValue';
+            $filterValues = $filterValueClass::whereIn('id', $filterValueIds)->get();
+
+            $syncData = [];
+            foreach ($filterValues as $filterValue) {
+                $syncData[$filterValue->id] = ['filter_id' => $filterValue->filter_id];
+            }
+
+            $this->filterValues()->sync($syncData);
+        } else {
+            $this->filterValues()->sync($filterValueIds);
+        }
     }
 
     /**

@@ -12,11 +12,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('parent_id')->nullable()->constrained('t_catalogs')->onDelete('cascade');
             $table->string('name');
+            $table->string('slug')->unique();
             $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->text('keywords')->nullable();
             $table->string('image')->nullable();
             $table->longText('content')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
 
             $table->index('parent_id');

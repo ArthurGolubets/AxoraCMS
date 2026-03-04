@@ -31,6 +31,42 @@
             <p class="text-red-800 dark:text-red-400">{{ error }}</p>
           </div>
 
+          <!-- Import Progress -->
+          <div v-else-if="importProgress && importing" class="py-8">
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Импорт данных...</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ importProgress.percentage }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                <div
+                  class="h-full bg-blue-600 transition-all duration-300 ease-out"
+                  :style="{ width: importProgress.percentage + '%' }"
+                ></div>
+              </div>
+            </div>
+            <div class="text-center">
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Обработано: {{ importProgress.processed || 0 }} из {{ importProgress.total || 0 }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                Создано: {{ importProgress.created || 0 }} | Обновлено: {{ importProgress.updated || 0 }}
+              </p>
+              <p v-if="importProgress.status === 'completed'" class="text-sm text-green-600 dark:text-green-400 mt-3 font-medium">
+                ✓ Импорт завершен успешно! Создано: {{ importProgress.created || 0 }}, Обновлено: {{ importProgress.updated || 0 }}
+              </p>
+              <p v-else-if="importProgress.status === 'failed'" class="text-sm text-red-600 dark:text-red-400 mt-3 font-medium">
+                ✗ Импорт завершился с ошибкой
+              </p>
+              <div v-if="importProgress.errors && importProgress.errors.length > 0" class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-left">
+                <h4 class="text-sm font-semibold text-red-900 dark:text-red-300 mb-2">Ошибки:</h4>
+                <ul class="text-xs text-red-700 dark:text-red-400 space-y-1 max-h-32 overflow-y-auto">
+                  <li v-for="(err, index) in importProgress.errors" :key="index">• {{ err }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div v-else-if="preview">
             <!-- Summary -->
             <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -102,18 +138,18 @@
             @click="close"
             type="button"
             class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium transition"
+            :disabled="importing && importProgress?.status !== 'completed' && importProgress?.status !== 'failed'"
           >
-            Отмена
+            {{ (importing && importProgress?.status !== 'completed' && importProgress?.status !== 'failed') ? 'Импорт...' : 'Закрыть' }}
           </button>
           <button
-            v-if="preview && preview.valid"
+            v-if="preview && preview.valid && !importing"
             @click="confirmImport"
             type="button"
             :style="buttonStyle"
             class="px-4 py-2 text-white rounded-lg font-medium transition-opacity hover:opacity-90"
-            :disabled="importing"
           >
-            {{ importing ? 'Импорт...' : 'Импортировать' }}
+            Импортировать
           </button>
         </div>
       </div>
@@ -139,6 +175,8 @@ const loading = ref(false);
 const error = ref('');
 const preview = ref(null);
 const importing = ref(false);
+const importProgress = ref(null);
+let progressInterval = null;
 
 watch(() => props.file, async (newFile) => {
   if (newFile && props.show) {
@@ -149,6 +187,12 @@ watch(() => props.file, async (newFile) => {
 watch(() => props.show, async (newShow) => {
   if (newShow && props.file) {
     await loadPreview();
+  } else if (!newShow) {
+    // Clean up interval when modal closes
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
   }
 });
 
@@ -156,6 +200,8 @@ const loadPreview = async () => {
   loading.value = true;
   error.value = '';
   preview.value = null;
+  importing.value = false;
+  importProgress.value = null;
 
   try {
     const formData = new FormData();
@@ -183,16 +229,95 @@ const loadPreview = async () => {
   }
 };
 
-const confirmImport = () => {
+const confirmImport = async () => {
   importing.value = true;
-  emit('import', preview.value);
+  importProgress.value = {
+    status: 'queued',
+    created: 0,
+    updated: 0,
+    total: preview.value.total,
+    processed: 0,
+    errors: [],
+    percentage: 0
+  };
+
+  try {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const response = await fetch(`/admin/api/${props.entityType}/import`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ items: preview.value.preview })
+    });
+
+    if (!response.ok) {
+      throw new Error('Ошибка при запуске импорта');
+    }
+
+    const result = await response.json();
+
+    if (result.import_id) {
+      // Start polling for progress
+      checkImportProgress(result.import_id);
+    } else {
+      throw new Error('Не получен ID импорта');
+    }
+  } catch (err) {
+    console.error('Import error:', err);
+    error.value = err.message || 'Ошибка при импорте';
+    importing.value = false;
+  }
+};
+
+const checkImportProgress = (importId) => {
+  progressInterval = setInterval(async () => {
+    try {
+      const response = await fetch(`/admin/api/${props.entityType}/import-progress/${importId}`);
+
+      if (!response.ok) {
+        throw new Error('Ошибка при получении статуса импорта');
+      }
+
+      const progress = await response.json();
+      importProgress.value = progress;
+
+      // Stop polling if completed or failed
+      if (progress.status === 'completed' || progress.status === 'failed') {
+        clearInterval(progressInterval);
+        progressInterval = null;
+
+        if (progress.status === 'completed') {
+          // Notify parent to refresh data
+          emit('import', preview.value);
+        }
+      }
+    } catch (err) {
+      console.error('Progress check error:', err);
+      clearInterval(progressInterval);
+      progressInterval = null;
+      error.value = err.message || 'Ошибка при проверке статуса';
+      importing.value = false;
+    }
+  }, 1000); // Check every second
 };
 
 const close = () => {
-  if (!importing.value) {
+  const canClose = !importing.value ||
+    importProgress.value?.status === 'completed' ||
+    importProgress.value?.status === 'failed';
+
+  if (canClose) {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
     emit('close');
     preview.value = null;
     error.value = '';
+    importing.value = false;
+    importProgress.value = null;
   }
 };
 </script>

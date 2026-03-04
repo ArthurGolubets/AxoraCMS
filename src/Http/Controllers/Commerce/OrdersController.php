@@ -99,9 +99,12 @@ class OrdersController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|string|max:255',
-            'payment_status' => 'required|in:pending,success,canceled',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:255',
+            'payment_status' => 'nullable|in:pending,paid,failed,refunded',
+            'delivery_status' => 'nullable|in:pending,processing,shipped,delivered,cancelled',
+            'delivery_type' => 'nullable|in:pickup,courier,post',
+            'payment_type' => 'nullable|in:online,cash,card',
         ]);
 
         if ($validator->fails()) {
@@ -116,7 +119,7 @@ class OrdersController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Заказ обновлен успешно',
-            'data' => $order
+            'data' => $order->fresh()
         ]);
     }
 
@@ -141,7 +144,7 @@ class OrdersController extends Controller
         $order = TOrders::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'payment_status' => 'required|in:pending,success,canceled',
+            'payment_status' => 'required|in:pending,paid,failed,refunded',
         ]);
 
         if ($validator->fails()) {
@@ -156,7 +159,7 @@ class OrdersController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Статус заказа изменен',
-            'data' => $order
+            'data' => $order->fresh()
         ]);
     }
 }

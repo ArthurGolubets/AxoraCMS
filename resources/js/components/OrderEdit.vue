@@ -435,13 +435,28 @@ const loadOrder = async () => {
 
 const loadProducts = async () => {
   try {
-    const response = await fetch('/admin/api/products', {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (response.ok) {
-      const data = await response.json();
-      products.value = data.data || [];
+    let allProducts = [];
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await fetch(`/admin/api/products?page=${page}&per_page=100`, {
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        allProducts = [...allProducts, ...(data.data || [])];
+
+        // Check if there are more pages
+        hasMore = data.current_page < data.last_page;
+        page++;
+      } else {
+        hasMore = false;
+      }
     }
+
+    products.value = allProducts;
   } catch (err) {
     console.error('Failed to load products:', err);
   }

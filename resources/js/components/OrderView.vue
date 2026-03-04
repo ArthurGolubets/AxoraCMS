@@ -30,7 +30,7 @@
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Статус заказа</h3>
           <div class="flex items-center space-x-4">
-            <div class="flex-1">
+            <div :class="order.delivery_type === 'pickup' ? 'w-full' : 'flex-1'">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Статус оплаты</label>
               <select v-model="order.payment_status" @change="updateOrder" class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
                 <option value="pending">Ожидает</option>
@@ -39,7 +39,7 @@
                 <option value="refunded">Возврат</option>
               </select>
             </div>
-            <div class="flex-1">
+            <div v-if="order.delivery_type !== 'pickup'" class="flex-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Статус доставки</label>
               <select v-model="order.delivery_status" @change="updateOrder" class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
                 <option value="pending">Ожидает</option>
@@ -77,6 +77,10 @@
             <div v-if="order.delivery_price > 0" class="flex justify-between items-center mb-2">
               <span class="text-gray-600 dark:text-gray-400">Доставка:</span>
               <span class="text-gray-900 dark:text-white">{{ formatPrice(order.delivery_price) }} ₽</span>
+            </div>
+            <div v-if="order.promocode" class="flex justify-between items-center mb-2">
+              <span class="text-gray-600 dark:text-gray-400">Промокод ({{ order.promocode.code }}):</span>
+              <span class="text-green-600 dark:text-green-400">-{{ formatPrice(order.promocode_discount || 0) }} ₽</span>
             </div>
             <div class="flex justify-between items-center text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
               <span class="text-gray-900 dark:text-white">Всего:</span>
@@ -136,6 +140,12 @@
               <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Тип доставки</label>
               <p class="text-gray-900 dark:text-white">{{ getDeliveryTypeLabel(order.delivery_type) }}</p>
             </div>
+            <div v-if="order.delivery_type !== 'pickup'">
+              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Статус</label>
+              <span class="inline-block px-2 py-1 text-xs rounded-full" :class="getDeliveryStatusClass(order.delivery_status)">
+                {{ getDeliveryStatusLabel(order.delivery_status) }}
+              </span>
+            </div>
             <div v-if="order.delivery_address">
               <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Адрес</label>
               <p class="text-gray-900 dark:text-white">{{ order.delivery_address }}</p>
@@ -160,6 +170,31 @@
               <span class="inline-block px-2 py-1 text-xs rounded-full" :class="getPaymentStatusClass(order.payment_status)">
                 {{ getPaymentStatusLabel(order.payment_status) }}
               </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Promocode Info -->
+        <div v-if="order.promocode" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Промокод</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Код</label>
+              <p class="text-gray-900 dark:text-white font-mono font-semibold">{{ order.promocode.code }}</p>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Название</label>
+              <p class="text-gray-900 dark:text-white">{{ order.promocode.name }}</p>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Скидка</label>
+              <p class="text-green-600 dark:text-green-400 font-semibold">
+                {{ order.promocode.type === 'fiat' ? formatPrice(order.promocode.value) + ' ₽' : order.promocode.value + '%' }}
+              </p>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Применена скидка</label>
+              <p class="text-green-600 dark:text-green-400 font-semibold">{{ formatPrice(order.promocode_discount || 0) }} ₽</p>
             </div>
           </div>
         </div>
@@ -196,7 +231,9 @@ const loadOrder = async () => {
     });
 
     if (response.ok) {
-      order.value = await response.json();
+      const data = await response.json();
+      console.log('Loaded order data:', data); // Debug log
+      order.value = data;
     } else {
       error('Ошибка при загрузке заказа');
     }
@@ -209,6 +246,22 @@ const loadOrder = async () => {
 const updateOrder = async () => {
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    const payload = {
+      name: order.value.name,
+      email: order.value.email || '',
+      phone: order.value.phone || '',
+      payment_status: order.value.payment_status,
+      delivery_status: order.value.delivery_status || 'pending',
+      delivery_type: order.value.delivery_type,
+      delivery_address: order.value.delivery_address || '',
+      delivery_price: order.value.delivery_price,
+      payment_type: order.value.payment_type,
+      comments: order.value.comments || ''
+    };
+
+    console.log('Sending update payload:', payload); // Debug
+
     const response = await fetch(`/admin/api/orders/${order.value.id}`, {
       method: 'PUT',
       headers: {
@@ -216,16 +269,18 @@ const updateOrder = async () => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        payment_status: order.value.payment_status,
-        delivery_status: order.value.delivery_status
-      })
+      body: JSON.stringify(payload)
     });
+
+    const result = await response.json();
+    console.log('Update response:', result); // Debug
 
     if (response.ok) {
       success('Статус заказа обновлен');
+      await loadOrder(); // Reload order to get fresh data
     } else {
-      error('Ошибка при обновлении заказа');
+      console.error('Update failed:', result);
+      error('Ошибка при обновлении заказа: ' + JSON.stringify(result.errors || result.message));
     }
   } catch (err) {
     console.error('Error updating order:', err);
@@ -281,6 +336,28 @@ const getPaymentStatusClass = (status) => {
     paid: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
     failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     refunded: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+  };
+  return classes[status] || classes.pending;
+};
+
+const getDeliveryStatusLabel = (status) => {
+  const labels = {
+    pending: 'Ожидает',
+    processing: 'В обработке',
+    shipped: 'Отправлен',
+    delivered: 'Доставлен',
+    cancelled: 'Отменен'
+  };
+  return labels[status] || status;
+};
+
+const getDeliveryStatusClass = (status) => {
+  const classes = {
+    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    processing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+    delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
   };
   return classes[status] || classes.pending;
 };

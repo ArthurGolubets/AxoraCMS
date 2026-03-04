@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable()->comment('Описание инфоблока');
             $table->string('table_name')->unique()->comment('Название таблицы для элементов');
             $table->boolean('is_active')->default(true)->comment('Активность инфоблока');
+            $table->boolean('is_favorite')->default(false)->comment('Избранные инфоблоки для sidebar');
             $table->json('settings')->nullable()->comment('Дополнительные настройки');
             $table->timestamps();
 

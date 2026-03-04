@@ -206,7 +206,7 @@ class CatalogImportExportController extends Controller
     }
 
     /**
-     * Import catalogs from preview
+     * Import catalogs from preview (async with job)
      */
     public function import(Request $request)
     {
@@ -218,58 +218,42 @@ class CatalogImportExportController extends Controller
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 
-        $catalogClass = 'App\Models\TCatalog';
         $items = $request->input('items');
-        $created = 0;
-        $updated = 0;
-        $errors = [];
+        $importId = \Illuminate\Support\Str::uuid()->toString();
 
-        foreach ($items as $item) {
-            try {
-                // Skip items with errors
-                if (isset($item['status']) && $item['status'] === 'error') {
-                    continue;
-                }
+        // Initialize progress
+        \Illuminate\Support\Facades\Cache::put("import_progress_{$importId}", [
+            'status' => 'queued',
+            'created' => 0,
+            'updated' => 0,
+            'total' => count($items),
+            'processed' => 0,
+            'errors' => [],
+            'percentage' => 0,
+        ], 3600);
 
-                // Auto-generate slug if empty
-                if (empty($item['slug'])) {
-                    $item['slug'] = $this->generateSlug($item['name'], $catalogClass, $item['id'] ?? null);
-                }
-
-                $data = [
-                    'name' => $item['name'],
-                    'slug' => $item['slug'],
-                    'description' => $item['description'] ?? null,
-                    'parent_id' => !empty($item['parent_id']) ? $item['parent_id'] : null,
-                    'is_active' => $item['is_active'] ?? true,
-                    'image' => $item['image'] ?? null,
-                ];
-
-                if ($item['action'] === 'update' && !empty($item['id'])) {
-                    $catalog = $catalogClass::find($item['id']);
-                    if ($catalog) {
-                        $catalog->update($data);
-                        $updated++;
-                    }
-                } else {
-                    $catalogClass::create($data);
-                    $created++;
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Ошибка в строке {$item['row']}: " . $e->getMessage();
-            }
-        }
-
-        // Log activity
-        TAdminAction::log('imported', 'catalog', null,
-            'Импорт категорий (создано: ' . $created . ', обновлено: ' . $updated . ')');
+        // Dispatch job
+        \HolartWeb\HolartCMS\Jobs\ImportCatalogsJob::dispatch($items, $importId);
 
         return response()->json([
             'success' => true,
-            'created' => $created,
-            'updated' => $updated,
-            'errors' => $errors
+            'import_id' => $importId,
+            'message' => 'Импорт запущен в фоновом режиме'
         ]);
+    }
+
+    /**
+     * Check import progress
+     */
+    public function checkProgress($importId)
+    {
+        $progress = \Illuminate\Support\Facades\Cache::get("import_progress_{$importId}");
+
+        if (!$progress) {
+            return response()->json(['error' => 'Import not found'], 404);
+        }
+
+        return response()->json($progress);
     }
 
     /**

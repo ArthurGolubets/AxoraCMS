@@ -20,16 +20,17 @@
 
     <!-- Filters -->
     <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input v-model="filters.search" @input="loadProducts" type="text" placeholder="Поиск по названию, SKU..." class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-        <select v-model="filters.catalog_id" @change="loadProducts" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input v-model="filters.search" @input="() => loadProducts(true)" type="text" placeholder="Поиск по названию, SKU..." class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+        <select v-model="filters.catalog_id" @change="() => loadProducts(true)" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
           <option :value="null">Все категории</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
-        <div class="flex items-center space-x-4">
-          <CustomCheckbox v-model="filters.is_new" @update:modelValue="loadProducts" label="Новинки" :themeColor="themeColor" />
-          <CustomCheckbox v-model="filters.is_hot" @update:modelValue="loadProducts" label="Хиты" :themeColor="themeColor" />
-        </div>
+      </div>
+      <div class="flex items-center space-x-6 mt-4">
+        <ToggleSwitch v-model="filters.is_new" @update:modelValue="() => loadProducts(true)" label="Новинки" />
+        <ToggleSwitch v-model="filters.is_hot" @update:modelValue="() => loadProducts(true)" label="Хиты" />
+        <ToggleSwitch v-model="filters.is_recommended" @update:modelValue="() => loadProducts(true)" label="Рекомендованные" />
       </div>
     </div>
 
@@ -92,8 +93,8 @@
           Показано {{ products.from }} - {{ products.to }} из {{ products.total }}
         </div>
         <div class="flex space-x-2">
-          <button @click="changePage(products.current_page - 1)" :disabled="products.current_page === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm disabled:opacity-50">Назад</button>
-          <button @click="changePage(products.current_page + 1)" :disabled="products.current_page === products.last_page" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm disabled:opacity-50">Вперед</button>
+          <button @click="changePage(products.current_page - 1)" :disabled="products.current_page === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">Назад</button>
+          <button @click="changePage(products.current_page + 1)" :disabled="products.current_page === products.last_page" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">Вперед</button>
         </div>
       </div>
     </div>
@@ -113,7 +114,7 @@
 import { ref, onMounted } from 'vue';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
-import CustomCheckbox from './CustomCheckbox.vue';
+import ToggleSwitch from './ToggleSwitch.vue';
 import ImportExportDropdown from './ImportExportDropdown.vue';
 import ThemeButton from './ThemeButton.vue';
 import ImportPreviewModal from './ImportPreviewModal.vue';
@@ -133,7 +134,11 @@ const filters = ref({
   page: 1
 });
 
-const loadProducts = async () => {
+const loadProducts = async (resetPage = false) => {
+  if (resetPage) {
+    filters.value.page = 1;
+  }
+
   loading.value = true;
   try {
     const params = new URLSearchParams();
@@ -156,17 +161,9 @@ const loadProducts = async () => {
 
 const loadCategories = async () => {
   try {
-    const response = await fetch('/admin/api/catalogs/tree');
+    const response = await fetch('/admin/api/catalogs/list');
     const data = await response.json();
-    const flatten = (items) => {
-      let result = [];
-      for (const item of items) {
-        result.push(item);
-        if (item.children?.length) result = result.concat(flatten(item.children));
-      }
-      return result;
-    };
-    categories.value = flatten(data);
+    categories.value = data;
   } catch (err) {
     console.error('Error loading categories:', err);
   }

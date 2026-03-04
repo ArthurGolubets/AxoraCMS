@@ -17,6 +17,7 @@ class TOrders extends Model
         'addition_data',
         'delivery_type',
         'delivery_address',
+        'delivery_status',
         'payment_type',
         'payment_id',
         'payment_status',
@@ -24,6 +25,7 @@ class TOrders extends Model
         'goods_price',
         'delivery_price',
         'promocode_id',
+        'promocode_discount',
         'comments',
         'user_id'
     ];
@@ -33,6 +35,7 @@ class TOrders extends Model
         'total_price' => 'decimal:2',
         'goods_price' => 'decimal:2',
         'delivery_price' => 'decimal:2',
+        'promocode_discount' => 'decimal:2',
         'payment_id' => 'integer',
         'promocode_id' => 'integer',
         'user_id' => 'integer',
@@ -46,11 +49,20 @@ class TOrders extends Model
     // Константы для payment_type
     const PAYMENT_ONLINE = 'online';
     const PAYMENT_CASH = 'cash';
+    const PAYMENT_CARD = 'card';
 
     // Константы для payment_status
     const STATUS_PENDING = 'pending';
-    const STATUS_SUCCESS = 'success';
-    const STATUS_CANCELED = 'canceled';
+    const STATUS_PAID = 'paid';
+    const STATUS_FAILED = 'failed';
+    const STATUS_REFUNDED = 'refunded';
+
+    // Константы для delivery_status
+    const DELIVERY_PENDING = 'pending';
+    const DELIVERY_PROCESSING = 'processing';
+    const DELIVERY_SHIPPED = 'shipped';
+    const DELIVERY_DELIVERED = 'delivered';
+    const DELIVERY_CANCELLED = 'cancelled';
 
     /**
      * Товары в заказе

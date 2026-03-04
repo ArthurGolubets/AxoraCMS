@@ -219,18 +219,10 @@ class ProductImportExportController extends Controller
                 $item['slug'] = $this->generateSlug($item['name'], $productClass);
             }
 
-            // Check if update or create - search by ID, SKU, or name
+            // Check if update or create - search by SKU only
             $existing = null;
-            if (!empty($item['id'])) {
-                $existing = $productClass::find($item['id']);
-            }
-
-            if (!$existing && !empty($item['sku'])) {
+            if (!empty($item['sku'])) {
                 $existing = $productClass::where('sku', $item['sku'])->first();
-            }
-
-            if (!$existing && !empty($item['name'])) {
-                $existing = $productClass::where('name', $item['name'])->first();
             }
 
             if ($existing) {
@@ -252,7 +244,7 @@ class ProductImportExportController extends Controller
     }
 
     /**
-     * Import products from preview
+     * Import products from preview (async with job)
      */
     public function import(Request $request)
     {
@@ -264,64 +256,42 @@ class ProductImportExportController extends Controller
             return response()->json(['error' => 'Product module not available'], 404);
         }
 
-        $productClass = 'App\Models\TProduct';
         $items = $request->input('items');
-        $created = 0;
-        $updated = 0;
-        $errors = [];
+        $importId = \Illuminate\Support\Str::uuid()->toString();
 
-        foreach ($items as $item) {
-            try {
-                // Skip items with errors
-                if (isset($item['status']) && $item['status'] === 'error') {
-                    continue;
-                }
+        // Initialize progress
+        \Illuminate\Support\Facades\Cache::put("import_progress_{$importId}", [
+            'status' => 'queued',
+            'created' => 0,
+            'updated' => 0,
+            'total' => count($items),
+            'processed' => 0,
+            'errors' => [],
+            'percentage' => 0,
+        ], 3600);
 
-                // Auto-generate slug if empty
-                if (empty($item['slug'])) {
-                    $item['slug'] = $this->generateSlug($item['name'], $productClass, $item['id'] ?? null);
-                }
-
-                $data = [
-                    'name' => $item['name'],
-                    'slug' => $item['slug'],
-                    'sku' => $item['sku'],
-                    'description' => $item['description'] ?? null,
-                    'price' => $item['price'],
-                    'old_price' => $item['old_price'] ?? null,
-                    'catalog_id' => !empty($item['catalog_id']) ? $item['catalog_id'] : null,
-                    'is_active' => $item['is_active'] ?? true,
-                    'is_new' => $item['is_new'] ?? false,
-                    'is_hot' => $item['is_hot'] ?? false,
-                    'is_recommended' => $item['is_recommended'] ?? false,
-                    'image' => $item['image'] ?? null,
-                ];
-
-                if ($item['action'] === 'update' && !empty($item['id'])) {
-                    $product = $productClass::find($item['id']);
-                    if ($product) {
-                        $product->update($data);
-                        $updated++;
-                    }
-                } else {
-                    $productClass::create($data);
-                    $created++;
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Ошибка в строке {$item['row']}: " . $e->getMessage();
-            }
-        }
-
-        // Log activity
-        TAdminAction::log('imported', 'product', null,
-            'Импорт товаров (создано: ' . $created . ', обновлено: ' . $updated . ')');
+        // Dispatch job
+        \HolartWeb\HolartCMS\Jobs\ImportProductsJob::dispatch($items, $importId);
 
         return response()->json([
             'success' => true,
-            'created' => $created,
-            'updated' => $updated,
-            'errors' => $errors
+            'import_id' => $importId,
+            'message' => 'Импорт запущен в фоновом режиме'
         ]);
+    }
+
+    /**
+     * Check import progress
+     */
+    public function checkProgress($importId)
+    {
+        $progress = \Illuminate\Support\Facades\Cache::get("import_progress_{$importId}");
+
+        if (!$progress) {
+            return response()->json(['error' => 'Import not found'], 404);
+        }
+
+        return response()->json($progress);
     }
 
     /**

@@ -7,6 +7,7 @@ use HolartWeb\HolartCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
 
 class CatalogController extends Controller
 {
@@ -97,11 +98,13 @@ class CatalogController extends Controller
         $validated = $request->validate([
             'parent_id' => 'nullable|exists:t_catalogs,id',
             'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:t_catalogs,slug',
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
             'image' => 'nullable|string',
             'content' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
         ]);
 
         $catalog = TCatalog::create($validated);
@@ -123,11 +126,13 @@ class CatalogController extends Controller
         $validated = $request->validate([
             'parent_id' => 'nullable|exists:t_catalogs,id',
             'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:t_catalogs,slug,' . $id,
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
             'image' => 'nullable|string',
             'content' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
         ]);
 
         // Prevent circular reference

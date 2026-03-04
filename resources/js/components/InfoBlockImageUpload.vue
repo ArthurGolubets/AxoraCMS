@@ -9,7 +9,7 @@
     <div v-if="isMultiple && images.length > 0" class="mb-3">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div v-for="(img, index) in images" :key="index" class="relative group">
-          <img :src="img" :alt="`Image ${index + 1}`" class="w-full h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600">
+          <img :src="getImageUrl(img)" :alt="`Image ${index + 1}`" class="w-full h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600">
           <button
             @click="removeImage(index)"
             type="button"
@@ -26,7 +26,7 @@
     <!-- Single Image Preview -->
     <div v-if="!isMultiple && previewUrl" class="mb-3">
       <div class="relative inline-block">
-        <img :src="previewUrl" :alt="label" class="w-48 h-48 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600">
+        <img :src="getImageUrl(previewUrl)" :alt="label" class="w-48 h-48 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600">
         <button
           @click="removeImage()"
           type="button"
@@ -110,26 +110,74 @@ const handleFileChange = async (event) => {
       continue;
     }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target.result;
+    // Upload to server
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      const response = await fetch('/admin/api/upload/image', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': token,
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка при загрузке файла');
+      }
+
+      const data = await response.json();
+      const imagePath = data.path || data.url;
 
       if (props.isMultiple) {
-        images.value.push(base64);
+        images.value.push(imagePath);
         emit('update:modelValue', [...images.value]);
       } else {
-        emit('update:modelValue', base64);
+        emit('update:modelValue', imagePath);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      alert(`Ошибка при загрузке файла ${file.name}: ${error.message}`);
+    }
   }
 
   // Reset input
   fileInput.value.value = '';
 };
 
-const removeImage = (index) => {
+const getImageUrl = (path) => {
+  if (!path) return '';
+  // If it's already a full URL or base64, return as is
+  if (path.startsWith('http') || path.startsWith('data:')) {
+    return path;
+  }
+  // Otherwise, construct storage URL
+  return `/storage/${path}`;
+};
+
+const removeImage = async (index) => {
+  const imagePath = props.isMultiple ? images.value[index] : props.modelValue;
+
+  // Delete image from server if it's not base64
+  if (imagePath && !imagePath.startsWith('data:')) {
+    try {
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      await fetch('/admin/api/upload/image', {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ path: imagePath })
+      });
+    } catch (error) {
+      console.error('Ошибка при удалении файла:', error);
+    }
+  }
+
   if (props.isMultiple) {
     images.value.splice(index, 1);
     emit('update:modelValue', [...images.value]);

@@ -73,7 +73,7 @@ watch(() => props.modelValue, (newValue) => {
   imageUrl.value = newValue || '';
 });
 
-const handleFileChange = (event) => {
+const handleFileChange = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
@@ -83,13 +83,47 @@ const handleFileChange = (event) => {
     return;
   }
 
-  // Create preview URL
+  // Create preview URL for immediate display
   const reader = new FileReader();
   reader.onload = (e) => {
     imageUrl.value = e.target.result;
-    emit('update:modelValue', e.target.result);
   };
   reader.readAsDataURL(file);
+
+  // Upload file to server
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'catalogs');
+
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const response = await fetch('/admin/api/upload/image', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': token,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Ошибка загрузки');
+    }
+
+    // Update with server path
+    imageUrl.value = data.path;
+    emit('update:modelValue', data.path);
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Ошибка при загрузке изображения: ' + error.message);
+    // Reset on error
+    imageUrl.value = '';
+    emit('update:modelValue', '');
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  }
 };
 
 const removeImage = () => {

@@ -76,6 +76,7 @@
               <ToggleSwitch v-model="form.is_new" label="Новинка" />
               <ToggleSwitch v-model="form.is_hot" label="Хит" />
               <ToggleSwitch v-model="form.is_recommended" label="Рекомендуем" />
+              <ToggleSwitch v-model="form.is_active" label="Активен" />
             </div>
           </div>
         </div>
@@ -188,6 +189,7 @@ const form = ref({
   is_new: false,
   is_hot: false,
   is_recommended: false,
+  is_active: true,
   content: '',
   gallery: [],
   variants: [],
@@ -201,7 +203,23 @@ const selectedCatalogName = computed(() => {
 
 const generateSlug = () => {
   if (!isEdit.value) {
+    const translitMap = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+      'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+      'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+      'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+      'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+      'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+      'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+      'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+      'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '',
+      'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+    };
+
     const slug = form.value.name
+      .split('')
+      .map(char => translitMap[char] || char)
+      .join('')
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
@@ -221,17 +239,9 @@ const removeVariant = (index) => {
 
 const loadCategories = async () => {
   try {
-    const response = await fetch('/admin/api/catalogs/tree');
+    const response = await fetch('/admin/api/catalogs/list');
     const data = await response.json();
-    const flatten = (items) => {
-      let result = [];
-      for (const item of items) {
-        result.push(item);
-        if (item.children?.length) result = result.concat(flatten(item.children));
-      }
-      return result;
-    };
-    categories.value = flatten(data);
+    categories.value = data;
     filteredCategories.value = categories.value;
   } catch (err) {
     console.error('Error loading categories:', err);
@@ -260,27 +270,32 @@ const loadProduct = async () => {
     const data = await response.json();
     console.log('Loaded product data:', data);
 
-    // Extract filter_value_ids from filter_values relationship
-    const filterValueIds = data.filter_values?.map(fv => fv.id) || [];
+    // API возвращает объект с ключом 'product'
+    const product = data.product || data;
+
+    // Extract filter_value_ids from filter_values relationship or assigned_filters
+    const filterValueIds = product.filter_values?.map(fv => fv.id) ||
+                          data.assigned_filters?.flatMap(f => f.values?.map(v => v.id) || []) || [];
 
     form.value = {
-      catalog_id: data.catalog_id,
-      name: data.name || '',
-      slug: data.slug || '',
-      title: data.title || '',
-      description: data.description || '',
-      keywords: data.keywords || '',
-      price: data.price || 0,
-      old_price: data.old_price || null,
-      sku: data.sku || '',
-      main_image: data.main_image || '',
-      tags: data.tags || [],
-      is_new: data.is_new || false,
-      is_hot: data.is_hot || false,
-      is_recommended: data.is_recommended || false,
-      content: data.content || '',
-      gallery: data.gallery || [],
-      variants: data.variants || [],
+      catalog_id: product.catalog_id,
+      name: product.name || '',
+      slug: product.slug || '',
+      title: product.title || '',
+      description: product.description || '',
+      keywords: product.keywords || '',
+      price: product.price || 0,
+      old_price: product.old_price || null,
+      sku: product.sku || '',
+      main_image: product.main_image || '',
+      tags: product.tags || [],
+      is_new: product.is_new || false,
+      is_hot: product.is_hot || false,
+      is_recommended: product.is_recommended || false,
+      is_active: product.is_active !== undefined ? product.is_active : true,
+      content: product.content || '',
+      gallery: product.gallery || [],
+      variants: product.variants || [],
       filter_values: filterValueIds
     };
 

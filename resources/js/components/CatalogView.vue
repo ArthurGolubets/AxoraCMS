@@ -37,7 +37,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div v-if="catalog.image" class="md:col-span-2">
           <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Изображение категории</h3>
-          <img :src="getImageUrl(catalog.image)" :alt="catalog.name" class="w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700">
+          <img :src="getImageUrl(catalog.image)" :alt="catalog.name" class="w-64 h-64 object-cover rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         </div>
 
         <div>
@@ -62,7 +62,7 @@
 
         <div v-if="catalog.content" class="md:col-span-2">
           <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Контент</h3>
-          <div class="prose dark:prose-invert max-w-none" v-html="catalog.content"></div>
+          <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="catalog.content"></div>
         </div>
       </div>
     </div>
@@ -85,29 +85,37 @@
         </button>
       </div>
 
-      <div v-if="catalog.products && catalog.products.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="catalog.products && catalog.products.length > 0" class="divide-y divide-gray-200 dark:divide-gray-700">
         <div
           v-for="product in catalog.products"
           :key="product.id"
           @click="$router.push(`/products/${product.id}`)"
-          class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
+          class="py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition flex items-center justify-between"
         >
-          <div class="flex items-start justify-between mb-2">
-            <h4 class="font-medium text-gray-900 dark:text-white">{{ product.name }}</h4>
-            <div class="flex flex-col items-end space-y-1">
-              <span v-if="product.is_new" class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded">Новинка</span>
-              <span v-if="product.is_hot" class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded">Хит</span>
+          <div class="flex-1">
+            <div class="flex items-center space-x-3">
+              <h4 class="font-medium text-gray-900 dark:text-white">{{ product.name }}</h4>
+              <div class="flex items-center space-x-1">
+                <span v-if="product.is_new" class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded">Новинка</span>
+                <span v-if="product.is_hot" class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded">Хит</span>
+                <span v-if="product.is_recommended" class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded">Рекомендованный</span>
+              </div>
             </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Артикул: {{ product.sku }}</p>
           </div>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ product.sku }}</p>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ product.price }} ₽</span>
-              <span v-if="product.old_price" class="text-sm text-gray-500 line-through">{{ product.old_price }} ₽</span>
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ product.price }} ₽</span>
+                <span v-if="product.old_price" class="text-sm text-gray-500 line-through">{{ product.old_price }} ₽</span>
+              </div>
+              <span v-if="product.variants && product.variants.length > 0" class="text-xs text-gray-500 dark:text-gray-400">
+                {{ product.variants.length }} вариант(ов)
+              </span>
             </div>
-            <span v-if="product.variants && product.variants.length > 0" class="text-xs text-gray-500 dark:text-gray-400">
-              {{ product.variants.length }} вариант(ов)
-            </span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
           </div>
         </div>
       </div>
