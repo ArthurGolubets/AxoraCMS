@@ -259,6 +259,71 @@ class PageBlockTypesController extends Controller
                         $template .= "        @endif\n";
                         break;
 
+                    case 'catalog_select':
+                        $template .= "        @php\n";
+                        $template .= "            \${$fieldName}Ids = \$block->data['{$fieldName}'] ?? [];\n";
+                        $template .= "            if (!is_array(\${$fieldName}Ids)) \${$fieldName}Ids = [\${$fieldName}Ids];\n";
+                        $template .= "            \${$fieldName}Items = \\App\\Models\\TCatalog::whereIn('id', \${$fieldName}Ids)->where('is_active', true)->get();\n";
+                        $template .= "        @endphp\n";
+                        $template .= "        @if(\${$fieldName}Items->count() > 0)\n";
+                        $template .= "            <div class=\"{$fieldName}\">\n";
+                        $template .= "                @foreach(\${$fieldName}Items as \$catalog)\n";
+                        $template .= "                    <div class=\"catalog-item\">\n";
+                        $template .= "                        <h3>{{ \$catalog->name }}</h3>\n";
+                        $template .= "                    </div>\n";
+                        $template .= "                @endforeach\n";
+                        $template .= "            </div>\n";
+                        $template .= "        @endif\n";
+                        break;
+
+                    case 'infoblocks_select':
+                        $template .= "        @php\n";
+                        $template .= "            \${$fieldName}Ids = \$block->data['{$fieldName}'] ?? [];\n";
+                        $template .= "            if (!is_array(\${$fieldName}Ids)) \${$fieldName}Ids = [\${$fieldName}Ids];\n";
+                        $template .= "            \${$fieldName}Items = \\App\\Models\\TInfoBlockElement::whereIn('info_block_id', \${$fieldName}Ids)->where('is_active', true)->get();\n";
+                        $template .= "        @endphp\n";
+                        $template .= "        @if(\${$fieldName}Items->count() > 0)\n";
+                        $template .= "            <div class=\"{$fieldName}\">\n";
+                        $template .= "                @foreach(\${$fieldName}Items as \$element)\n";
+                        $template .= "                    <div class=\"element-item\">{{ \$element->name }}</div>\n";
+                        $template .= "                @endforeach\n";
+                        $template .= "            </div>\n";
+                        $template .= "        @endif\n";
+                        break;
+
+                    case 'products_select':
+                        $template .= "        @php\n";
+                        $template .= "            \${$fieldName}Ids = \$block->data['{$fieldName}'] ?? [];\n";
+                        $template .= "            if (!is_array(\${$fieldName}Ids)) \${$fieldName}Ids = [\${$fieldName}Ids];\n";
+                        $template .= "            \${$fieldName}Items = \\App\\Models\\TProduct::whereIn('id', \${$fieldName}Ids)->where('is_active', true)->get();\n";
+                        $template .= "        @endphp\n";
+                        $template .= "        @if(\${$fieldName}Items->count() > 0)\n";
+                        $template .= "            <div class=\"{$fieldName}\">\n";
+                        $template .= "                @foreach(\${$fieldName}Items as \$product)\n";
+                        $template .= "                    <div class=\"product-item\">\n";
+                        $template .= "                        <h3>{{ \$product->name }}</h3>\n";
+                        $template .= "                        <p>{{ number_format(\$product->price, 0, '.', ' ') }} ₽</p>\n";
+                        $template .= "                    </div>\n";
+                        $template .= "                @endforeach\n";
+                        $template .= "            </div>\n";
+                        $template .= "        @endif\n";
+                        break;
+
+                    case 'repeater':
+                        $template .= "        @php\n";
+                        $template .= "            \${$fieldName}Items = \$block->data['{$fieldName}'] ?? [];\n";
+                        $template .= "        @endphp\n";
+                        $template .= "        @if(!empty(\${$fieldName}Items) && is_array(\${$fieldName}Items))\n";
+                        $template .= "            <div class=\"{$fieldName}\">\n";
+                        $template .= "                @foreach(\${$fieldName}Items as \$item)\n";
+                        $template .= "                    <div class=\"{$fieldName}-item\">\n";
+                        $template .= "                        {{-- Access: \$item['field_name'] --}}\n";
+                        $template .= "                    </div>\n";
+                        $template .= "                @endforeach\n";
+                        $template .= "            </div>\n";
+                        $template .= "        @endif\n";
+                        break;
+
                     default:
                         $template .= "        @if(!empty(\$block->data['{$fieldName}']))\n";
                         $template .= "            <div class=\"{$fieldName}\">\n";

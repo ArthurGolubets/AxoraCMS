@@ -313,6 +313,10 @@
                           <option value="catalog_relation">Привязка к каталогу</option>
                           <option value="product_relation">Привязка к товару</option>
                           <option value="page_relation">Привязка к странице</option>
+                          <option value="catalog_select">Выбор каталогов</option>
+                          <option value="infoblocks_select">Выбор инфоблоков</option>
+                          <option value="products_select">Выбор товаров</option>
+                          <option value="repeater">Повторитель</option>
                         </select>
                       </div>
                     </div>
@@ -351,6 +355,70 @@
                         class="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white font-mono"
                         placeholder='["Вариант 1", "Вариант 2"]'
                       ></textarea>
+                    </div>
+
+                    <!-- Multiple select option for catalog/infoblock/product selectors -->
+                    <div v-if="['catalog_select', 'infoblocks_select', 'products_select'].includes(field.type)" class="space-y-2">
+                      <div class="flex items-center">
+                        <input
+                          v-model="field.multiple"
+                          type="checkbox"
+                          :id="'field_multiple_' + index"
+                          class="mr-2 rounded"
+                        >
+                        <label :for="'field_multiple_' + index" class="text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                          Множественный выбор
+                        </label>
+                      </div>
+
+                      <div v-if="!field.multiple">
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Максимум элементов (пусто = без ограничений)
+                        </label>
+                        <input
+                          v-model.number="field.max_items"
+                          type="number"
+                          min="1"
+                          placeholder="Без ограничений"
+                          class="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
+                        >
+                      </div>
+
+                      <!-- Product filters for products_select -->
+                      <div v-if="field.type === 'products_select'" class="space-y-2 border-t border-gray-200 dark:border-gray-600 pt-2">
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Автоматические фильтры товаров
+                        </label>
+                        <div class="flex flex-wrap gap-2">
+                          <label class="flex items-center">
+                            <input
+                              v-model="field.filter_new"
+                              type="checkbox"
+                              :id="'field_filter_new_' + index"
+                              class="mr-1 rounded"
+                            >
+                            <span class="text-xs text-gray-700 dark:text-gray-300">Только новинки</span>
+                          </label>
+                          <label class="flex items-center">
+                            <input
+                              v-model="field.filter_recommended"
+                              type="checkbox"
+                              :id="'field_filter_recommended_' + index"
+                              class="mr-1 rounded"
+                            >
+                            <span class="text-xs text-gray-700 dark:text-gray-300">Только рекомендованные</span>
+                          </label>
+                          <label class="flex items-center">
+                            <input
+                              v-model="field.filter_hot"
+                              type="checkbox"
+                              :id="'field_filter_hot_' + index"
+                              class="mr-1 rounded"
+                            >
+                            <span class="text-xs text-gray-700 dark:text-gray-300">Только хиты</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
 
                     <div class="flex items-center">

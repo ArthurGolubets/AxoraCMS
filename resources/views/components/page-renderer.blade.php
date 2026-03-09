@@ -28,17 +28,26 @@
         <!-- Dynamic page blocks -->
         @foreach($blocks as $block)
             @php
-                $blockCode = str_replace('_', '-', $block->blockType->code);
-                $componentPath = 'components.blocks.' . $blockCode;
+                // Check if custom template is defined for non-system blocks
+                if (!$block->blockType->is_system && !empty($block->blockType->template)) {
+                    $componentPath = 'components.blocks.custom.' . $block->blockType->code;
+                } else {
+                    // Use system block path
+                    $blockCode = str_replace('_', '-', $block->blockType->code);
+                    $componentPath = 'components.blocks.' . $blockCode;
+                }
+
+                $childBlocks = $block->childBlocks ?? collect();
             @endphp
 
-            @if($block->blockType->is_container)
+            @if(view()->exists($componentPath))
                 @include($componentPath, [
                     'settings' => $block->settings,
-                    'childBlocks' => $block->childBlocks
+                    'block' => $block,
+                    'childBlocks' => $childBlocks
                 ])
             @else
-                @include($componentPath, ['settings' => $block->settings])
+                <!-- Block template not found: {{ $block->blockType->code }} -->
             @endif
         @endforeach
     @endif

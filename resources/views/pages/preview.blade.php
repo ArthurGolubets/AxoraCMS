@@ -12,7 +12,7 @@
     @endif
 
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
 
     <!-- Preview Banner Style -->
     <style>
@@ -85,13 +85,25 @@
             @if($block->blockType && $block->blockType->code)
                 @php
                     $settings = $block->settings ?? [];
-                    $viewPath = 'holart-cms::components.blocks.' . $block->blockType->code;
+                    $childBlocks = $block->childBlocks ?? collect();
+
+                    // Check if custom template is defined for non-system blocks
+                    if (!$block->blockType->is_system && !empty($block->blockType->template)) {
+                        $viewPath = 'components.blocks.custom.' . $block->blockType->code;
+                    } else {
+                        // Use system block path
+                        $blockCode = str_replace('_', '-', $block->blockType->code);
+                        $viewPath = 'components.blocks.' . $blockCode;
+                    }
                 @endphp
 
                 @if(view()->exists($viewPath))
-                    @include($viewPath, ['settings' => $settings, 'block' => $block])
+                    @include($viewPath, ['settings' => $settings, 'block' => $block, 'childBlocks' => $childBlocks])
                 @else
-                    <!-- Block template not found: {{ $block->blockType->code }} -->
+                    <div class="alert alert-warning m-3">
+                        <strong>Блок не найден:</strong> {{ $block->blockType->name }} ({{ $block->blockType->code }})
+                        <br><small>Путь: {{ $viewPath }}</small>
+                    </div>
                 @endif
             @endif
         @endforeach

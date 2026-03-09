@@ -264,6 +264,220 @@
                           {{ pg.title }}
                         </option>
                       </select>
+
+                      <!-- Catalog Select -->
+                      <div v-else-if="field.type === 'catalog_select'" class="space-y-2">
+                        <div class="flex gap-2">
+                          <input
+                            v-model="catalogSearch"
+                            type="text"
+                            placeholder="Поиск каталогов..."
+                            @input="searchCatalogs"
+                            class="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                          >
+                        </div>
+                        <div v-if="field.multiple !== false" class="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1">
+                          <label
+                            v-for="catalog in availableCatalogs"
+                            :key="catalog.id"
+                            class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                            :class="{ 'opacity-50 cursor-not-allowed': !field.multiple && field.max_items && Array.isArray(block.settings[field.name]) && block.settings[field.name].length >= field.max_items && !block.settings[field.name].includes(catalog.id) }"
+                          >
+                            <input
+                              type="checkbox"
+                              :value="catalog.id"
+                              v-model="block.settings[field.name]"
+                              :disabled="!field.multiple && field.max_items && Array.isArray(block.settings[field.name]) && block.settings[field.name].length >= field.max_items && !block.settings[field.name].includes(catalog.id)"
+                              class="mr-2 rounded"
+                            >
+                            <span class="text-sm text-gray-900 dark:text-white">{{ catalog.name }}</span>
+                          </label>
+                        </div>
+                        <select
+                          v-else
+                          v-model="block.settings[field.name]"
+                          class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                        >
+                          <option value="">Не выбрано</option>
+                          <option v-for="catalog in availableCatalogs" :key="catalog.id" :value="catalog.id">
+                            {{ catalog.name }}
+                          </option>
+                        </select>
+                        <p v-if="!field.multiple && field.max_items && Array.isArray(block.settings[field.name])" class="text-xs text-gray-500 dark:text-gray-400">
+                          Выбрано: {{ block.settings[field.name].length }} / {{ field.max_items }}
+                        </p>
+                      </div>
+
+                      <!-- InfoBlocks Select -->
+                      <div v-else-if="field.type === 'infoblocks_select'" class="space-y-2">
+                        <div class="flex gap-2">
+                          <input
+                            v-model="infoblockSearch"
+                            type="text"
+                            placeholder="Поиск инфоблоков..."
+                            @input="searchInfoBlocks"
+                            class="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                          >
+                        </div>
+                        <div v-if="field.multiple !== false" class="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1">
+                          <label
+                            v-for="infoblock in availableInfoBlocks"
+                            :key="infoblock.id"
+                            class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                            :class="{ 'opacity-50 cursor-not-allowed': !field.multiple && field.max_items && Array.isArray(block.settings[field.name]) && block.settings[field.name].length >= field.max_items && !block.settings[field.name].includes(infoblock.id) }"
+                          >
+                            <input
+                              type="checkbox"
+                              :value="infoblock.id"
+                              v-model="block.settings[field.name]"
+                              :disabled="!field.multiple && field.max_items && Array.isArray(block.settings[field.name]) && block.settings[field.name].length >= field.max_items && !block.settings[field.name].includes(infoblock.id)"
+                              class="mr-2 rounded"
+                            >
+                            <span class="text-sm text-gray-900 dark:text-white">{{ infoblock.name }}</span>
+                          </label>
+                        </div>
+                        <select
+                          v-else
+                          v-model="block.settings[field.name]"
+                          class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                        >
+                          <option value="">Не выбрано</option>
+                          <option v-for="infoblock in availableInfoBlocks" :key="infoblock.id" :value="infoblock.id">
+                            {{ infoblock.name }}
+                          </option>
+                        </select>
+                        <p v-if="!field.multiple && field.max_items && Array.isArray(block.settings[field.name])" class="text-xs text-gray-500 dark:text-gray-400">
+                          Выбрано: {{ block.settings[field.name].length }} / {{ field.max_items }}
+                        </p>
+                      </div>
+
+                      <!-- Products Select -->
+                      <div v-else-if="field.type === 'products_select'" class="space-y-2">
+                        <div class="flex gap-2 flex-wrap">
+                          <select
+                            v-model="productFilters.catalog_id"
+                            @change="searchProducts"
+                            class="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                          >
+                            <option value="">Все каталоги</option>
+                            <option v-for="catalog in availableCatalogs" :key="catalog.id" :value="catalog.id">
+                              {{ catalog.name }}
+                            </option>
+                          </select>
+                        </div>
+                        <div v-if="!field.filter_new && !field.filter_recommended && !field.filter_hot" class="flex gap-2 flex-wrap text-xs">
+                          <label class="flex items-center">
+                            <input
+                              type="checkbox"
+                              v-model="productFilters.is_new"
+                              @change="searchProducts(field)"
+                              class="mr-1 rounded"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300">Новинка</span>
+                          </label>
+                          <label class="flex items-center">
+                            <input
+                              type="checkbox"
+                              v-model="productFilters.is_recommended"
+                              @change="searchProducts(field)"
+                              class="mr-1 rounded"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300">Рекомендованный</span>
+                          </label>
+                          <label class="flex items-center">
+                            <input
+                              type="checkbox"
+                              v-model="productFilters.is_hot"
+                              @change="searchProducts(field)"
+                              class="mr-1 rounded"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300">Хит</span>
+                          </label>
+                        </div>
+                        <div v-else class="text-xs text-gray-600 dark:text-gray-400 italic">
+                          Активные фильтры:
+                          <span v-if="field.filter_new">Новинки</span>
+                          <span v-if="field.filter_recommended">{{ field.filter_new ? ', ' : '' }}Рекомендованные</span>
+                          <span v-if="field.filter_hot">{{ field.filter_new || field.filter_recommended ? ', ' : '' }}Хиты</span>
+                        </div>
+                        <input
+                          v-model="productSearch"
+                          type="text"
+                          placeholder="Поиск товаров..."
+                          @input="searchProducts"
+                          class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                        >
+                        <div v-if="field.multiple !== false" class="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1">
+                          <label
+                            v-for="product in availableProducts"
+                            :key="product.id"
+                            class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                            :class="{ 'opacity-50 cursor-not-allowed': !field.multiple && field.max_items && Array.isArray(block.settings[field.name]) && block.settings[field.name].length >= field.max_items && !block.settings[field.name].includes(product.id) }"
+                          >
+                            <input
+                              type="checkbox"
+                              :value="product.id"
+                              v-model="block.settings[field.name]"
+                              :disabled="!field.multiple && field.max_items && Array.isArray(block.settings[field.name]) && block.settings[field.name].length >= field.max_items && !block.settings[field.name].includes(product.id)"
+                              class="mr-2 rounded"
+                            >
+                            <span class="text-sm text-gray-900 dark:text-white">{{ product.name }}</span>
+                          </label>
+                        </div>
+                        <select
+                          v-else
+                          v-model="block.settings[field.name]"
+                          class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm"
+                        >
+                          <option value="">Не выбрано</option>
+                          <option v-for="product in availableProducts" :key="product.id" :value="product.id">
+                            {{ product.name }}
+                          </option>
+                        </select>
+                        <p v-if="!field.multiple && field.max_items && Array.isArray(block.settings[field.name])" class="text-xs text-gray-500 dark:text-gray-400">
+                          Выбрано: {{ block.settings[field.name].length }} / {{ field.max_items }}
+                        </p>
+                      </div>
+
+                      <!-- Repeater -->
+                      <div v-else-if="field.type === 'repeater'" class="space-y-2">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Элементы</span>
+                          <button
+                            type="button"
+                            @click="addRepeaterItem(block.settings, field.name)"
+                            class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                          >
+                            + Добавить
+                          </button>
+                        </div>
+                        <div class="space-y-3">
+                          <div
+                            v-for="(item, itemIndex) in block.settings[field.name]"
+                            :key="itemIndex"
+                            class="border border-gray-300 dark:border-gray-600 rounded p-3 space-y-2"
+                          >
+                            <div class="flex justify-between items-center">
+                              <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Элемент #{{ itemIndex + 1 }}</span>
+                              <button
+                                type="button"
+                                @click="removeRepeaterItem(block.settings, field.name, itemIndex)"
+                                class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                              >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                              </button>
+                            </div>
+                            <textarea
+                              v-model="block.settings[field.name][itemIndex]"
+                              rows="2"
+                              placeholder="Введите данные..."
+                              class="w-full px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs"
+                            ></textarea>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -455,6 +669,169 @@
                                     {{ pg.title }}
                                   </option>
                                 </select>
+
+                                <!-- Catalog Select (multiple) -->
+                                <div v-else-if="field.type === 'catalog_select'" class="space-y-2">
+                                  <div class="flex gap-2">
+                                    <input
+                                      v-model="catalogSearch"
+                                      type="text"
+                                      placeholder="Поиск каталогов..."
+                                      @input="searchCatalogs"
+                                      class="flex-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs"
+                                    >
+                                  </div>
+                                  <div class="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1">
+                                    <label
+                                      v-for="catalog in availableCatalogs"
+                                      :key="catalog.id"
+                                      class="flex items-center p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        :value="catalog.id"
+                                        v-model="childBlock.settings[field.name]"
+                                        class="mr-2 rounded"
+                                      >
+                                      <span class="text-xs text-gray-900 dark:text-white">{{ catalog.name }}</span>
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <!-- InfoBlocks Select (multiple) -->
+                                <div v-else-if="field.type === 'infoblocks_select'" class="space-y-2">
+                                  <div class="flex gap-2">
+                                    <input
+                                      v-model="infoblockSearch"
+                                      type="text"
+                                      placeholder="Поиск инфоблоков..."
+                                      @input="searchInfoBlocks"
+                                      class="flex-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs"
+                                    >
+                                  </div>
+                                  <div class="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1">
+                                    <label
+                                      v-for="infoblock in availableInfoBlocks"
+                                      :key="infoblock.id"
+                                      class="flex items-center p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        :value="infoblock.id"
+                                        v-model="childBlock.settings[field.name]"
+                                        class="mr-2 rounded"
+                                      >
+                                      <span class="text-xs text-gray-900 dark:text-white">{{ infoblock.name }}</span>
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <!-- Products Select (multiple with filters) -->
+                                <div v-else-if="field.type === 'products_select'" class="space-y-2">
+                                  <div class="flex gap-2 flex-wrap">
+                                    <select
+                                      v-model="productFilters.catalog_id"
+                                      @change="searchProducts"
+                                      class="flex-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs"
+                                    >
+                                      <option value="">Все каталоги</option>
+                                      <option v-for="catalog in availableCatalogs" :key="catalog.id" :value="catalog.id">
+                                        {{ catalog.name }}
+                                      </option>
+                                    </select>
+                                  </div>
+                                  <div class="flex gap-2 flex-wrap text-xs">
+                                    <label class="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        v-model="productFilters.is_new"
+                                        @change="searchProducts"
+                                        class="mr-1 rounded"
+                                      >
+                                      <span class="text-gray-700 dark:text-gray-300">Новинка</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        v-model="productFilters.is_recommended"
+                                        @change="searchProducts"
+                                        class="mr-1 rounded"
+                                      >
+                                      <span class="text-gray-700 dark:text-gray-300">Рекомендованный</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        v-model="productFilters.is_hot"
+                                        @change="searchProducts"
+                                        class="mr-1 rounded"
+                                      >
+                                      <span class="text-gray-700 dark:text-gray-300">Хит</span>
+                                    </label>
+                                  </div>
+                                  <input
+                                    v-model="productSearch"
+                                    type="text"
+                                    placeholder="Поиск товаров..."
+                                    @input="searchProducts"
+                                    class="w-full px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs"
+                                  >
+                                  <div class="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1">
+                                    <label
+                                      v-for="product in availableProducts"
+                                      :key="product.id"
+                                      class="flex items-center p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        :value="product.id"
+                                        v-model="childBlock.settings[field.name]"
+                                        class="mr-2 rounded"
+                                      >
+                                      <span class="text-xs text-gray-900 dark:text-white">{{ product.name }}</span>
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <!-- Repeater -->
+                                <div v-else-if="field.type === 'repeater'" class="space-y-2">
+                                  <div class="flex justify-between items-center">
+                                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Элементы</span>
+                                    <button
+                                      type="button"
+                                      @click="addRepeaterItem(childBlock.settings, field.name)"
+                                      class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                                    >
+                                      + Добавить
+                                    </button>
+                                  </div>
+                                  <div class="space-y-2">
+                                    <div
+                                      v-for="(item, itemIndex) in childBlock.settings[field.name]"
+                                      :key="itemIndex"
+                                      class="border border-gray-300 dark:border-gray-600 rounded p-2 space-y-1"
+                                    >
+                                      <div class="flex justify-between items-center">
+                                        <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Элемент #{{ itemIndex + 1 }}</span>
+                                        <button
+                                          type="button"
+                                          @click="removeRepeaterItem(childBlock.settings, field.name, itemIndex)"
+                                          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                        >
+                                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                          </svg>
+                                        </button>
+                                      </div>
+                                      <textarea
+                                        v-model="childBlock.settings[field.name][itemIndex]"
+                                        rows="2"
+                                        placeholder="Введите данные..."
+                                        class="w-full px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-xs"
+                                      ></textarea>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
@@ -638,6 +1015,20 @@ const catalogs = ref([]);
 const products = ref([]);
 const pagesForRelation = ref([]);
 
+// New field types data
+const availableCatalogs = ref([]);
+const availableInfoBlocks = ref([]);
+const availableProducts = ref([]);
+const catalogSearch = ref('');
+const infoblockSearch = ref('');
+const productSearch = ref('');
+const productFilters = ref({
+  catalog_id: '',
+  is_new: false,
+  is_recommended: false,
+  is_hot: false
+});
+
 // Delete Confirmation Modal
 const deleteModal = ref({
   visible: false,
@@ -773,7 +1164,12 @@ const addBlock = async (blockType, parentBlockId = null, containerColumn = null)
     const defaultSettings = {};
     if (blockType.fields_schema) {
       blockType.fields_schema.forEach(field => {
-        defaultSettings[field.name] = field.default || '';
+        // Initialize array for multiple select fields
+        if (['catalog_select', 'infoblocks_select', 'products_select', 'repeater'].includes(field.type)) {
+          defaultSettings[field.name] = [];
+        } else {
+          defaultSettings[field.name] = field.default || '';
+        }
       });
     }
 
@@ -930,6 +1326,21 @@ const reorderBlocks = async (newBlocks) => {
 
 const toggleBlockEdit = (block) => {
   block.isEditing = !block.isEditing;
+
+  // Load data for new field types when opening edit mode
+  if (block.isEditing) {
+    const hasNewFieldTypes = block.block_type?.fields_schema?.some(field =>
+      ['catalog_select', 'infoblocks_select', 'products_select'].includes(field.type)
+    );
+
+    if (hasNewFieldTypes) {
+      searchCatalogs();
+      searchInfoBlocks();
+      // Find products_select field to apply its filters
+      const productsField = block.block_type?.fields_schema?.find(f => f.type === 'products_select');
+      searchProducts(productsField);
+    }
+  }
 };
 
 // Container helper functions
@@ -1131,10 +1542,119 @@ const loadPagesForRelation = async () => {
   }
 };
 
+// New field types functions
+const searchCatalogs = async () => {
+  try {
+    const params = new URLSearchParams();
+    if (catalogSearch.value) {
+      params.append('search', catalogSearch.value);
+    }
+
+    const response = await fetch(`/admin/api/page-block-fields/catalogs?${params}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (response.ok) {
+      availableCatalogs.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to search catalogs:', error);
+  }
+};
+
+const searchInfoBlocks = async () => {
+  try {
+    const params = new URLSearchParams();
+    if (infoblockSearch.value) {
+      params.append('search', infoblockSearch.value);
+    }
+
+    const response = await fetch(`/admin/api/page-block-fields/infoblocks?${params}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (response.ok) {
+      availableInfoBlocks.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to search infoblocks:', error);
+  }
+};
+
+const searchProducts = async (field = null) => {
+  try {
+    const params = new URLSearchParams();
+    if (productSearch.value) {
+      params.append('search', productSearch.value);
+    }
+    if (productFilters.value.catalog_id) {
+      params.append('catalog_id', productFilters.value.catalog_id);
+    }
+
+    // Apply field-level filters first (from block type configuration)
+    if (field) {
+      if (field.filter_new) {
+        params.append('is_new', '1');
+      }
+      if (field.filter_recommended) {
+        params.append('is_recommended', '1');
+      }
+      if (field.filter_hot) {
+        params.append('is_hot', '1');
+      }
+    }
+
+    // Then apply user-selected filters (from UI)
+    if (!field || !field.filter_new) {
+      if (productFilters.value.is_new) {
+        params.append('is_new', '1');
+      }
+    }
+    if (!field || !field.filter_recommended) {
+      if (productFilters.value.is_recommended) {
+        params.append('is_recommended', '1');
+      }
+    }
+    if (!field || !field.filter_hot) {
+      if (productFilters.value.is_hot) {
+        params.append('is_hot', '1');
+      }
+    }
+
+    const response = await fetch(`/admin/api/page-block-fields/products?${params}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (response.ok) {
+      availableProducts.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to search products:', error);
+  }
+};
+
+const addRepeaterItem = (settings, fieldName) => {
+  if (!settings[fieldName]) {
+    settings[fieldName] = [];
+  }
+  settings[fieldName].push('');
+};
+
+const removeRepeaterItem = (settings, fieldName, index) => {
+  if (settings[fieldName] && Array.isArray(settings[fieldName])) {
+    settings[fieldName].splice(index, 1);
+  }
+};
+
 onMounted(() => {
   loadPage();
   loadBlocks();
   loadBlockTypes();
+
+  // Pre-load catalogs for new field types
+  searchCatalogs();
+  searchInfoBlocks();
+  searchProducts();
 });
 </script>
 

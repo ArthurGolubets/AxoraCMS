@@ -276,6 +276,13 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::delete('page-block-types/{id}', [$pageBlockTypesController, 'destroy']);
             Route::post('page-block-types/create-template', [$pageBlockTypesController, 'createTemplate']);
             Route::delete('page-block-types/{id}/template', [$pageBlockTypesController, 'deleteTemplate']);
+
+            // Page Block Fields routes (for selectors)
+            $pageBlockFieldsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Pages\\PageBlockFieldsController';
+            Route::get('page-block-fields/catalogs', [$pageBlockFieldsController, 'getCatalogs']);
+            Route::get('page-block-fields/infoblocks', [$pageBlockFieldsController, 'getInfoBlocks']);
+            Route::get('page-block-fields/products', [$pageBlockFieldsController, 'getProducts']);
+            Route::get('page-block-fields/infoblocks/{infoBlockId}/elements', [$pageBlockFieldsController, 'getInfoBlockElements']);
         }
 
         // Menus routes - use app controllers if they exist

@@ -20,21 +20,63 @@
             <!-- Column 1 -->
             <div class="col-md-4 container-column">
                 @foreach($col1Blocks as $block)
-                    @include('components.blocks.' . str_replace('_', '-', $block->blockType->code), ['settings' => $block->settings])
+                    @php
+                        $childBlockChildren = $block->childBlocks ?? collect();
+
+                        // Check if custom template is defined for non-system blocks
+                        if (!$block->blockType->is_system && !empty($block->blockType->template)) {
+                            $childViewPath = 'components.blocks.custom.' . $block->blockType->code;
+                        } else {
+                            // Use system block path
+                            $blockCode = str_replace('_', '-', $block->blockType->code);
+                            $childViewPath = 'components.blocks.' . $blockCode;
+                        }
+                    @endphp
+                    @if(view()->exists($childViewPath))
+                        @include($childViewPath, ['settings' => $block->settings, 'block' => $block, 'childBlocks' => $childBlockChildren])
+                    @endif
                 @endforeach
             </div>
 
             <!-- Column 2 -->
             <div class="col-md-4 container-column">
                 @foreach($col2Blocks as $block)
-                    @include('components.blocks.' . str_replace('_', '-', $block->blockType->code), ['settings' => $block->settings])
+                    @php
+                        $childBlockChildren = $block->childBlocks ?? collect();
+
+                        // Check if custom template is defined for non-system blocks
+                        if (!$block->blockType->is_system && !empty($block->blockType->template)) {
+                            $childViewPath = 'components.blocks.custom.' . $block->blockType->code;
+                        } else {
+                            // Use system block path
+                            $blockCode = str_replace('_', '-', $block->blockType->code);
+                            $childViewPath = 'components.blocks.' . $blockCode;
+                        }
+                    @endphp
+                    @if(view()->exists($childViewPath))
+                        @include($childViewPath, ['settings' => $block->settings, 'block' => $block, 'childBlocks' => $childBlockChildren])
+                    @endif
                 @endforeach
             </div>
 
             <!-- Column 3 -->
             <div class="col-md-4 container-column">
                 @foreach($col3Blocks as $block)
-                    @include('components.blocks.' . str_replace('_', '-', $block->blockType->code), ['settings' => $block->settings])
+                    @php
+                        $childBlockChildren = $block->childBlocks ?? collect();
+
+                        // Check if custom template is defined for non-system blocks
+                        if (!$block->blockType->is_system && !empty($block->blockType->template)) {
+                            $childViewPath = 'components.blocks.custom.' . $block->blockType->code;
+                        } else {
+                            // Use system block path
+                            $blockCode = str_replace('_', '-', $block->blockType->code);
+                            $childViewPath = 'components.blocks.' . $blockCode;
+                        }
+                    @endphp
+                    @if(view()->exists($childViewPath))
+                        @include($childViewPath, ['settings' => $block->settings, 'block' => $block, 'childBlocks' => $childBlockChildren])
+                    @endif
                 @endforeach
             </div>
         </div>
