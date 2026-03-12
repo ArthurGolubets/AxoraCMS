@@ -98,8 +98,12 @@ class HolartCMSServiceProvider extends ServiceProvider
                 $schedule->command('holartcms:clean-page-visits')->daily();
 
                 // Schedule YooKassa payment check if module is installed
-                if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('yookassa')) {
-                    $schedule->command('holartcms:ykassa-check-payment')->everyMinute();
+                try {
+                    if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('yookassa')) {
+                        $schedule->command('holartcms:ykassa-check-payment')->everyMinute();
+                    }
+                } catch (\Exception $e) {
+                    // Skip if tables don't exist yet (during initial installation)
                 }
             });
         }
