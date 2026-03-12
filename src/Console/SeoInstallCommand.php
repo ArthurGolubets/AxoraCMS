@@ -51,6 +51,12 @@ class SeoInstallCommand extends Command
         $this->info('✓ Middleware registered');
         $this->newLine();
 
+        // Step 3: Register module installation
+        $this->info('Step 3: Registering module installation...');
+        TModule::install(self::MODULE_NAME, self::VERSION);
+        $this->info('✓ Module registered');
+        $this->newLine();
+
         $this->info('╔════════════════════════════════════════════════╗');
         $this->info('║ Pages & SEO Module installed successfully     ║');
         $this->info('╚════════════════════════════════════════════════╝');
@@ -116,11 +122,5 @@ class SeoInstallCommand extends Command
         $this->warn('       ' . $sharePageDataMiddleware . ',');
         $this->warn('       ' . $trackPageVisitsMiddleware . ',');
         $this->warn('   ]);');
-
-        // Register module
-        $this->newLine();
-        $this->info('Registering module installation...');
-        TModule::install(self::MODULE_NAME, self::VERSION);
-        $this->info('✓ Module registered');
     }
 }
