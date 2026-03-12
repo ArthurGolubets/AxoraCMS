@@ -91,7 +91,11 @@ class PageDataService
      */
     private function findPageByRoute(?string $routeName, string $url): ?array
     {
-        if (!Schema::hasTable('t_pages')) {
+        try {
+            if (!Schema::hasTable('t_pages')) {
+                return null;
+            }
+        } catch (\Exception $e) {
             return null;
         }
 
@@ -143,7 +147,11 @@ class PageDataService
      */
     private function findCatalogByUrl(string $url): ?array
     {
-        if (!Schema::hasTable('t_catalogs')) {
+        try {
+            if (!Schema::hasTable('t_catalogs')) {
+                return null;
+            }
+        } catch (\Exception $e) {
             return null;
         }
 
@@ -189,7 +197,11 @@ class PageDataService
      */
     private function findProductByUrl(string $url): ?array
     {
-        if (!Schema::hasTable('t_products')) {
+        try {
+            if (!Schema::hasTable('t_products')) {
+                return null;
+            }
+        } catch (\Exception $e) {
             return null;
         }
 
@@ -281,7 +293,11 @@ class PageDataService
      */
     private function hasInactivePage(?string $routeName, string $url): bool
     {
-        if (!Schema::hasTable('t_pages')) {
+        try {
+            if (!Schema::hasTable('t_pages')) {
+                return false;
+            }
+        } catch (\Exception $e) {
             return false;
         }
 
@@ -316,7 +332,11 @@ class PageDataService
      */
     private function hasInactiveCatalog(string $url): bool
     {
-        if (!Schema::hasTable('t_catalogs')) {
+        try {
+            if (!Schema::hasTable('t_catalogs')) {
+                return false;
+            }
+        } catch (\Exception $e) {
             return false;
         }
 
@@ -347,7 +367,11 @@ class PageDataService
      */
     private function hasInactiveProduct(string $url): bool
     {
-        if (!Schema::hasTable('t_products')) {
+        try {
+            if (!Schema::hasTable('t_products')) {
+                return false;
+            }
+        } catch (\Exception $e) {
             return false;
         }
 

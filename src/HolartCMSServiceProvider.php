@@ -28,19 +28,30 @@ class HolartCMSServiceProvider extends ServiceProvider
             'model' => \HolartWeb\HolartCMS\Models\TAdministrator::class,
         ]);
 
-        // Register PageDataService as singleton
-        $this->app->singleton(\HolartWeb\HolartCMS\Services\PageDataService::class, function ($app) {
-            return new \HolartWeb\HolartCMS\Services\PageDataService();
-        });
+        // Register services only if respective modules are installed
+        $this->app->booted(function () {
+            try {
+                // Register PageDataService and PageVisitService if SEO or Pages module is installed
+                if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('seo') ||
+                    \HolartWeb\HolartCMS\Models\TModule::isInstalled('pages')) {
+                    $this->app->singleton(\HolartWeb\HolartCMS\Services\PageDataService::class, function ($app) {
+                        return new \HolartWeb\HolartCMS\Services\PageDataService();
+                    });
 
-        // Register PageVisitService as singleton
-        $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
-            return new \HolartWeb\HolartCMS\Services\PageVisitService();
-        });
+                    $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
+                        return new \HolartWeb\HolartCMS\Services\PageVisitService();
+                    });
+                }
 
-        // Register CatalogService as singleton
-        $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
-            return new \HolartWeb\HolartCMS\Services\CatalogService();
+                // Register CatalogService if Shop module is installed
+                if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('shop')) {
+                    $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
+                        return new \HolartWeb\HolartCMS\Services\CatalogService();
+                    });
+                }
+            } catch (\Exception $e) {
+                // Skip if database is not configured yet
+            }
         });
     }
 
