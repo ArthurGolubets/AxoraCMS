@@ -34,34 +34,35 @@ class HolartCMSServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Load migrations
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        try {
+            // Load migrations
+            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
-        // Load views
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'holart-cms');
+            // Load views
+            $this->loadViewsFrom(__DIR__.'/../resources/views', 'holart-cms');
 
-        // Register services as singletons (lazy loaded)
-        $this->app->singleton(\HolartWeb\HolartCMS\Services\PageDataService::class, function ($app) {
-            return new \HolartWeb\HolartCMS\Services\PageDataService();
-        });
+            // Register services as singletons (lazy loaded)
+            $this->app->singleton(\HolartWeb\HolartCMS\Services\PageDataService::class, function ($app) {
+                return new \HolartWeb\HolartCMS\Services\PageDataService();
+            });
 
-        $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
-            return new \HolartWeb\HolartCMS\Services\PageVisitService();
-        });
+            $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
+                return new \HolartWeb\HolartCMS\Services\PageVisitService();
+            });
 
-        $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
-            return new \HolartWeb\HolartCMS\Services\CatalogService();
-        });
+            $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
+                return new \HolartWeb\HolartCMS\Services\CatalogService();
+            });
 
-        // Register middleware aliases only
-        $this->app['router']->aliasMiddleware('admin.auth', \HolartWeb\HolartCMS\Http\Middleware\RedirectIfNotAdmin::class);
-        $this->app['router']->aliasMiddleware('share.page.data', \HolartWeb\HolartCMS\Http\Middleware\SharePageData::class);
+            // Register middleware aliases only
+            $this->app['router']->aliasMiddleware('admin.auth', \HolartWeb\HolartCMS\Http\Middleware\RedirectIfNotAdmin::class);
+            $this->app['router']->aliasMiddleware('share.page.data', \HolartWeb\HolartCMS\Http\Middleware\SharePageData::class);
 
-        // SharePageData middleware is NOT registered automatically
-        // It will be registered during module installation via InstallCommand
+            // SharePageData middleware is NOT registered automatically
+            // It will be registered during module installation via InstallCommand
 
-        // Register commands (always register so they can be called via Artisan::call() from web)
-        $this->commands([
+            // Register commands (always register so they can be called via Artisan::call() from web)
+            $this->commands([
             \HolartWeb\HolartCMS\Console\InstallCommand::class,
             \HolartWeb\HolartCMS\Console\UpdateCommand::class,
             \HolartWeb\HolartCMS\Console\ShopInstallCommand::class,
@@ -121,8 +122,12 @@ class HolartCMSServiceProvider extends ServiceProvider
             __DIR__.'/../resources/dist' => public_path('vendor/holart-cms'),
         ], 'holart-cms-assets');
 
-        // Register admin routes with prefix
-        $this->registerAdminRoutes();
+            // Register admin routes with prefix
+            $this->registerAdminRoutes();
+        } catch (\Exception $e) {
+            // Suppress errors during package discovery when DB is not configured
+            // This allows composer require to work without database connection
+        }
     }
 
     /**
