@@ -64,20 +64,28 @@ class InstallCommand extends Command
         // Run core migrations only (administrators, settings, modules)
         $this->info('🗄️  Запуск базовых миграций...');
 
-        $packagePath = 'vendor/holartweb/axora-cms';
-        if (!file_exists(base_path($packagePath))) {
-            $packagePath = 'packages/holartweb/axora-cms';
-        }
-
+        // Determine package path
+        $packagePath = dirname(__DIR__, 2); // Go up from src/ to package root
         $migrationPath = $packagePath . '/database/migrations';
 
-        // Run only core migrations (not module-specific subdirectories)
-        $this->call('migrate', [
-            '--path' => $migrationPath,
-            '--force' => true
-        ]);
+        $this->line("Migration path: {$migrationPath}");
 
-        $this->info('✓ Базовые миграции завершены');
+        if (!file_exists($migrationPath)) {
+            $this->error('❌ Директория миграций не найдена: ' . $migrationPath);
+            return self::FAILURE;
+        }
+
+        // Run only core migrations (not module-specific subdirectories)
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', [
+                '--path' => str_replace(base_path() . '/', '', $migrationPath),
+                '--force' => true
+            ]);
+            $this->info('✓ Базовые миграции завершены');
+        } catch (\Exception $e) {
+            $this->error('❌ Ошибка при выполнении миграций: ' . $e->getMessage());
+            return self::FAILURE;
+        }
 
         // Build frontend
         $this->info('🎨 Сборка фронтенда...');
