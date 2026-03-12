@@ -61,9 +61,27 @@ class InstallCommand extends Command
             '--force' => $this->option('force'),
         ]);
 
-        // Run migrations
-        $this->info('🗄️  Запуск миграций...');
-        $this->call('migrate');
+        // Run core migrations only (administrators, settings, modules)
+        $this->info('🗄️  Запуск базовых миграций...');
+
+        $packagePath = 'vendor/holartweb/axora-cms';
+        if (!file_exists(base_path($packagePath))) {
+            $packagePath = 'packages/holartweb/axora-cms';
+        }
+
+        // Run only core migrations (not module-specific)
+        $coreMigrations = [
+            $packagePath . '/database/migrations/2024_01_01_000001_create_t_administrators_table.php',
+            $packagePath . '/database/migrations/2024_01_01_000002_create_t_settings_table.php',
+            $packagePath . '/database/migrations/2024_01_01_000003_create_t_modules_table.php',
+            $packagePath . '/database/migrations/2024_01_01_000011_add_dashboard_initialized_to_administrators.php',
+        ];
+
+        foreach ($coreMigrations as $migration) {
+            if (file_exists(base_path($migration))) {
+                $this->call('migrate', ['--path' => $migration, '--force' => true]);
+            }
+        }
 
         // Build frontend
         $this->info('🎨 Сборка фронтенда...');

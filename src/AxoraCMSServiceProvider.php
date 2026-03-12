@@ -35,8 +35,8 @@ class AxoraCMSServiceProvider extends ServiceProvider
     public function boot(): void
     {
         try {
-            // Load migrations
-            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+            // Migrations are NOT loaded automatically
+            // They will be run during module installation via Install commands
 
             // Load views
             $this->loadViewsFrom(__DIR__.'/../resources/views', 'axora-cms');
