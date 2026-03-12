@@ -4,9 +4,22 @@ namespace HolartWeb\HolartCMS\Services;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class PageDataService
 {
+    /**
+     * Check if database is configured and accessible
+     */
+    private function isDatabaseAvailable(): bool
+    {
+        try {
+            DB::connection()->getPdo();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
     /**
      * Get page data by current route
      *
@@ -91,6 +104,10 @@ class PageDataService
      */
     private function findPageByRoute(?string $routeName, string $url): ?array
     {
+        if (!$this->isDatabaseAvailable()) {
+            return null;
+        }
+
         try {
             if (!Schema::hasTable('t_pages')) {
                 return null;
@@ -147,6 +164,10 @@ class PageDataService
      */
     private function findCatalogByUrl(string $url): ?array
     {
+        if (!$this->isDatabaseAvailable()) {
+            return null;
+        }
+
         try {
             if (!Schema::hasTable('t_catalogs')) {
                 return null;
@@ -197,6 +218,10 @@ class PageDataService
      */
     private function findProductByUrl(string $url): ?array
     {
+        if (!$this->isDatabaseAvailable()) {
+            return null;
+        }
+
         try {
             if (!Schema::hasTable('t_products')) {
                 return null;
@@ -293,6 +318,10 @@ class PageDataService
      */
     private function hasInactivePage(?string $routeName, string $url): bool
     {
+        if (!$this->isDatabaseAvailable()) {
+            return false;
+        }
+
         try {
             if (!Schema::hasTable('t_pages')) {
                 return false;
@@ -332,6 +361,10 @@ class PageDataService
      */
     private function hasInactiveCatalog(string $url): bool
     {
+        if (!$this->isDatabaseAvailable()) {
+            return false;
+        }
+
         try {
             if (!Schema::hasTable('t_catalogs')) {
                 return false;
@@ -367,6 +400,10 @@ class PageDataService
      */
     private function hasInactiveProduct(string $url): bool
     {
+        if (!$this->isDatabaseAvailable()) {
+            return false;
+        }
+
         try {
             if (!Schema::hasTable('t_products')) {
                 return false;

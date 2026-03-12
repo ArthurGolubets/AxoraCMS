@@ -31,6 +31,10 @@ class HolartCMSServiceProvider extends ServiceProvider
         // Register services only if respective modules are installed
         $this->app->booted(function () {
             try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('t_modules')) {
+                    return;
+                }
+
                 // Register PageDataService and PageVisitService if SEO or Pages module is installed
                 if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('seo') ||
                     \HolartWeb\HolartCMS\Models\TModule::isInstalled('pages')) {
@@ -73,6 +77,10 @@ class HolartCMSServiceProvider extends ServiceProvider
         // Add SharePageData middleware to web group only if modules are installed
         $this->app->booted(function () {
             try {
+                if (!\Illuminate\Support\Facades\Schema::hasTable('t_modules')) {
+                    return;
+                }
+
                 if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('seo') ||
                     \HolartWeb\HolartCMS\Models\TModule::isInstalled('pages')) {
                     $this->app['router']->pushMiddlewareToGroup('web', \HolartWeb\HolartCMS\Http\Middleware\SharePageData::class);
@@ -119,7 +127,8 @@ class HolartCMSServiceProvider extends ServiceProvider
 
                 // Schedule YooKassa payment check if module is installed
                 try {
-                    if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('yookassa')) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('t_modules') &&
+                        \HolartWeb\HolartCMS\Models\TModule::isInstalled('yookassa')) {
                         $schedule->command('holartcms:ykassa-check-payment')->everyMinute();
                     }
                 } catch (\Exception $e) {
