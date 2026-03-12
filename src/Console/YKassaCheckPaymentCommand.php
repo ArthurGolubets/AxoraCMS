@@ -15,12 +15,16 @@ class YKassaCheckPaymentCommand extends Command
 
     public function handle(): int
     {
-        // Проверяем, установлена ли интеграция ЮКасса
-        $shopId = TIntegrationSettings::get('yookassa', 'shop_id');
-        $secretKey = TIntegrationSettings::get('yookassa', 'secret_key');
+        try {
+            // Проверяем, установлена ли интеграция ЮКасса
+            $shopId = TIntegrationSettings::get('yookassa', 'shop_id');
+            $secretKey = TIntegrationSettings::get('yookassa', 'secret_key');
 
-        if (empty($shopId) || empty($secretKey)) {
-            $this->warn('YooKassa not configured. Skipping payment check.');
+            if (empty($shopId) || empty($secretKey)) {
+                return self::SUCCESS;
+            }
+        } catch (\Exception $e) {
+            // Database not configured or module not installed
             return self::SUCCESS;
         }
 

@@ -12,9 +12,13 @@ class CleanOldPageVisitsCommand extends Command
 
     public function handle(): int
     {
-        if (!Schema::hasTable('t_page_visits')) {
-            $this->warn('Table t_page_visits does not exist. Skipping cleanup.');
-            return Command::FAILURE;
+        try {
+            if (!Schema::hasTable('t_page_visits')) {
+                return Command::SUCCESS;
+            }
+        } catch (\Exception $e) {
+            // Database not configured yet
+            return Command::SUCCESS;
         }
 
         $days = (int) $this->option('days');

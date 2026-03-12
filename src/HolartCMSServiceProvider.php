@@ -28,34 +28,17 @@ class HolartCMSServiceProvider extends ServiceProvider
             'model' => \HolartWeb\HolartCMS\Models\TAdministrator::class,
         ]);
 
-        // Register services only if respective modules are installed
-        $this->app->booted(function () {
-            try {
-                if (!\Illuminate\Support\Facades\Schema::hasTable('t_modules')) {
-                    return;
-                }
+        // Register services as singletons (they handle DB checks internally)
+        $this->app->singleton(\HolartWeb\HolartCMS\Services\PageDataService::class, function ($app) {
+            return new \HolartWeb\HolartCMS\Services\PageDataService();
+        });
 
-                // Register PageDataService and PageVisitService if SEO or Pages module is installed
-                if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('seo') ||
-                    \HolartWeb\HolartCMS\Models\TModule::isInstalled('pages')) {
-                    $this->app->singleton(\HolartWeb\HolartCMS\Services\PageDataService::class, function ($app) {
-                        return new \HolartWeb\HolartCMS\Services\PageDataService();
-                    });
+        $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
+            return new \HolartWeb\HolartCMS\Services\PageVisitService();
+        });
 
-                    $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
-                        return new \HolartWeb\HolartCMS\Services\PageVisitService();
-                    });
-                }
-
-                // Register CatalogService if Shop module is installed
-                if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('shop')) {
-                    $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
-                        return new \HolartWeb\HolartCMS\Services\CatalogService();
-                    });
-                }
-            } catch (\Exception $e) {
-                // Skip if database is not configured yet
-            }
+        $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
+            return new \HolartWeb\HolartCMS\Services\CatalogService();
         });
     }
 
@@ -107,20 +90,14 @@ class HolartCMSServiceProvider extends ServiceProvider
         ]);
 
         // Schedule automatic cleanup of old page visits
+        // Scheduled tasks will check module installation themselves
         if ($this->app->runningInConsole()) {
             $this->app->booted(function () {
                 $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
-                $schedule->command('holartcms:clean-page-visits')->daily();
 
-                // Schedule YooKassa payment check if module is installed
-                try {
-                    if (\Illuminate\Support\Facades\Schema::hasTable('t_modules') &&
-                        \HolartWeb\HolartCMS\Models\TModule::isInstalled('yookassa')) {
-                        $schedule->command('holartcms:ykassa-check-payment')->everyMinute();
-                    }
-                } catch (\Exception $e) {
-                    // Skip if tables don't exist yet (during initial installation)
-                }
+                // These commands handle DB checks internally
+                $schedule->command('holartcms:clean-page-visits')->daily();
+                $schedule->command('holartcms:ykassa-check-payment')->everyMinute();
             });
         }
 
