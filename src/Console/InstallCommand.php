@@ -69,19 +69,15 @@ class InstallCommand extends Command
             $packagePath = 'packages/holartweb/axora-cms';
         }
 
-        // Run only core migrations (not module-specific)
-        $coreMigrations = [
-            $packagePath . '/database/migrations/2024_01_01_000001_create_t_administrators_table.php',
-            $packagePath . '/database/migrations/2024_01_01_000002_create_t_settings_table.php',
-            $packagePath . '/database/migrations/2024_01_01_000003_create_t_modules_table.php',
-            $packagePath . '/database/migrations/2024_01_01_000011_add_dashboard_initialized_to_administrators.php',
-        ];
+        $migrationPath = $packagePath . '/database/migrations';
 
-        foreach ($coreMigrations as $migration) {
-            if (file_exists(base_path($migration))) {
-                $this->call('migrate', ['--path' => $migration, '--force' => true]);
-            }
-        }
+        // Run only core migrations (not module-specific subdirectories)
+        $this->call('migrate', [
+            '--path' => $migrationPath,
+            '--force' => true
+        ]);
+
+        $this->info('✓ Базовые миграции завершены');
 
         // Build frontend
         $this->info('🎨 Сборка фронтенда...');

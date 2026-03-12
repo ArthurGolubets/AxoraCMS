@@ -1,7 +1,7 @@
 {
     "name": "holartweb/axora-cms",
     "description": "Admin panel for Laravel 12 with Vue.js",
-    "version": "1.0.5.2",
+    "version": "1.0.5.3",
     "type": "library",
     "license": "MIT",
     "keywords": ["laravel", "admin", "cms", "vue"],
