@@ -130,6 +130,11 @@
         </div>
       </div>
 
+      <!-- Characteristics Tab -->
+      <div v-show="activeTab === 'characteristics'" class="space-y-6">
+        <ProductCharacteristics v-model="form.addition_info" applies-to="catalog" />
+      </div>
+
       <!-- Filters Tab (only for edit mode) -->
       <div v-show="activeTab === 'filters'" class="space-y-6">
         <CatalogFiltersBlock v-if="isEdit && route.params.id" :catalogId="route.params.id" />
@@ -169,6 +174,7 @@ import ImageUpload from './ImageUpload.vue';
 import ToggleSwitch from './ToggleSwitch.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
 import CatalogFiltersBlock from './CatalogFiltersBlock.vue';
+import ProductCharacteristics from './ProductCharacteristics.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -186,6 +192,7 @@ const tabs = [
   { id: 'main', label: 'Основное' },
   { id: 'seo', label: 'SEO' },
   { id: 'content', label: 'Контент' },
+  { id: 'characteristics', label: 'Характеристики' },
   { id: 'filters', label: 'Фильтры' }
 ];
 
@@ -199,6 +206,7 @@ const form = ref({
   image: '',
   content: '',
   is_active: true,
+  addition_info: {},
 });
 
 const generateSlug = () => {
@@ -253,6 +261,28 @@ const loadCatalog = async () => {
   try {
     const response = await fetch(`/admin/api/catalogs/${route.params.id}`);
     const data = await response.json();
+    console.log('CatalogForm: Loaded catalog data:', data);
+
+    // Parse addition_info if it's a string
+    let additionInfo = {};
+    if (data.catalog.addition_info) {
+      console.log('CatalogForm: Raw addition_info:', data.catalog.addition_info, 'Type:', typeof data.catalog.addition_info);
+      if (typeof data.catalog.addition_info === 'string') {
+        try {
+          const parsed = JSON.parse(data.catalog.addition_info);
+          additionInfo = Array.isArray(parsed) ? {} : parsed;
+          console.log('CatalogForm: Parsed addition_info:', additionInfo);
+        } catch (e) {
+          console.error('Failed to parse addition_info:', e);
+          additionInfo = {};
+        }
+      } else if (typeof data.catalog.addition_info === 'object') {
+        // Could be array (old format) or object (new format)
+        additionInfo = Array.isArray(data.catalog.addition_info) ? {} : data.catalog.addition_info;
+        console.log('CatalogForm: addition_info is object:', additionInfo);
+      }
+    }
+
     form.value = {
       parent_id: data.catalog.parent_id,
       name: data.catalog.name,
@@ -263,7 +293,9 @@ const loadCatalog = async () => {
       image: data.catalog.image || '',
       content: data.catalog.content || '',
       is_active: data.catalog.is_active !== undefined ? data.catalog.is_active : true,
+      addition_info: additionInfo,
     };
+    console.log('CatalogForm: Final form.value.addition_info:', form.value.addition_info);
   } catch (err) {
     console.error('Error loading catalog:', err);
     await error('Ошибка при загрузке категории');

@@ -7,14 +7,109 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use HolartWeb\HolartCMS\Models\TAdminAction;
+use HolartWeb\HolartCMS\Models\TModule;
 
 class ModulesController extends Controller
 {
+    // Module versions - должны совпадать с версиями в Install командах
+    const MODULES_VERSIONS = [
+        'shop' => '1.0.0',
+        'callback' => '1.0.0',
+        'commerce' => '1.0.0',
+        'logging' => '1.0.0',
+        'infoblocks' => '1.0.0',
+        'seo' => '1.0.0',
+        'pagebuilder' => '1.0.0',
+        'telegram' => '1.0.0',
+        'yookassa' => '1.0.0',
+    ];
+
     /**
-     * Get list of available modules with their status
+     * Get modules status (always accessible for sidebar menu)
+     */
+    public function status()
+    {
+        $modules = [
+            [
+                'id' => 'shop',
+                'name' => 'Каталог и товары',
+                'description' => 'Модуль, который добавит на сайт систему каталогов, товаров, и их логику',
+                'installed' => $this->isShopModuleInstalled(),
+            ],
+            [
+                'id' => 'callback',
+                'name' => 'Обратная связь',
+                'description' => 'Модуль для управления email подписками, комментариями и обращениями пользователей',
+                'installed' => $this->isCallbackModuleInstalled(),
+            ],
+            [
+                'id' => 'commerce',
+                'name' => 'Коммерция',
+                'description' => 'Модуль для управления заказами, промокодами и платежными транзакциями. Требует установленный модуль "Каталог и товары"',
+                'installed' => $this->isCommerceModuleInstalled(),
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
+            ],
+            [
+                'id' => 'logging',
+                'name' => 'Журнал активности',
+                'description' => 'Модуль для отслеживания всех действий администраторов: создание, редактирование, удаление товаров, категорий, заказов, установка модулей и изменение настроек',
+                'installed' => $this->isLoggingModuleInstalled(),
+            ],
+            [
+                'id' => 'infoblocks',
+                'name' => 'Информационные блоки',
+                'description' => 'Модуль для создания пользовательских сущностей с динамическими полями.',
+                'installed' => $this->isInfoBlocksModuleInstalled(),
+            ],
+            [
+                'id' => 'seo',
+                'name' => 'Страницы и SEO',
+                'description' => 'Модуль для создания статических страниц и управления SEO-оптимизацией: мета-теги, sitemap, ЧПУ.',
+                'installed' => $this->isSeoModuleInstalled(),
+            ],
+            [
+                'id' => 'pagebuilder',
+                'name' => 'Конструктор страниц',
+                'description' => 'Модуль для создания и редактирования страниц с помощью визуального конструктора блоков. Требует установленный модуль "Страницы и SEO"',
+                'installed' => $this->isPageBuilderModuleInstalled(),
+                'dependencies' => ['seo'],
+                'can_install' => $this->isSeoModuleInstalled(),
+            ],
+            [
+                'id' => 'telegram',
+                'name' => 'Telegram',
+                'description' => 'Интеграция с Telegram для отправки уведомлений через бота',
+                'installed' => $this->isTelegramIntegrationInstalled(),
+                'type' => 'integration',
+            ],
+            [
+                'id' => 'yookassa',
+                'name' => 'ЮКassa',
+                'description' => 'Интеграция с платежной системой ЮКassa для приема платежей. Требует установленный модуль "Коммерция"',
+                'installed' => $this->isYookassaIntegrationInstalled(),
+                'type' => 'integration',
+                'dependencies' => ['commerce'],
+                'can_install' => $this->isCommerceModuleInstalled(),
+            ]
+        ];
+
+        return response()->json([
+            'modules' => $modules,
+            'show_modules_page' => config('holart-cms.show_modules', false)
+        ]);
+    }
+
+    /**
+     * Get list of available modules with their status (for modules management page)
      */
     public function index()
     {
+        // Check if modules page is enabled
+        if (!config('holart-cms.show_modules', false)) {
+            abort(404);
+        }
+
         $modules = [
             [
                 'id' => 'shop',
@@ -75,8 +170,40 @@ class ModulesController extends Controller
                 'uninstall_command' => 'holartcms:pagebuilder-uninstall',
                 'dependencies' => ['seo'],
                 'can_install' => $this->isSeoModuleInstalled(),
+            ],
+            [
+                'id' => 'telegram',
+                'name' => 'Telegram',
+                'description' => 'Интеграция с Telegram для отправки уведомлений через бота',
+                'installed' => $this->isTelegramIntegrationInstalled(),
+                'install_command' => 'holartcms:telegram-install',
+                'uninstall_command' => 'holartcms:telegram-uninstall',
+                'type' => 'integration',
+            ],
+            [
+                'id' => 'yookassa',
+                'name' => 'ЮКassa',
+                'description' => 'Интеграция с платежной системой ЮКassa для приема платежей. Требует установленный модуль "Коммерция"',
+                'installed' => $this->isYookassaIntegrationInstalled(),
+                'install_command' => 'holartcms:yookassa-install',
+                'uninstall_command' => 'holartcms:yookassa-uninstall',
+                'type' => 'integration',
+                'dependencies' => ['commerce'],
+                'can_install' => $this->isCommerceModuleInstalled(),
             ]
         ];
+
+        // Add version information to each module
+        $modules = array_map(function($module) {
+            $moduleId = $module['id'];
+            $module['current_version'] = self::MODULES_VERSIONS[$moduleId] ?? null;
+            $module['installed_version'] = TModule::getInstalledVersion($moduleId);
+            $module['needs_update'] = $module['installed'] &&
+                                      $module['installed_version'] &&
+                                      $module['current_version'] &&
+                                      version_compare($module['installed_version'], $module['current_version'], '<');
+            return $module;
+        }, $modules);
 
         return response()->json([
             'modules' => $modules
@@ -143,6 +270,12 @@ class ModulesController extends Controller
                 case 'pagebuilder':
                     $exitCode = Artisan::call('holartcms:pagebuilder-install');
                     break;
+                case 'telegram':
+                    $exitCode = Artisan::call('holartcms:telegram-install');
+                    break;
+                case 'yookassa':
+                    $exitCode = Artisan::call('holartcms:yookassa-install');
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -175,6 +308,93 @@ class ModulesController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при установке модуля: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a module
+     */
+    public function updateModule(Request $request, $moduleId)
+    {
+        $request->validate([
+            'module_id' => 'required|string'
+        ]);
+
+        try {
+            $exitCode = 0;
+
+            // Update is essentially a reinstall that preserves data
+            switch ($moduleId) {
+                case 'shop':
+                    $exitCode = Artisan::call('holartcms:shop-install');
+                    break;
+                case 'callback':
+                    $exitCode = Artisan::call('holartcms:callback-user-install');
+                    break;
+                case 'commerce':
+                    $exitCode = Artisan::call('holartcms:commerce-install');
+                    break;
+                case 'logging':
+                    $exitCode = Artisan::call('holartcms:logging-install');
+                    break;
+                case 'infoblocks':
+                    $exitCode = Artisan::call('holartcms:infoblocks-install');
+                    break;
+                case 'seo':
+                    $exitCode = Artisan::call('holartcms:seo-install');
+                    break;
+                case 'pagebuilder':
+                    $exitCode = Artisan::call('holartcms:pagebuilder-install');
+                    break;
+                case 'telegram':
+                    $exitCode = Artisan::call('holartcms:telegram-install');
+                    break;
+                case 'yookassa':
+                    $exitCode = Artisan::call('holartcms:yookassa-install');
+                    break;
+                default:
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Неизвестный модуль'
+                    ], 404);
+            }
+
+            $output = Artisan::output();
+
+            // Check if command failed (exit code != 0)
+            if ($exitCode !== 0) {
+                return response()->json([
+                    'success' => false,
+                    'output' => $output,
+                    'message' => 'Ошибка при обновлении модуля. Проверьте вывод команды.'
+                ], 400);
+            }
+
+            // Log activity
+            $moduleNames = [
+                'shop' => 'Каталог и товары',
+                'callback' => 'Обратная связь',
+                'commerce' => 'Коммерция',
+                'logging' => 'Журнал активности',
+                'infoblocks' => 'Информационные блоки',
+                'seo' => 'Страницы и SEO',
+                'pagebuilder' => 'Конструктор страниц',
+                'telegram' => 'Telegram',
+                'yookassa' => 'ЮКassa'
+            ];
+            $moduleName = $moduleNames[$moduleId] ?? $moduleId;
+            TAdminAction::log('updated', 'module', null, 'Обновлен модуль: ' . $moduleName);
+
+            return response()->json([
+                'success' => true,
+                'output' => $output,
+                'message' => 'Модуль обновлен успешно'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении модуля: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -229,6 +449,16 @@ class ModulesController extends Controller
                         '--preserve-db' => $preserveDatabase
                     ]);
                     break;
+                case 'telegram':
+                    Artisan::call('holartcms:telegram-uninstall', [
+                        '--preserve-db' => $preserveDatabase
+                    ]);
+                    break;
+                case 'yookassa':
+                    Artisan::call('holartcms:yookassa-uninstall', [
+                        '--preserve-db' => $preserveDatabase
+                    ]);
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -261,11 +491,7 @@ class ModulesController extends Controller
      */
     private function isShopModuleInstalled()
     {
-        // Check if catalog and product controllers exist (they are copied during install)
-        return file_exists(app_path('Http/Controllers/CatalogController.php')) &&
-               file_exists(app_path('Http/Controllers/ProductController.php')) &&
-               Schema::hasTable('t_catalogs') &&
-               Schema::hasTable('t_products');
+        return TModule::isInstalled('shop');
     }
 
     /**
@@ -273,12 +499,7 @@ class ModulesController extends Controller
      */
     private function isCallbackModuleInstalled()
     {
-        return file_exists(app_path('Http/Controllers/UsersEmailsController.php')) &&
-               file_exists(app_path('Http/Controllers/CommentsController.php')) &&
-               file_exists(app_path('Http/Controllers/UserRequestsController.php')) &&
-               Schema::hasTable('t_users_emails') &&
-               Schema::hasTable('t_comments') &&
-               Schema::hasTable('t_user_requests');
+        return TModule::isInstalled('callback');
     }
 
     /**
@@ -286,10 +507,7 @@ class ModulesController extends Controller
      */
     private function isCommerceModuleInstalled()
     {
-        return file_exists(app_path('Http/Controllers/OrdersController.php')) &&
-               file_exists(app_path('Http/Controllers/PromocodesController.php')) &&
-               Schema::hasTable('t_orders') &&
-               Schema::hasTable('t_promocodes');
+        return TModule::isInstalled('commerce');
     }
 
     /**
@@ -297,8 +515,7 @@ class ModulesController extends Controller
      */
     private function isLoggingModuleInstalled()
     {
-        return file_exists(app_path('Http/Controllers/LogsController.php')) &&
-               Schema::hasTable('t_admin_actions');
+        return TModule::isInstalled('logging');
     }
 
     /**
@@ -306,11 +523,7 @@ class ModulesController extends Controller
      */
     private function isInfoBlocksModuleInstalled()
     {
-        return file_exists(app_path('Http/Controllers/InfoBlocksController.php')) &&
-               file_exists(app_path('Models/TInfoBlock.php')) &&
-               Schema::hasTable('t_info_blocks') &&
-               Schema::hasTable('t_info_block_fields') &&
-               Schema::hasTable('t_info_block_elements');
+        return TModule::isInstalled('infoblocks');
     }
 
     /**
@@ -318,10 +531,7 @@ class ModulesController extends Controller
      */
     private function isSeoModuleInstalled()
     {
-        return file_exists(app_path('Http/Controllers/PagesController.php')) &&
-               file_exists(app_path('Models/TPage.php')) &&
-               Schema::hasTable('t_pages') &&
-               Schema::hasTable('t_page_visits');
+        return TModule::isInstalled('seo');
     }
 
     /**
@@ -329,10 +539,23 @@ class ModulesController extends Controller
      */
     private function isPageBuilderModuleInstalled()
     {
-        return file_exists(app_path('Http/Controllers/PageBlocksController.php')) &&
-               file_exists(app_path('Models/TPageBlock.php')) &&
-               Schema::hasTable('t_page_blocks') &&
-               Schema::hasTable('t_page_block_types');
+        return TModule::isInstalled('pagebuilder');
+    }
+
+    /**
+     * Check if Telegram integration is installed
+     */
+    private function isTelegramIntegrationInstalled()
+    {
+        return TModule::isInstalled('telegram');
+    }
+
+    /**
+     * Check if Yookassa integration is installed
+     */
+    private function isYookassaIntegrationInstalled()
+    {
+        return TModule::isInstalled('yookassa');
     }
 
     /**

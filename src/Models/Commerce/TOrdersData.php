@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace HolartWeb\HolartCMS\Models\Commerce;
 
 use Illuminate\Database\Eloquent\Model;
 

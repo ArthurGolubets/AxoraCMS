@@ -3,10 +3,14 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Artisan;
 
 class LoggingInstallCommand extends Command
 {
+    const VERSION = '1.0.0';
+    const MODULE_NAME = 'logging';
+
     protected $signature = 'holartcms:logging-install';
     protected $description = 'Install HolartCMS Logging Module';
 
@@ -17,72 +21,38 @@ class LoggingInstallCommand extends Command
         $this->info('╚══════════════════════════════════════╝');
         $this->newLine();
 
-        // Step 1: Copy Logs Controller
-        $this->info('Step 1: Copying logs controller...');
-
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/holart-cms');
         if (!file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
-        $appControllersPath = app_path('Http/Controllers');
-
-        $source = $packagePath . '/src/Http/Controllers/Logging/LogsController.php';
-        $destination = $appControllersPath . '/LogsController.php';
-
-        if (file_exists($source)) {
-            $content = file_get_contents($source);
-            // Update namespace from package to app
-            $content = str_replace(
-                'namespace HolartWeb\HolartCMS\Http\Controllers\Logging;',
-                'namespace App\Http\Controllers;',
-                $content
-            );
-            $content = str_replace(
-                'use Illuminate\Routing\Controller;',
-                '',
-                $content
-            );
-            file_put_contents($destination, $content);
-            $this->info("✓ Copied LogsController.php");
-        } else {
-            $this->warn("⚠ Source file not found: {$source}");
-        }
-        $this->newLine();
-
-        // Step 2: Copy and Run Migration
-        $this->info('Step 2: Copying and running database migration...');
-        $migrationFile = '2026_02_27_125658_create_t_admin_actions_table.php';
-
-        $source = $packagePath . '/database/migrations/' . $migrationFile;
-        $destination = database_path('migrations/' . $migrationFile);
-
-        if (file_exists($source)) {
-            copy($source, $destination);
-            $this->info("✓ Copied migration {$migrationFile}");
-        } else {
-            $this->warn("⚠ Source migration not found: {$source}");
-        }
+        // Step 1: Run Migration
+        $this->info('Step 1: Running database migration...');
 
         try {
-            // Run only logging module migration
-            $migrationPath = database_path('migrations/' . $migrationFile);
-            if (file_exists($migrationPath)) {
-                Artisan::call('migrate', [
-                    '--path' => 'database/migrations/' . $migrationFile,
-                    '--force' => true
-                ]);
-            }
+            Artisan::call('migrate', [
+                '--path' => 'vendor/holartweb/holart-cms/database/migrations/2026_02_27_125658_create_t_admin_actions_table.php',
+                '--force' => true
+            ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
-            return self::FAILURE;
+            // Try alternative path
+            try {
+                Artisan::call('migrate', [
+                    '--path' => 'packages/holartweb/holart-cms/database/migrations/2026_02_27_125658_create_t_admin_actions_table.php',
+                    '--force' => true
+                ]);
+                $this->info('✓ Migrations completed successfully');
+            } catch (\Exception $e2) {
+                $this->error('❌ Migration failed: ' . $e2->getMessage());
+                return self::FAILURE;
+            }
         }
         $this->newLine();
 
-        // Step 3: Build Frontend Assets
-        $this->info('Step 3: Building frontend assets...');
+        // Step 2: Build Frontend Assets
+        $this->info('Step 2: Building frontend assets...');
 
         if (file_exists($packagePath . '/package.json')) {
             $this->info('Installing npm dependencies...');
@@ -107,8 +77,8 @@ class LoggingInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 4: Publish Assets
-        $this->info('Step 4: Publishing assets...');
+        // Step 3: Publish Assets
+        $this->info('Step 3: Publishing assets...');
         Artisan::call('vendor:publish', [
             '--tag' => 'holart-cms-assets',
             '--force' => true,
@@ -116,12 +86,18 @@ class LoggingInstallCommand extends Command
         $this->info('✓ Assets published successfully');
         $this->newLine();
 
-        // Step 5: Clear Cache
-        $this->info('Step 5: Clearing application cache...');
+        // Step 4: Clear Cache
+        $this->info('Step 4: Clearing application cache...');
         Artisan::call('config:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         $this->info('✓ Cache cleared successfully');
+        $this->newLine();
+
+        // Register module
+        $this->info('Registering module installation...');
+        TModule::install(self::MODULE_NAME, self::VERSION);
+        $this->info('✓ Module registered');
         $this->newLine();
 
         // Success Message

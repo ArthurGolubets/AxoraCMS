@@ -67,6 +67,27 @@
       </div>
     </div>
 
+    <!-- Characteristics -->
+    <div v-if="catalog.addition_info && catalog.addition_info.length > 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Характеристики</h3>
+      <div class="space-y-3">
+        <div v-for="(char, index) in catalog.addition_info" :key="index" class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700 last:border-0">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ char.name }}</span>
+          <span class="text-sm text-gray-900 dark:text-white">
+            <template v-if="char.type === 'boolean'">
+              {{ char.value ? 'Да' : 'Нет' }}
+            </template>
+            <template v-else-if="char.multiple && char.values && char.values.length > 0">
+              {{ char.values.join(', ') }}
+            </template>
+            <template v-else>
+              {{ char.value }}
+            </template>
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- Filters Block -->
     <div class="mb-6">
       <CatalogFiltersBlock :catalogId="catalog.id" />

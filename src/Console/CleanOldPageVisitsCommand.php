@@ -51,10 +51,7 @@ class CleanOldPageVisitsCommand extends Command
      */
     private function getPageVisitModel(): ?string
     {
-        if (class_exists('App\Models\TPageVisit')) {
-            return 'App\Models\TPageVisit';
-        }
-
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\SEO\TPageVisit')) {
             return 'HolartWeb\HolartCMS\Models\SEO\TPageVisit';
         }

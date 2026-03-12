@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace HolartWeb\HolartCMS\Models\Shop;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +28,7 @@ class TProduct extends Model
         'is_active',
         'content',
         'gallery',
+        'addition_info'
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class TProduct extends Model
         'is_recommended' => 'boolean',
         'is_active' => 'boolean',
         'tags' => 'array',
+        'addition_info' => 'array',
         'gallery' => 'array',
     ];
 

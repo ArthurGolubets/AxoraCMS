@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('keywords')->nullable();
             $table->string('image')->nullable();
             $table->longText('content')->nullable();
+            $table->json('addition_info')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

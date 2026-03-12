@@ -2,7 +2,7 @@
 
 namespace HolartWeb\HolartCMS\Http\Controllers\Shop;
 
-use App\Models\TCatalog;
+use HolartWeb\HolartCMS\Models\Shop\TCatalog;
 use HolartWeb\HolartCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -105,6 +105,7 @@ class CatalogController extends Controller
             'image' => 'nullable|string',
             'content' => 'nullable|string',
             'is_active' => 'nullable|boolean',
+            'addition_info' => 'nullable|array',
         ]);
 
         $catalog = TCatalog::create($validated);
@@ -133,6 +134,7 @@ class CatalogController extends Controller
             'image' => 'nullable|string',
             'content' => 'nullable|string',
             'is_active' => 'nullable|boolean',
+            'addition_info' => 'nullable|array',
         ]);
 
         // Prevent circular reference

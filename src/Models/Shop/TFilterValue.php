@@ -35,7 +35,7 @@ class TFilterValue extends Model
     public function products()
     {
         return $this->belongsToMany(
-            'App\Models\TProduct',
+            TProduct::class,
             't_product_filter_values',
             'filter_value_id',
             'product_id'

@@ -71,4 +71,16 @@ return [
 
     'admin_model' => \HolartWeb\HolartCMS\Models\TAdministrator::class,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Show Modules Page
+    |--------------------------------------------------------------------------
+    |
+    | Control whether the modules management page is accessible.
+    | Set to false to hide the modules page from menu and return 404.
+    |
+    */
+
+    'show_modules' => env('HOLART_CMS_SHOW_MODULES', false),
+
 ];

@@ -36,12 +36,12 @@ class ImportCatalogsJob implements ShouldQueue
      */
     public function handle()
     {
-        if (!class_exists('App\Models\TCatalog')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
             $this->updateProgress(0, 0, count($this->items), ['Catalog module not available'], 'error');
             return;
         }
 
-        $catalogClass = 'App\Models\TCatalog';
+        $catalogClass = 'HolartWeb\HolartCMS\Models\Shop\TCatalog';
         $created = 0;
         $updated = 0;
         $errors = [];

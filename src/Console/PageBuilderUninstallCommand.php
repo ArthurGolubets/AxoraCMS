@@ -3,11 +3,14 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\File;
 
 class PageBuilderUninstallCommand extends Command
 {
+    const MODULE_NAME = 'pagebuilder';
+
     protected $signature = 'holartcms:pagebuilder-uninstall {--preserve-db : Preserve database tables}';
     protected $description = 'Uninstall HolartCMS Page Builder Module';
 
@@ -53,6 +56,12 @@ class PageBuilderUninstallCommand extends Command
             $this->warn('⚠ Database tables preserved (--preserve-db flag used)');
             $this->newLine();
         }
+
+        // Remove module record
+        $this->info('Removing module registration...');
+        TModule::uninstall(self::MODULE_NAME);
+        $this->info('✓ Module unregistered');
+        $this->newLine();
 
         $this->info('╔═════════════════════════════════════════════╗');
         $this->info('║ Page Builder Module uninstalled successfully ║');

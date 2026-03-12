@@ -3,6 +3,7 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Schema;
 
 class ShopUninstallCommand extends Command
 {
+    const MODULE_NAME = 'shop';
+
     protected $signature = 'holartcms:shop-uninstall {--preserve-db : Preserve database tables and data}';
     protected $description = 'Uninstall HolartCMS Shop Module';
 
@@ -156,6 +159,12 @@ class ShopUninstallCommand extends Command
         $this->newLine();
 
         // Success Message
+        // Remove module record from database
+        $this->info('Removing module registration...');
+        TModule::uninstall(self::MODULE_NAME);
+        $this->info('✓ Module unregistered');
+        $this->newLine();
+
         $this->info('╔══════════════════════════════════════╗');
         $this->info('║ Shop Module Uninstalled Successfully! ║');
         $this->info('╚══════════════════════════════════════╝');

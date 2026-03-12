@@ -226,12 +226,7 @@ class PageVisitService
      */
     private function getPageModel(): ?string
     {
-        // First try app model (if module is installed)
-        if (class_exists('App\Models\TPage')) {
-            return 'App\Models\TPage';
-        }
-
-        // Fallback to package model
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\SEO\TPage')) {
             return 'HolartWeb\HolartCMS\Models\SEO\TPage';
         }
@@ -246,12 +241,7 @@ class PageVisitService
      */
     private function getPageVisitModel(): ?string
     {
-        // First try app model (if module is installed)
-        if (class_exists('App\Models\TPageVisit')) {
-            return 'App\Models\TPageVisit';
-        }
-
-        // Fallback to package model
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\SEO\TPageVisit')) {
             return 'HolartWeb\HolartCMS\Models\SEO\TPageVisit';
         }

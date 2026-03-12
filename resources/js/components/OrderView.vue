@@ -232,7 +232,6 @@ const loadOrder = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Loaded order data:', data); // Debug log
       order.value = data;
     } else {
       error('Ошибка при загрузке заказа');
@@ -260,7 +259,6 @@ const updateOrder = async () => {
       comments: order.value.comments || ''
     };
 
-    console.log('Sending update payload:', payload); // Debug
 
     const response = await fetch(`/admin/api/orders/${order.value.id}`, {
       method: 'PUT',

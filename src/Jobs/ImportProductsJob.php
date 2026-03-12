@@ -36,12 +36,12 @@ class ImportProductsJob implements ShouldQueue
      */
     public function handle()
     {
-        if (!class_exists('App\Models\TProduct')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TProduct')) {
             $this->updateProgress(0, 0, count($this->items), ['Product module not available'], 'error');
             return;
         }
 
-        $productClass = 'App\Models\TProduct';
+        $productClass = 'HolartWeb\HolartCMS\Models\Shop\TProduct';
         $created = 0;
         $updated = 0;
         $errors = [];

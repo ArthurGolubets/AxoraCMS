@@ -78,9 +78,20 @@
                   >
                     Не установлен
                   </span>
+                  <span
+                    v-if="module.needs_update"
+                    class="ml-3 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded"
+                  >
+                    Доступно обновление
+                  </span>
                 </div>
 
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ module.description }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ module.description }}</p>
+
+                <div v-if="module.installed && (module.installed_version || module.current_version)" class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                  <span v-if="module.installed_version">Установлена: {{ module.installed_version }}</span>
+                  <span v-if="module.current_version && module.needs_update"> → Доступна: {{ module.current_version }}</span>
+                </div>
 
                 <!-- Module Output -->
                 <div v-if="moduleOutputs[module.id]" class="mb-4 p-4 bg-gray-900 text-green-400 rounded-lg font-mono text-xs overflow-x-auto max-h-48 overflow-y-auto">
@@ -101,6 +112,19 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   {{ processingModules[module.id] ? 'Установка...' : 'Установить' }}
+                </button>
+
+                <button
+                  v-if="module.installed && module.needs_update"
+                  @click="updateModule(module)"
+                  :disabled="processingModules[module.id]"
+                  class="px-6 py-2.5 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition flex items-center"
+                >
+                  <svg v-if="processingModules[module.id]" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ processingModules[module.id] ? 'Обновление...' : 'Обновить' }}
                 </button>
 
                 <button
@@ -150,9 +174,20 @@
                   >
                     Не установлен
                   </span>
+                  <span
+                    v-if="module.needs_update"
+                    class="ml-3 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded"
+                  >
+                    Доступно обновление
+                  </span>
                 </div>
 
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ module.description }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ module.description }}</p>
+
+                <div v-if="module.installed && (module.installed_version || module.current_version)" class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                  <span v-if="module.installed_version">Установлена: {{ module.installed_version }}</span>
+                  <span v-if="module.current_version && module.needs_update"> → Доступна: {{ module.current_version }}</span>
+                </div>
 
                 <!-- Module Output -->
                 <div v-if="moduleOutputs[module.id]" class="mb-4 p-4 bg-gray-900 text-green-400 rounded-lg font-mono text-xs overflow-x-auto max-h-48 overflow-y-auto">
@@ -173,6 +208,19 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   {{ processingModules[module.id] ? 'Установка...' : 'Установить' }}
+                </button>
+
+                <button
+                  v-if="module.installed && module.needs_update"
+                  @click="updateModule(module)"
+                  :disabled="processingModules[module.id]"
+                  class="px-6 py-2.5 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition flex items-center"
+                >
+                  <svg v-if="processingModules[module.id]" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 814 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ processingModules[module.id] ? 'Обновление...' : 'Обновить' }}
                 </button>
 
                 <button
@@ -393,6 +441,45 @@ const closeUninstallModal = () => {
     preserveDatabase: true,
     removeComponents: false
   };
+};
+
+const updateModule = async (module) => {
+  processingModules.value[module.id] = true;
+  moduleOutputs.value[module.id] = '';
+
+  try {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const response = await fetch(`/admin/api/modules/${module.id}/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': token
+      },
+      body: JSON.stringify({
+        module_id: module.id
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      moduleOutputs.value[module.id] = result.output;
+      await success('Модуль обновлен успешно');
+      await loadModules();
+      triggerModuleUpdate(); // Notify App.vue to update sidebar
+    } else {
+      // Show output even on error
+      if (result.output) {
+        moduleOutputs.value[module.id] = result.output;
+      }
+      await error(result.message || 'Ошибка при обновлении модуля');
+    }
+  } catch (err) {
+    console.error('Update error:', err);
+    await error('Ошибка при обновлении модуля');
+  } finally {
+    processingModules.value[module.id] = false;
+  }
 };
 
 const confirmUninstall = async () => {

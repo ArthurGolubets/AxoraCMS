@@ -234,12 +234,7 @@ class PageDataService
      */
     private function getPageModel(): ?string
     {
-        // First try app model (if module is installed)
-        if (class_exists('App\Models\TPage')) {
-            return 'App\Models\TPage';
-        }
-
-        // Fallback to package model
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\SEO\TPage')) {
             return 'HolartWeb\HolartCMS\Models\SEO\TPage';
         }
@@ -254,12 +249,7 @@ class PageDataService
      */
     private function getCatalogModel(): ?string
     {
-        // First try app model (if module is installed)
-        if (class_exists('App\Models\TCatalog')) {
-            return 'App\Models\TCatalog';
-        }
-
-        // Fallback to package model
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
             return 'HolartWeb\HolartCMS\Models\Shop\TCatalog';
         }
@@ -274,12 +264,7 @@ class PageDataService
      */
     private function getProductModel(): ?string
     {
-        // First try app model (if module is installed)
-        if (class_exists('App\Models\TProduct')) {
-            return 'App\Models\TProduct';
-        }
-
-        // Fallback to package model
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\Shop\TProduct')) {
             return 'HolartWeb\HolartCMS\Models\Shop\TProduct';
         }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace HolartWeb\HolartCMS\Models\Shop;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,11 +20,13 @@ class TCatalog extends Model
         'image',
         'content',
         'is_active',
+        'addition_info',
     ];
 
     protected $casts = [
         'parent_id' => 'integer',
         'is_active' => 'boolean',
+        'addition_info' => 'array',
     ];
 
     /**
@@ -79,6 +81,7 @@ class TCatalog extends Model
             array_unshift($breadcrumbs, [
                 'id' => $category->id,
                 'name' => $category->name,
+                'slug' => $category->slug,
             ]);
             $category = $category->parent;
         }

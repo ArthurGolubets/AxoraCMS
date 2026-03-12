@@ -2,8 +2,8 @@
 
 namespace HolartWeb\HolartCMS\Http\Controllers\Shop;
 
-use App\Models\TProduct;
-use App\Models\TProductVariant;
+use HolartWeb\HolartCMS\Models\Shop\TProduct;
+use HolartWeb\HolartCMS\Models\Shop\TProductVariant;
 use HolartWeb\HolartCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -118,6 +118,7 @@ class ProductController extends Controller
             'variants.*.attributes' => 'nullable|array',
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
+            'addition_info' => 'nullable|array',
         ]);
 
         // Generate slug if not provided
@@ -180,6 +181,7 @@ class ProductController extends Controller
             'variants' => 'nullable|array',
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
+            'addition_info' => 'nullable|array',
         ]);
 
         // Handle variants update

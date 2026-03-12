@@ -3,6 +3,7 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class CallbackUninstallCommand extends Command
 {
+    const MODULE_NAME = 'callback';
+
     protected $signature = 'holartcms:callback-user-uninstall {--preserve-db : Preserve database tables and data}';
     protected $description = 'Uninstall HolartCMS Callback Module';
 
@@ -107,6 +110,12 @@ class CallbackUninstallCommand extends Command
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         $this->info('✓ Cache cleared successfully');
+        $this->newLine();
+
+        // Remove module record from database
+        $this->info('Removing module registration...');
+        TModule::uninstall(self::MODULE_NAME);
+        $this->info('✓ Module unregistered');
         $this->newLine();
 
         // Success Message

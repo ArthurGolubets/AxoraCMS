@@ -67,6 +67,26 @@
           </div>
         </div>
 
+        <div v-if="product.addition_info && product.addition_info.length > 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Характеристики</h3>
+          <div class="space-y-3">
+            <div v-for="(char, index) in product.addition_info" :key="index" class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700 last:border-0">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ char.name }}</span>
+              <span class="text-sm text-gray-900 dark:text-white">
+                <template v-if="char.type === 'boolean'">
+                  {{ char.value ? 'Да' : 'Нет' }}
+                </template>
+                <template v-else-if="char.multiple && char.values && char.values.length > 0">
+                  {{ char.values.join(', ') }}
+                </template>
+                <template v-else>
+                  {{ char.value }}
+                </template>
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Описание</h3>
           <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="product.content || '<p class=\'text-gray-500 dark:text-gray-400\'>Нет описания</p>'"></div>

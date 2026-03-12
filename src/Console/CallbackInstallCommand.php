@@ -3,11 +3,15 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use HolartWeb\HolartCMS\Services\LicenseService;
 use Illuminate\Support\Facades\Artisan;
 
 class CallbackInstallCommand extends Command
 {
+    const VERSION = '1.0.0';
+    const MODULE_NAME = 'callback';
+
     protected $signature = 'holartcms:callback-user-install';
     protected $description = 'Install HolartCMS Callback Module';
 
@@ -36,92 +40,20 @@ class CallbackInstallCommand extends Command
         $this->info('✓ License verified successfully');
         $this->newLine();
 
-        // Step 2: Copy Callback Models
-        $this->info('Step 2: Copying callback models...');
+        // Step 2: Run Migrations
+        $this->info('Step 2: Running database migrations...');
 
-        // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/holart-cms');
         if (!file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
-        $appModelsPath = app_path('Models');
-
-        $models = ['TUsersEmails.php', 'TComments.php', 'TUserRequests.php'];
-        foreach ($models as $model) {
-            $source = $packagePath . '/src/Models/Callback/' . $model;
-            $destination = $appModelsPath . '/' . $model;
-
-            if (file_exists($source)) {
-                copy($source, $destination);
-                $this->info("✓ Copied {$model}");
-            } else {
-                $this->warn("⚠ Source file not found: {$source}");
-            }
-        }
-        $this->newLine();
-
-        // Step 3: Copy Callback Controllers
-        $this->info('Step 3: Copying callback controllers...');
-        $appControllersPath = app_path('Http/Controllers');
-
-        $controllers = ['UsersEmailsController.php', 'CommentsController.php', 'UserRequestsController.php'];
-        foreach ($controllers as $controller) {
-            $source = $packagePath . '/src/Http/Controllers/Callback/' . $controller;
-            $destination = $appControllersPath . '/' . $controller;
-
-            if (file_exists($source)) {
-                $content = file_get_contents($source);
-                // Update namespace from package to app
-                $content = str_replace(
-                    'namespace HolartWeb\HolartCMS\Http\Controllers\Callback;',
-                    'namespace App\Http\Controllers;',
-                    $content
-                );
-                $content = str_replace(
-                    'use Illuminate\Routing\Controller;',
-                    '',
-                    $content
-                );
-                file_put_contents($destination, $content);
-                $this->info("✓ Copied {$controller}");
-            } else {
-                $this->warn("⚠ Source file not found: {$source}");
-            }
-        }
-        $this->newLine();
-
-        // Step 4: Copy and Run Migrations
-        $this->info('Step 4: Copying and running database migrations...');
-        $migrationFiles = [
-            '2024_01_01_000020_create_t_users_emails_table.php',
-            '2024_01_01_000021_create_t_comments_table.php',
-            '2024_01_01_000022_create_t_user_requests_table.php',
-        ];
-
-        foreach ($migrationFiles as $file) {
-            $source = $packagePath . '/database/migrations/callback/' . $file;
-            $destination = database_path('migrations/' . $file);
-
-            if (file_exists($source)) {
-                copy($source, $destination);
-                $this->info("✓ Copied migration {$file}");
-            } else {
-                $this->warn("⚠ Source migration not found: {$source}");
-            }
-        }
-
         try {
-            // Run only callback module migrations
-            foreach ($migrationFiles as $file) {
-                $migrationPath = database_path('migrations/' . $file);
-                if (file_exists($migrationPath)) {
-                    Artisan::call('migrate', [
-                        '--path' => 'database/migrations/' . $file,
-                        '--force' => true
-                    ]);
-                }
-            }
+            $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/callback';
+            Artisan::call('migrate', [
+                '--path' => $migrationsPath,
+                '--force' => true
+            ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
             $this->error('❌ Migration failed: ' . $e->getMessage());
@@ -129,56 +61,24 @@ class CallbackInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 5: Build Frontend Assets
-        $this->info('Step 5: Building frontend assets...');
-
-        if (file_exists($packagePath . '/package.json')) {
-            $this->info('Installing npm dependencies...');
-            exec("cd {$packagePath} && npm install 2>&1", $output, $returnVar);
-
-            if ($returnVar !== 0) {
-                $this->warn('⚠ npm install encountered issues');
-            } else {
-                $this->info('✓ npm dependencies installed');
-            }
-
-            $this->info('Building assets...');
-            exec("cd {$packagePath} && npm run build 2>&1", $output, $returnVar);
-
-            if ($returnVar !== 0) {
-                $this->error('❌ Asset build failed');
-                return self::FAILURE;
-            }
-            $this->info('✓ Assets built successfully');
-        } else {
-            $this->warn('⚠ package.json not found, skipping asset build');
-        }
-        $this->newLine();
-
-        // Step 6: Publish Assets
-        $this->info('Step 6: Publishing assets...');
-        Artisan::call('vendor:publish', [
-            '--tag' => 'holart-cms-assets',
-            '--force' => true,
-        ]);
-        $this->info('✓ Assets published successfully');
-        $this->newLine();
-
-        // Step 7: Clear Cache
-        $this->info('Step 7: Clearing application cache...');
+        // Step 3: Clear Cache
+        $this->info('Step 3: Clearing application cache...');
         Artisan::call('config:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         $this->info('✓ Cache cleared successfully');
         $this->newLine();
 
-        // Success Message
-        $this->info('╔════════════════════════════════════════╗');
-        $this->info('║ Callback Module Installed Successfully! ║');
-        $this->info('╚════════════════════════════════════════╝');
+        // Register module
+        $this->info('Registering module installation...');
+        TModule::install(self::MODULE_NAME, self::VERSION);
+        $this->info('✓ Module registered');
         $this->newLine();
-        $this->info('You can now access the callback features in your admin panel.');
-        $this->info('Navigate to: ' . url('/admin/callback'));
+
+        // Success Message
+        $this->info('╔════════════════════════════════════════════╗');
+        $this->info('║ Callback Module Installed Successfully!   ║');
+        $this->info('╚════════════════════════════════════════════╝');
         $this->newLine();
 
         return self::SUCCESS;
@@ -186,39 +86,25 @@ class CallbackInstallCommand extends Command
 
     protected function checkLicense(): bool
     {
-        // Check if license key already exists
         $savedKey = $this->licenseService->getSavedLicense();
 
         if ($savedKey && $this->licenseService->checkLicense($savedKey, 'callback-install')) {
             return true;
         }
 
-        // If running in console (not web), request new license key
-        if ($this->input->isInteractive()) {
-            $this->warn('No valid license key found.');
-            $key = $this->ask('Please enter your license key');
+        $this->warn('No valid license key found.');
+        $key = $this->ask('Please enter your license key');
 
-            if (empty($key)) {
-                return false;
-            }
-
-            // Validate license
-            if (!$this->licenseService->checkLicense($key, 'callback-install')) {
-                $this->error('Invalid license key!');
-                return false;
-            }
-
-            // Save license
-            $this->licenseService->saveLicense($key);
-            return true;
+        if (empty($key)) {
+            return false;
         }
 
-        // If not interactive (web call), just use saved license or skip
-        if ($savedKey) {
-            return true;
+        if (!$this->licenseService->checkLicense($key, 'callback-install')) {
+            $this->error('Invalid license key!');
+            return false;
         }
 
-        $this->warn('⚠ No license key found, but continuing installation...');
+        $this->licenseService->saveLicense($key);
         return true;
     }
 }

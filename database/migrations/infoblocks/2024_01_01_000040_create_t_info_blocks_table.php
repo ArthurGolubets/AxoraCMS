@@ -24,6 +24,7 @@ return new class extends Migration
 
             $table->index('code');
             $table->index('is_active');
+            $table->index('is_favorite');
         });
     }
 

@@ -13,11 +13,11 @@ class PageBlockFieldsController extends Controller
     public function getCatalogs(Request $request)
     {
         // Check if Shop module is installed
-        if (!class_exists('App\\Models\\TCatalog')) {
+        if (!class_exists('HolartWeb\\HolartCMS\\Models\\Shop\\TCatalog')) {
             return response()->json([]);
         }
 
-        $catalogClass = 'App\\Models\\TCatalog';
+        $catalogClass = 'HolartWeb\\HolartCMS\\Models\\Shop\\TCatalog';
         $query = $catalogClass::query()->where('is_active', true);
 
         // Filter by search
@@ -41,11 +41,11 @@ class PageBlockFieldsController extends Controller
     public function getInfoBlocks(Request $request)
     {
         // Check if InfoBlocks module is installed
-        if (!class_exists('App\\Models\\TInfoBlock')) {
+        if (!class_exists('HolartWeb\\HolartCMS\\Models\\InfoBlocks\\TInfoBlock')) {
             return response()->json([]);
         }
 
-        $infoBlockClass = 'App\\Models\\TInfoBlock';
+        $infoBlockClass = 'HolartWeb\\HolartCMS\\Models\\InfoBlocks\\TInfoBlock';
         $query = $infoBlockClass::query()->where('is_active', true);
 
         // Filter by search
@@ -64,11 +64,11 @@ class PageBlockFieldsController extends Controller
     public function getProducts(Request $request)
     {
         // Check if Shop module is installed
-        if (!class_exists('App\\Models\\TProduct')) {
+        if (!class_exists('HolartWeb\\HolartCMS\\Models\\Shop\\TProduct')) {
             return response()->json([]);
         }
 
-        $productClass = 'App\\Models\\TProduct';
+        $productClass = 'HolartWeb\\HolartCMS\\Models\\Shop\\TProduct';
         $query = $productClass::query()->where('is_active', true);
 
         // Filter by search
@@ -111,11 +111,11 @@ class PageBlockFieldsController extends Controller
     public function getInfoBlockElements(Request $request, $infoBlockId)
     {
         // Check if InfoBlocks module is installed
-        if (!class_exists('App\\Models\\TInfoBlockElement')) {
+        if (!class_exists('HolartWeb\\HolartCMS\\Models\\InfoBlocks\\TInfoBlockElement')) {
             return response()->json([]);
         }
 
-        $elementClass = 'App\\Models\\TInfoBlockElement';
+        $elementClass = 'HolartWeb\\HolartCMS\\Models\\InfoBlocks\\TInfoBlockElement';
         $query = $elementClass::query()
             ->where('info_block_id', $infoBlockId)
             ->where('is_active', true);

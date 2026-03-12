@@ -3,6 +3,7 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use HolartWeb\HolartCMS\Services\LicenseService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
@@ -10,6 +11,9 @@ use Illuminate\Support\Facades\Schema;
 
 class CommerceInstallCommand extends Command
 {
+    const VERSION = '1.0.0';
+    const MODULE_NAME = 'commerce';
+
     protected $signature = 'holartcms:commerce-install';
     protected $description = 'Install HolartCMS Commerce Module';
 
@@ -223,6 +227,12 @@ class CommerceInstallCommand extends Command
         $this->info('✓ Cache cleared successfully');
         $this->newLine();
 
+        // Register module
+        $this->info('Registering module installation...');
+        TModule::install(self::MODULE_NAME, self::VERSION);
+        $this->info('✓ Module registered');
+        $this->newLine();
+
         // Success Message
         $this->info('╔═══════════════════════════════════════════╗');
         $this->info('║ Commerce Module Installed Successfully!  ║');
@@ -237,9 +247,7 @@ class CommerceInstallCommand extends Command
 
     protected function checkShopModuleInstalled(): bool
     {
-        return file_exists(app_path('Http/Controllers/CatalogController.php')) &&
-               file_exists(app_path('Http/Controllers/ProductController.php')) &&
-               Schema::hasTable('t_catalogs') &&
+        return Schema::hasTable('t_catalogs') &&
                Schema::hasTable('t_products');
     }
 

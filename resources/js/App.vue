@@ -67,6 +67,12 @@
                 Фильтры
               </a>
             </router-link>
+            <router-link to="/content-settings" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/content-settings'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Настройки
+              </a>
+            </router-link>
           </div>
         </div>
 
@@ -218,6 +224,31 @@
           </div>
         </div>
 
+        <!-- Integrations Group (only if integrations are installed) -->
+        <div v-if="telegramIntegrationInstalled || yookassaIntegrationInstalled" class="mb-1">
+          <button @click="toggleMenuGroup('integrations')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Интеграции' : ''">
+            <div class="flex items-center">
+              <svg class="w-5 h-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              <span v-if="!isCollapsed">Интеграции</span>
+            </div>
+            <svg v-if="!isCollapsed" class="w-4 h-4 transition-transform" :class="{ 'rotate-180': menuGroups.integrations }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div v-if="menuGroups.integrations && !isCollapsed" class="ml-3 mt-1 space-y-1">
+            <router-link v-if="telegramIntegrationInstalled" to="/integrations/telegram" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/integrations/telegram'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.781-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.001.321.023.465.141.121.099.155.232.171.326.016.094.036.307.02.473z"/></svg>
+                Telegram
+              </a>
+            </router-link>
+            <router-link v-if="yookassaIntegrationInstalled" to="/integrations/yookassa" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/integrations/yookassa'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                ЮКassa
+              </a>
+            </router-link>
+          </div>
+        </div>
+
         <!-- Settings Group (only for super_admin and administrator) -->
         <div v-if="canAccessSettings" class="mb-1">
           <button @click="toggleMenuGroup('settings')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Настройки' : ''">
@@ -240,7 +271,7 @@
                 Окружение
               </a>
             </router-link>
-            <router-link to="/modules" v-slot="{ isActive }" custom>
+            <router-link v-if="showModules" to="/modules" v-slot="{ isActive }" custom>
               <a @click="$router.push('/modules'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 Модули
@@ -424,6 +455,7 @@ const menuGroups = ref({
   commerce: false,
   infoblocks: false,
   pages_seo: false,
+  integrations: false,
 });
 
 const adminUser = ref({
@@ -439,6 +471,9 @@ const infoblocksModuleInstalled = ref(false);
 const loggingModuleInstalled = ref(false);
 const seoModuleInstalled = ref(false);
 const pageBuilderModuleInstalled = ref(false);
+const showModules = ref(true);
+const telegramIntegrationInstalled = ref(false);
+const yookassaIntegrationInstalled = ref(false);
 const favoriteInfoBlocks = ref([]);
 
 const roleLabel = computed(() => {
@@ -562,12 +597,14 @@ const loadSettings = async () => {
 
 const loadModulesStatus = async () => {
   try {
-    const response = await fetch('/admin/api/modules', {
+    const response = await fetch('/admin/api/modules/status', {
       headers: { 'Accept': 'application/json' }
     });
 
     if (response.ok) {
       const data = await response.json();
+      showModules.value = data.show_modules_page || false;
+
       const shopModule = data.modules?.find(m => m.id === 'shop');
       shopModuleInstalled.value = shopModule?.installed || false;
 
@@ -588,6 +625,12 @@ const loadModulesStatus = async () => {
 
       const pageBuilderModule = data.modules?.find(m => m.id === 'pagebuilder');
       pageBuilderModuleInstalled.value = pageBuilderModule?.installed || false;
+
+      const telegramIntegration = data.modules?.find(m => m.id === 'telegram');
+      telegramIntegrationInstalled.value = telegramIntegration?.installed || false;
+
+      const yookassaIntegration = data.modules?.find(m => m.id === 'yookassa');
+      yookassaIntegrationInstalled.value = yookassaIntegration?.installed || false;
 
       // Load favorite infoblocks if module is installed
       if (infoblocksModuleInstalled.value) {

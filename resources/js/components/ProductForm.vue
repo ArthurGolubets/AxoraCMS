@@ -121,6 +121,11 @@
         </div>
       </div>
 
+      <!-- Characteristics Tab -->
+      <div v-show="activeTab === 'characteristics'" class="space-y-6">
+        <ProductCharacteristics v-model="form.addition_info" applies-to="product" />
+      </div>
+
       <!-- Filters Tab -->
       <div v-show="activeTab === 'filters'" class="space-y-6">
         <ProductFiltersBlock
@@ -153,6 +158,7 @@ import GalleryUpload from './GalleryUpload.vue';
 import ToggleSwitch from './ToggleSwitch.vue';
 import ProductFiltersBlock from './ProductFiltersBlock.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
+import ProductCharacteristics from './ProductCharacteristics.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -171,6 +177,7 @@ const tabs = [
   { id: 'seo', label: 'SEO' },
   { id: 'variants', label: 'Варианты' },
   { id: 'content', label: 'Контент' },
+  { id: 'characteristics', label: 'Характеристики' },
   { id: 'filters', label: 'Фильтры' }
 ];
 
@@ -194,6 +201,7 @@ const form = ref({
   gallery: [],
   variants: [],
   filter_values: [],
+  addition_info: {},
 });
 
 const selectedCatalogName = computed(() => {
@@ -268,7 +276,6 @@ const loadProduct = async () => {
     }
 
     const data = await response.json();
-    console.log('Loaded product data:', data);
 
     // API возвращает объект с ключом 'product'
     const product = data.product || data;
@@ -276,6 +283,23 @@ const loadProduct = async () => {
     // Extract filter_value_ids from filter_values relationship or assigned_filters
     const filterValueIds = product.filter_values?.map(fv => fv.id) ||
                           data.assigned_filters?.flatMap(f => f.values?.map(v => v.id) || []) || [];
+
+    // Parse addition_info if it's a string
+    let additionInfo = {};
+    if (product.addition_info) {
+      if (typeof product.addition_info === 'string') {
+        try {
+          const parsed = JSON.parse(product.addition_info);
+          additionInfo = Array.isArray(parsed) ? {} : parsed;
+        } catch (e) {
+          additionInfo = {};
+        }
+      } else if (typeof product.addition_info === 'object') {
+        // Could be array (old format) or object (new format)
+        additionInfo = Array.isArray(product.addition_info) ? {} : product.addition_info;
+
+      }
+    }
 
     form.value = {
       catalog_id: product.catalog_id,
@@ -296,12 +320,10 @@ const loadProduct = async () => {
       content: product.content || '',
       gallery: product.gallery || [],
       variants: product.variants || [],
-      filter_values: filterValueIds
+      filter_values: filterValueIds,
+      addition_info: additionInfo
     };
-
-    console.log('Form after loading:', form.value);
   } catch (err) {
-    console.error('Error loading product:', err);
     await error('Ошибка при загрузке товара');
   }
 };

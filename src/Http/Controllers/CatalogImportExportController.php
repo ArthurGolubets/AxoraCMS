@@ -63,11 +63,11 @@ class CatalogImportExportController extends Controller
      */
     public function export()
     {
-        if (!class_exists('App\Models\TCatalog')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 
-        $catalogClass = 'App\Models\TCatalog';
+        $catalogClass = 'HolartWeb\HolartCMS\Models\Shop\TCatalog';
         $catalogs = $catalogClass::with('parent')->orderBy('id')->get();
 
         $spreadsheet = new Spreadsheet();
@@ -129,7 +129,7 @@ class CatalogImportExportController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv'
         ]);
 
-        if (!class_exists('App\Models\TCatalog')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 
@@ -143,7 +143,7 @@ class CatalogImportExportController extends Controller
 
         $preview = [];
         $errors = [];
-        $catalogClass = 'App\Models\TCatalog';
+        $catalogClass = 'HolartWeb\HolartCMS\Models\Shop\TCatalog';
 
         foreach ($data as $index => $row) {
             $rowNum = $index + 2; // +2 because of header and 0-indexing
@@ -214,7 +214,7 @@ class CatalogImportExportController extends Controller
             'items' => 'required|array'
         ]);
 
-        if (!class_exists('App\Models\TCatalog')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 

@@ -43,8 +43,8 @@ class SearchController extends Controller
         }
 
         // Search catalogs if module exists
-        if (class_exists('App\Models\TCatalog')) {
-            $catalogClass = 'App\Models\TCatalog';
+        if (class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
+            $catalogClass = 'HolartWeb\HolartCMS\Models\Shop\TCatalog';
             $catalogs = $catalogClass::where('name', 'like', "%{$query}%")
                 ->limit(5)
                 ->get();
@@ -61,8 +61,8 @@ class SearchController extends Controller
         }
 
         // Search products if module exists
-        if (class_exists('App\Models\TProduct')) {
-            $productClass = 'App\Models\TProduct';
+        if (class_exists('HolartWeb\HolartCMS\Models\Shop\TProduct')) {
+            $productClass = 'HolartWeb\HolartCMS\Models\Shop\TProduct';
             $products = $productClass::where('name', 'like', "%{$query}%")
                 ->orWhere('sku', 'like', "%{$query}%")
                 ->with('catalog')

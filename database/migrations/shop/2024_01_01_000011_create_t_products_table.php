@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('old_price', 10, 2)->nullable();
             $table->string('sku')->unique();
             $table->json('tags')->nullable();
+            $table->json('addition_info')->nullable();
             $table->boolean('is_new')->default(false);
             $table->boolean('is_hot')->default(false);
             $table->boolean('is_recommended')->default(false);

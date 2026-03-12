@@ -258,10 +258,7 @@ class DashboardMetricsService
      */
     private function getPageModel(): ?string
     {
-        if (class_exists('App\Models\TPage')) {
-            return 'App\Models\TPage';
-        }
-
+        // Use package model
         if (class_exists('HolartWeb\HolartCMS\Models\SEO\TPage')) {
             return 'HolartWeb\HolartCMS\Models\SEO\TPage';
         }

@@ -4,10 +4,14 @@ namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
 use HolartWeb\HolartCMS\Services\LicenseService;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Artisan;
 
 class ShopInstallCommand extends Command
 {
+    const VERSION = '1.0.0';
+    const MODULE_NAME = 'shop';
+
     protected $signature = 'holartcms:shop-install';
     protected $description = 'Install HolartCMS Shop Module';
 
@@ -36,8 +40,8 @@ class ShopInstallCommand extends Command
         $this->info('✓ License verified successfully');
         $this->newLine();
 
-        // Step 2: Copy Shop Models
-        $this->info('Step 2: Copying shop models...');
+        // Step 2: Run Migrations
+        $this->info('Step 2: Running database migrations...');
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/holart-cms');
@@ -45,105 +49,13 @@ class ShopInstallCommand extends Command
             $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
-        $appModelsPath = app_path('Models');
-
-        $models = ['TCatalog.php', 'TProduct.php', 'TProductVariant.php', 'TFilter.php', 'TFilterValue.php'];
-        foreach ($models as $model) {
-            $source = $packagePath . '/src/Models/Shop/' . $model;
-            $destination = $appModelsPath . '/' . $model;
-
-            if (file_exists($source)) {
-                // Update namespace from package to app for models
-                $content = file_get_contents($source);
-                $content = str_replace(
-                    'namespace HolartWeb\HolartCMS\Models\Shop;',
-                    'namespace App\Models;',
-                    $content
-                );
-                // Update model references
-                $content = str_replace(
-                    'HolartWeb\HolartCMS\Models\Shop\TFilter',
-                    'App\Models\TFilter',
-                    $content
-                );
-                $content = str_replace(
-                    'HolartWeb\HolartCMS\Models\Shop\TFilterValue',
-                    'App\Models\TFilterValue',
-                    $content
-                );
-                file_put_contents($destination, $content);
-                $this->info("✓ Copied {$model}");
-            } else {
-                $this->warn("⚠ Source file not found: {$source}");
-            }
-        }
-        $this->newLine();
-
-        // Step 3: Copy Shop Controllers
-        $this->info('Step 3: Copying shop controllers...');
-        $appControllersPath = app_path('Http/Controllers');
-
-        $controllers = ['CatalogController.php', 'ProductController.php', 'FilterController.php'];
-        foreach ($controllers as $controller) {
-            $source = $packagePath . '/src/Http/Controllers/Shop/' . $controller;
-            $destination = $appControllersPath . '/' . $controller;
-
-            if (file_exists($source)) {
-                $content = file_get_contents($source);
-                // Update namespace from package to app
-                $content = str_replace(
-                    'namespace HolartWeb\HolartCMS\Http\Controllers\Shop;',
-                    'namespace App\Http\Controllers;',
-                    $content
-                );
-                $content = str_replace(
-                    'use Illuminate\Routing\Controller;',
-                    '',
-                    $content
-                );
-                file_put_contents($destination, $content);
-                $this->info("✓ Copied {$controller}");
-            } else {
-                $this->warn("⚠ Source file not found: {$source}");
-            }
-        }
-        $this->newLine();
-
-        // Step 4: Copy and Run Migrations
-        $this->info('Step 4: Copying and running database migrations...');
-        $migrationFiles = [
-            '2024_01_01_000010_create_t_catalogs_table.php',
-            '2024_01_01_000011_create_t_products_table.php',
-            '2024_01_01_000012_create_t_product_variants_table.php',
-            '2024_01_01_000013_add_main_image_to_products.php',
-            '2026_03_03_000070_create_t_filters_table.php',
-            '2026_03_03_000071_create_t_filter_values_table.php',
-            '2026_03_03_000072_create_t_product_filter_values_table.php',
-        ];
-
-        foreach ($migrationFiles as $file) {
-            $source = $packagePath . '/database/migrations/shop/' . $file;
-            $destination = database_path('migrations/' . $file);
-
-            if (file_exists($source)) {
-                copy($source, $destination);
-                $this->info("✓ Copied migration {$file}");
-            } else {
-                $this->warn("⚠ Source migration not found: {$source}");
-            }
-        }
-
         try {
-            // Run only shop module migrations
-            foreach ($migrationFiles as $file) {
-                $migrationPath = database_path('migrations/' . $file);
-                if (file_exists($migrationPath)) {
-                    Artisan::call('migrate', [
-                        '--path' => 'database/migrations/' . $file,
-                        '--force' => true
-                    ]);
-                }
-            }
+            // Run shop module migrations from package directory
+            $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/shop';
+            Artisan::call('migrate', [
+                '--path' => $migrationsPath,
+                '--force' => true
+            ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
             $this->error('❌ Migration failed: ' . $e->getMessage());
@@ -151,8 +63,8 @@ class ShopInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 5: Build Frontend Assets
-        $this->info('Step 5: Building frontend assets...');
+        // Step 3: Build Frontend Assets
+        $this->info('Step 3: Building frontend assets...');
 
         if (file_exists($packagePath . '/package.json')) {
             $this->info('Installing npm dependencies...');
@@ -177,8 +89,8 @@ class ShopInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 6: Publish Assets
-        $this->info('Step 6: Publishing assets...');
+        // Step 4: Publish Assets
+        $this->info('Step 4: Publishing assets...');
         Artisan::call('vendor:publish', [
             '--tag' => 'holart-cms-assets',
             '--force' => true,
@@ -186,12 +98,18 @@ class ShopInstallCommand extends Command
         $this->info('✓ Assets published successfully');
         $this->newLine();
 
-        // Step 7: Clear Cache
-        $this->info('Step 7: Clearing application cache...');
+        // Step 5: Clear Cache
+        $this->info('Step 5: Clearing application cache...');
         Artisan::call('config:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         $this->info('✓ Cache cleared successfully');
+        $this->newLine();
+
+        // Step 6: Register module in database
+        $this->info('Step 6: Registering module...');
+        TModule::install(self::MODULE_NAME, self::VERSION);
+        $this->info('✓ Module registered successfully (version ' . self::VERSION . ')');
         $this->newLine();
 
         // Success Message

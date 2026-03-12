@@ -5,7 +5,7 @@ namespace HolartWeb\HolartCMS\Http\Controllers\Commerce;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use App\Models\TOrdersData;
+use HolartWeb\HolartCMS\Models\Commerce\TOrdersData;
 
 class OrdersDataController extends Controller
 {

@@ -3,12 +3,15 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use HolartWeb\HolartCMS\Models\TAdminAction;
 
 class SeoUninstallCommand extends Command
 {
+    const MODULE_NAME = 'seo';
+
     protected $signature = 'holartcms:seo-uninstall {--preserve-db : Preserve database tables}';
     protected $description = 'Uninstall HolartCMS SEO Module';
 
@@ -130,5 +133,11 @@ class SeoUninstallCommand extends Command
 
         file_put_contents($bootstrapPath, $content);
         $this->info('   Middleware removed from bootstrap/app.php');
+
+        // Remove module record
+        $this->newLine();
+        $this->info('Removing module registration...');
+        TModule::uninstall(self::MODULE_NAME);
+        $this->info('✓ Module unregistered');
     }
 }

@@ -75,11 +75,11 @@ class ProductImportExportController extends Controller
      */
     public function export()
     {
-        if (!class_exists('App\Models\TProduct')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TProduct')) {
             return response()->json(['error' => 'Product module not available'], 404);
         }
 
-        $productClass = 'App\Models\TProduct';
+        $productClass = 'HolartWeb\HolartCMS\Models\Shop\TProduct';
         $products = $productClass::with('catalog')->orderBy('id')->get();
 
         $spreadsheet = new Spreadsheet();
@@ -153,7 +153,7 @@ class ProductImportExportController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv'
         ]);
 
-        if (!class_exists('App\Models\TProduct')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TProduct')) {
             return response()->json(['error' => 'Product module not available'], 404);
         }
 
@@ -167,7 +167,7 @@ class ProductImportExportController extends Controller
 
         $preview = [];
         $errors = [];
-        $productClass = 'App\Models\TProduct';
+        $productClass = 'HolartWeb\HolartCMS\Models\Shop\TProduct';
 
         foreach ($data as $index => $row) {
             $rowNum = $index + 2; // +2 because of header and 0-indexing
@@ -252,7 +252,7 @@ class ProductImportExportController extends Controller
             'items' => 'required|array'
         ]);
 
-        if (!class_exists('App\Models\TProduct')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TProduct')) {
             return response()->json(['error' => 'Product module not available'], 404);
         }
 

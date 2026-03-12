@@ -28,7 +28,7 @@ class TFilter extends Model
      */
     public function catalog()
     {
-        return $this->belongsTo('App\Models\TCatalog', 'catalog_id');
+        return $this->belongsTo(TCatalog::class, 'catalog_id');
     }
 
     /**
@@ -70,11 +70,11 @@ class TFilter extends Model
      */
     public function scopeForCatalog($query, $catalogId)
     {
-        if (!class_exists('App\Models\TCatalog')) {
+        if (!class_exists('HolartWeb\HolartCMS\Models\Shop\TCatalog')) {
             return $query->whereNull('catalog_id');
         }
 
-        $catalog = \App\Models\TCatalog::find($catalogId);
+        $catalog = TCatalog::find($catalogId);
         if (!$catalog) {
             return $query->whereNull('catalog_id');
         }

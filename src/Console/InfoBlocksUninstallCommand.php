@@ -3,6 +3,7 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Schema;
 
 class InfoBlocksUninstallCommand extends Command
 {
+    const MODULE_NAME = 'infoblocks';
+
     protected $signature = 'holartcms:infoblocks-uninstall {--preserve-db : Preserve database tables and data}';
     protected $description = 'Uninstall HolartCMS InfoBlocks Module';
 
@@ -144,6 +147,12 @@ class InfoBlocksUninstallCommand extends Command
         Artisan::call('route:clear');
         Artisan::call('view:clear');
         $this->info('✓ Cache cleared successfully');
+        $this->newLine();
+
+        // Remove module record
+        $this->info('Removing module registration...');
+        TModule::uninstall(self::MODULE_NAME);
+        $this->info('✓ Module unregistered');
         $this->newLine();
 
         // Success Message

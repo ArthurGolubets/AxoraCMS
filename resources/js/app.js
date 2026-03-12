@@ -42,6 +42,9 @@ import FilterView from './components/FilterView.vue';
 import PagesList from './components/Pages/PagesList.vue';
 import PageForm from './components/Pages/PageForm.vue';
 import PagesSettings from './components/Pages/PagesSettings.vue';
+import ContentSettings from './views/ContentSettings.vue';
+import TelegramSettings from './components/Integrations/TelegramSettings.vue';
+import YookassaSettings from './components/Integrations/YookassaSettings.vue';
 import Error403 from './components/Error403.vue';
 import Error404 from './components/Error404.vue';
 import './style.css';
@@ -286,6 +289,21 @@ const router = createRouter({
             component: PagesSettings
         },
         {
+            path: '/content-settings',
+            name: 'content-settings',
+            component: ContentSettings
+        },
+        {
+            path: '/integrations/telegram',
+            name: 'telegram-settings',
+            component: TelegramSettings
+        },
+        {
+            path: '/integrations/yookassa',
+            name: 'yookassa-settings',
+            component: YookassaSettings
+        },
+        {
             path: '/403',
             name: 'error-403',
             component: Error403
@@ -327,11 +345,27 @@ router.beforeEach(async (to, from, next) => {
             }
         }
 
+        // Check if accessing modules page
+        if (to.name === 'modules') {
+            // Check if modules page is enabled
+            const modulesResponse = await fetch('/admin/api/modules/status', {
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (modulesResponse.ok) {
+                const statusData = await modulesResponse.json();
+                if (!statusData.show_modules_page) {
+                    next({ name: 'error-404' });
+                    return;
+                }
+            }
+        }
+
         // Check if accessing shop module routes
         const shopRoutes = ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit'];
         if (shopRoutes.includes(to.name)) {
             // Check if shop module is installed
-            const modulesResponse = await fetch('/admin/api/modules', {
+            const modulesResponse = await fetch('/admin/api/modules/status', {
                 headers: { 'Accept': 'application/json' }
             });
 
@@ -350,7 +384,7 @@ router.beforeEach(async (to, from, next) => {
         const callbackRoutes = ['users-emails', 'users-email-view', 'comments', 'comment-view', 'user-requests', 'user-request-view'];
         if (callbackRoutes.includes(to.name)) {
             // Check if callback module is installed
-            const modulesResponse = await fetch('/admin/api/modules', {
+            const modulesResponse = await fetch('/admin/api/modules/status', {
                 headers: { 'Accept': 'application/json' }
             });
 
@@ -375,7 +409,7 @@ router.beforeEach(async (to, from, next) => {
             }
 
             // Check if commerce module is installed
-            const modulesResponse = await fetch('/admin/api/modules', {
+            const modulesResponse = await fetch('/admin/api/modules/status', {
                 headers: { 'Accept': 'application/json' }
             });
 
@@ -394,7 +428,7 @@ router.beforeEach(async (to, from, next) => {
         const infoblocksRoutes = ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-element-create', 'infoblock-element-edit'];
         if (infoblocksRoutes.includes(to.name)) {
             // Check if infoblocks module is installed
-            const modulesResponse = await fetch('/admin/api/modules', {
+            const modulesResponse = await fetch('/admin/api/modules/status', {
                 headers: { 'Accept': 'application/json' }
             });
 

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use HolartWeb\HolartCMS\Http\Controllers\Auth\LoginController;
 use HolartWeb\HolartCMS\Http\Controllers\Auth\ForgotPasswordController;
 use HolartWeb\HolartCMS\Http\Controllers\DashboardController;
@@ -78,9 +79,8 @@ Route::middleware(['admin.auth'])->group(function () {
         Route::post('environment/test-smtp', [EnvironmentController::class, 'testSmtp']);
 
         // Activity logs (admin actions tracking) - only if logging module is installed
-        $logsControllerPath = app_path('Http/Controllers/LogsController.php');
-        if (file_exists($logsControllerPath)) {
-            $logsController = 'App\\Http\\Controllers\\LogsController';
+        if (class_exists('HolartWeb\\HolartCMS\\Models\\Logging\\TAdminAction')) {
+            $logsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Logging\\LogsController';
             Route::get('logs/filters', [$logsController, 'filters']);
             Route::get('logs/statistics', [$logsController, 'statistics']);
             Route::get('logs/{id}', [$logsController, 'show']);
@@ -92,16 +92,27 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::get('logs/entity-types', [LogsController::class, 'entityTypes']);
         }
 
+        Route::get('modules/status', [ModulesController::class, 'status']);
         Route::get('modules', [ModulesController::class, 'index']);
         Route::post('modules/update', [ModulesController::class, 'update']);
         Route::post('modules/{moduleId}/install', [ModulesController::class, 'install']);
+        Route::post('modules/{moduleId}/update', [ModulesController::class, 'updateModule']);
         Route::post('modules/{moduleId}/uninstall', [ModulesController::class, 'uninstall']);
 
         // Catalog routes - only if shop module is installed
-        $catalogControllerPath = app_path('Http/Controllers/CatalogController.php');
-        if (file_exists($catalogControllerPath)) {
-            $catalogController = 'App\\Http\\Controllers\\CatalogController';
-            $productController = 'App\\Http\\Controllers\\ProductController';
+        if (class_exists('HolartWeb\\HolartCMS\\Models\\Shop\\TCatalog')) {
+            $catalogController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Shop\\CatalogController';
+            $productController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Shop\\ProductController';
+            $characteristicDefinitionsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Shop\\CharacteristicDefinitionsController';
+
+            // Characteristic Definitions routes
+            Route::post('characteristic-definitions/generate-code', [$characteristicDefinitionsController, 'generateCode']);
+            Route::post('characteristic-definitions/reorder', [$characteristicDefinitionsController, 'reorder']);
+            Route::get('characteristic-definitions', [$characteristicDefinitionsController, 'index']);
+            Route::get('characteristic-definitions/{id}', [$characteristicDefinitionsController, 'show']);
+            Route::post('characteristic-definitions', [$characteristicDefinitionsController, 'store']);
+            Route::put('characteristic-definitions/{id}', [$characteristicDefinitionsController, 'update']);
+            Route::delete('characteristic-definitions/{id}', [$characteristicDefinitionsController, 'destroy']);
 
             // Catalog Import/Export routes - MUST come before generic routes
             Route::get('catalogs/import-template', [CatalogImportExportController::class, 'downloadTemplate']);
@@ -137,11 +148,10 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Callback routes - only if callback module is installed
-        $usersEmailsControllerPath = app_path('Http/Controllers/UsersEmailsController.php');
-        if (file_exists($usersEmailsControllerPath)) {
-            $usersEmailsController = 'App\\Http\\Controllers\\UsersEmailsController';
-            $commentsController = 'App\\Http\\Controllers\\CommentsController';
-            $userRequestsController = 'App\\Http\\Controllers\\UserRequestsController';
+        if (class_exists('HolartWeb\\HolartCMS\\Models\\Callback\\TUsersEmails')) {
+            $usersEmailsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Callback\\UsersEmailsController';
+            $commentsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Callback\\CommentsController';
+            $userRequestsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Callback\\UserRequestsController';
 
             // Users Emails routes
             Route::get('users-emails', [$usersEmailsController, 'index']);
@@ -170,12 +180,11 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Commerce routes - only if commerce module is installed
-        $ordersControllerPath = app_path('Http/Controllers/OrdersController.php');
-        if (file_exists($ordersControllerPath)) {
-            $ordersController = 'App\\Http\\Controllers\\OrdersController';
-            $promocodesController = 'App\\Http\\Controllers\\PromocodesController';
-            $transactionsController = 'App\\Http\\Controllers\\PaymentTransactionsController';
-            $ordersDataController = 'App\\Http\\Controllers\\OrdersDataController';
+        if (class_exists('HolartWeb\\HolartCMS\\Models\\Commerce\\TOrders')) {
+            $ordersController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Commerce\\OrdersController';
+            $promocodesController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Commerce\\PromocodesController';
+            $transactionsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Commerce\\PaymentTransactionsController';
+            $ordersDataController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Commerce\\OrdersDataController';
 
             // Orders routes
             Route::get('orders', [$ordersController, 'index']);
@@ -209,11 +218,10 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // InfoBlocks routes - only if infoblocks module is installed
-        $infoBlocksControllerPath = app_path('Http/Controllers/InfoBlocksController.php');
-        if (file_exists($infoBlocksControllerPath)) {
-            $infoBlocksController = 'App\\Http\\Controllers\\InfoBlocksController';
-            $infoBlockFieldsController = 'App\\Http\\Controllers\\InfoBlockFieldsController';
-            $infoBlockElementsController = 'App\\Http\\Controllers\\InfoBlockElementsController';
+        if (class_exists('HolartWeb\\HolartCMS\\Models\\InfoBlocks\\TInfoBlock')) {
+            $infoBlocksController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\InfoBlocks\\InfoBlocksController';
+            $infoBlockFieldsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockFieldsController';
+            $infoBlockElementsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockElementsController';
 
             // InfoBlocks routes
             Route::get('infoblocks/favorites', [$infoBlocksController, 'favorites']);
@@ -267,9 +275,8 @@ Route::middleware(['admin.auth'])->group(function () {
         Route::post('menu-items/{id}/toggle-active', [$menuItemsController, 'toggleActive']);
 
         // Filter routes (only if shop module is installed)
-        $filterControllerPath = app_path('Http/Controllers/FilterController.php');
-        if (file_exists($filterControllerPath)) {
-            $filterController = 'App\\Http\\Controllers\\FilterController';
+        if (class_exists('HolartWeb\\HolartCMS\\Models\\Shop\\TFilter')) {
+            $filterController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Shop\\FilterController';
 
             // Specific routes MUST come before generic {id} routes
             Route::get('filters/for-catalog/{catalogId}', [$filterController, 'forCatalog']);
@@ -290,8 +297,8 @@ Route::middleware(['admin.auth'])->group(function () {
 
         // Pages & SEO Module Routes (only if SEO module is installed)
         if (Schema::hasTable('t_pages')) {
-            $pagesController = \App\Http\Controllers\PagesController::class;
-            $statsController = \App\Http\Controllers\PageStatsController::class;
+            $pagesController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\SEO\\PagesController';
+            $statsController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\SEO\\PageStatsController';
 
             // Pages CRUD
             Route::get('pages', [$pagesController, 'index']);
@@ -309,6 +316,20 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::get('page-stats/popular', [$statsController, 'popular']);
             Route::get('page-stats/unlinked', [$statsController, 'unlinked']);
             Route::get('page-stats/{pageId}', [$statsController, 'pageStats']);
+        }
+
+        // Integrations routes (only if integrations table exists)
+        if (Schema::hasTable('t_integration_settings')) {
+            $telegramController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Integrations\\TelegramSettingsController';
+            $yookassaController = 'HolartWeb\\HolartCMS\\Http\\Controllers\\Integrations\\YookassaSettingsController';
+
+            // Telegram integration
+            Route::get('integrations/telegram', [$telegramController, 'index']);
+            Route::post('integrations/telegram', [$telegramController, 'update']);
+
+            // Yookassa integration
+            Route::get('integrations/yookassa', [$yookassaController, 'index']);
+            Route::post('integrations/yookassa', [$yookassaController, 'update']);
         }
     });
 

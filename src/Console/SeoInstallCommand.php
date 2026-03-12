@@ -3,12 +3,16 @@
 namespace HolartWeb\HolartCMS\Console;
 
 use Illuminate\Console\Command;
+use HolartWeb\HolartCMS\Models\TModule;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use HolartWeb\HolartCMS\Models\TAdminAction;
 
 class SeoInstallCommand extends Command
 {
+    const VERSION = '1.0.0';
+    const MODULE_NAME = 'seo';
+
     protected $signature = 'holartcms:seo-install';
     protected $description = 'Install HolartCMS SEO Module';
 
@@ -25,123 +29,8 @@ class SeoInstallCommand extends Command
             $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
-        // Step 1: Copy Models
-        $this->info('Step 1: Copying SEO models...');
-        $appModelsPath = app_path('Models');
-
-        $models = ['TPage.php', 'TPageVisit.php'];
-        foreach ($models as $model) {
-            $source = $packagePath . '/src/Models/SEO/' . $model;
-            $destination = $appModelsPath . '/' . $model;
-
-            if (file_exists($source)) {
-                $content = file_get_contents($source);
-                // Update namespace from package to app
-                $content = str_replace(
-                    'namespace HolartWeb\HolartCMS\Models\SEO;',
-                    'namespace App\Models;',
-                    $content
-                );
-                file_put_contents($destination, $content);
-                $this->info("✓ Copied {$model}");
-            }
-        }
-        $this->newLine();
-
-        // Step 2: Copy Controllers
-        $this->info('Step 2: Copying SEO controllers...');
-        $appControllersPath = app_path('Http/Controllers');
-
-        $controllers = ['PagesController.php', 'PageStatsController.php'];
-        foreach ($controllers as $controller) {
-            $source = $packagePath . '/src/Http/Controllers/SEO/' . $controller;
-            $destination = $appControllersPath . '/' . $controller;
-
-            if (file_exists($source)) {
-                $content = file_get_contents($source);
-                // Update namespace from package to app
-                $content = str_replace(
-                    'namespace HolartWeb\HolartCMS\Http\Controllers\SEO;',
-                    'namespace App\Http\Controllers;',
-                    $content
-                );
-                // Replace model imports
-                $content = str_replace(
-                    'use HolartWeb\HolartCMS\Models\SEO\\',
-                    'use App\Models\\',
-                    $content
-                );
-                // Also replace individual model imports
-                $content = str_replace(
-                    'use HolartWeb\HolartCMS\Models\SEO\TPage;',
-                    'use App\Models\TPage;',
-                    $content
-                );
-                $content = str_replace(
-                    'use HolartWeb\HolartCMS\Models\SEO\TPageVisit;',
-                    'use App\Models\TPageVisit;',
-                    $content
-                );
-                file_put_contents($destination, $content);
-                $this->info("✓ Copied {$controller}");
-            }
-        }
-        $this->newLine();
-
-        // Step 3: Copy Service
-        $this->info('Step 3: Copying PageVisitService...');
-        $appServicesPath = app_path('Services');
-        if (!file_exists($appServicesPath)) {
-            mkdir($appServicesPath, 0755, true);
-        }
-
-        $source = $packagePath . '/src/Services/PageVisitService.php';
-        $destination = $appServicesPath . '/PageVisitService.php';
-        if (file_exists($source)) {
-            $content = file_get_contents($source);
-            $content = str_replace(
-                'namespace HolartWeb\HolartCMS\Services;',
-                'namespace App\Services;',
-                $content
-            );
-            $content = str_replace(
-                'use HolartWeb\HolartCMS\Models\SEO\\',
-                'use App\Models\\',
-                $content
-            );
-            file_put_contents($destination, $content);
-            $this->info('✓ Copied PageVisitService.php');
-        }
-        $this->newLine();
-
-        // Step 4: Copy Middleware
-        $this->info('Step 4: Copying TrackPageVisits middleware...');
-        $appMiddlewarePath = app_path('Http/Middleware');
-        if (!file_exists($appMiddlewarePath)) {
-            mkdir($appMiddlewarePath, 0755, true);
-        }
-
-        $source = $packagePath . '/src/Http/Middleware/TrackPageVisits.php';
-        $destination = $appMiddlewarePath . '/TrackPageVisits.php';
-        if (file_exists($source)) {
-            $content = file_get_contents($source);
-            $content = str_replace(
-                'namespace HolartWeb\HolartCMS\Http\Middleware;',
-                'namespace App\Http\Middleware;',
-                $content
-            );
-            $content = str_replace(
-                'use HolartWeb\HolartCMS\Services\PageVisitService;',
-                'use App\Services\PageVisitService;',
-                $content
-            );
-            file_put_contents($destination, $content);
-            $this->info('✓ Copied TrackPageVisits.php');
-        }
-        $this->newLine();
-
-        // Step 5: Run migrations
-        $this->info('Step 5: Running SEO migrations...');
+        // Step 1: Run migrations
+        $this->info('Step 1: Running SEO migrations...');
 
         // Determine migration path
         $migrationPath = 'vendor/holartweb/holart-cms/database/migrations/seo';
@@ -156,8 +45,8 @@ class SeoInstallCommand extends Command
         $this->info('✓ Migrations completed');
         $this->newLine();
 
-        // Step 6: Register middleware automatically
-        $this->info('Step 6: Registering middleware...');
+        // Step 2: Register middleware automatically
+        $this->info('Step 2: Registering middleware...');
         $this->registerMiddleware();
         $this->info('✓ Middleware registered');
         $this->newLine();
@@ -187,7 +76,7 @@ class SeoInstallCommand extends Command
         }
 
         $content = file_get_contents($bootstrapPath);
-        $middlewareClass = '\App\Http\Middleware\TrackPageVisits::class';
+        $middlewareClass = '\HolartWeb\HolartCMS\Http\Middleware\TrackPageVisits::class';
 
         // Check if already registered
         if (str_contains($content, 'TrackPageVisits')) {
@@ -225,5 +114,11 @@ class SeoInstallCommand extends Command
         $this->warn('   $middleware->web(append: [');
         $this->warn('       ' . $middlewareClass . ',');
         $this->warn('   ]);');
+
+        // Register module
+        $this->newLine();
+        $this->info('Registering module installation...');
+        TModule::install(self::MODULE_NAME, self::VERSION);
+        $this->info('✓ Module registered');
     }
 }

@@ -1,8 +1,9 @@
 <template>
-  <label class="inline-flex items-center cursor-pointer">
+  <label class="inline-flex items-center cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': disabled }">
     <input
       type="checkbox"
       :checked="modelValue"
+      :disabled="disabled"
       @change="$emit('update:modelValue', $event.target.checked)"
       class="sr-only peer"
     >
@@ -16,8 +17,15 @@
 
 <script setup>
 defineProps({
-  modelValue: Boolean,
+  modelValue: {
+    type: Boolean,
+    default: false
+  },
   label: String,
+  disabled: {
+    type: Boolean,
+    default: false
+  },
   themeColor: String,
   themeColorClass: String,
 });

@@ -37,6 +37,11 @@ class HolartCMSServiceProvider extends ServiceProvider
         $this->app->singleton(\HolartWeb\HolartCMS\Services\PageVisitService::class, function ($app) {
             return new \HolartWeb\HolartCMS\Services\PageVisitService();
         });
+
+        // Register CatalogService as singleton
+        $this->app->singleton(\HolartWeb\HolartCMS\Services\CatalogService::class, function ($app) {
+            return new \HolartWeb\HolartCMS\Services\CatalogService();
+        });
     }
 
     /**
@@ -79,6 +84,11 @@ class HolartCMSServiceProvider extends ServiceProvider
             \HolartWeb\HolartCMS\Console\PageBuilderUninstallCommand::class,
             \HolartWeb\HolartCMS\Console\ScanRoutesCommand::class,
             \HolartWeb\HolartCMS\Console\CleanOldPageVisitsCommand::class,
+            \HolartWeb\HolartCMS\Console\TelegramInstallCommand::class,
+            \HolartWeb\HolartCMS\Console\TelegramUninstallCommand::class,
+            \HolartWeb\HolartCMS\Console\YookassaInstallCommand::class,
+            \HolartWeb\HolartCMS\Console\YookassaUninstallCommand::class,
+            \HolartWeb\HolartCMS\Console\YKassaCheckPaymentCommand::class,
         ]);
 
         // Schedule automatic cleanup of old page visits
@@ -86,6 +96,11 @@ class HolartCMSServiceProvider extends ServiceProvider
             $this->app->booted(function () {
                 $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
                 $schedule->command('holartcms:clean-page-visits')->daily();
+
+                // Schedule YooKassa payment check if module is installed
+                if (\HolartWeb\HolartCMS\Models\TModule::isInstalled('yookassa')) {
+                    $schedule->command('holartcms:ykassa-check-payment')->everyMinute();
+                }
             });
         }
 
