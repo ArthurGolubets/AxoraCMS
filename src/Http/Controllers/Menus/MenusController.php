@@ -84,7 +84,8 @@ class MenusController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|unique:t_menus,code',
-            'location' => 'required|in:header,footer',
+            'location' => 'required|in:header,footer,custom',
+            'custom_code' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
@@ -119,7 +120,8 @@ class MenusController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|unique:t_menus,code,' . $id,
-            'location' => 'required|in:header,footer',
+            'location' => 'required|in:header,footer,custom',
+            'custom_code' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);

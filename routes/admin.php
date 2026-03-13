@@ -249,30 +249,31 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
 
-        // Menus routes - use app controllers if they exist
-        $menusController = class_exists(\App\Http\Controllers\MenusController::class)
-            ? \App\Http\Controllers\MenusController::class
-            : \HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController::class;
-        $menuItemsController = class_exists(\App\Http\Controllers\MenuItemsController::class)
-            ? \App\Http\Controllers\MenuItemsController::class
-            : \HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController::class;
+        if (class_exists('\HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController') && class_exists('\HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController')) {
+            $menusController = \HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController::class;
+            $menuItemsController = \HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController::class;
 
-        // Menus routes
-        Route::get('menus', [$menusController, 'index']);
-        Route::get('menus/{id}', [$menusController, 'show']);
-        Route::post('menus', [$menusController, 'store']);
-        Route::put('menus/{id}', [$menusController, 'update']);
-        Route::delete('menus/{id}', [$menusController, 'destroy']);
-        Route::post('menus/{id}/toggle-active', [$menusController, 'toggleActive']);
-        Route::post('menus/generate-code', [$menusController, 'generateCode']);
+            // Menus routes
+            Route::get('menus', [$menusController, 'index']);
+            Route::get('menus/{id}', [$menusController, 'show']);
+            Route::post('menus', [$menusController, 'store']);
+            Route::put('menus/{id}', [$menusController, 'update']);
+            Route::delete('menus/{id}', [$menusController, 'destroy']);
+            Route::post('menus/{id}/toggle-active', [$menusController, 'toggleActive']);
+            Route::post('menus/generate-code', [$menusController, 'generateCode']);
 
-        // Menu Items routes
-        Route::get('menus/{menuId}/items', [$menuItemsController, 'index']);
-        Route::post('menu-items', [$menuItemsController, 'store']);
-        Route::put('menu-items/{id}', [$menuItemsController, 'update']);
-        Route::delete('menu-items/{id}', [$menuItemsController, 'destroy']);
-        Route::post('menu-items/reorder', [$menuItemsController, 'reorder']);
-        Route::post('menu-items/{id}/toggle-active', [$menuItemsController, 'toggleActive']);
+            // Menu Items routes
+            Route::get('menus/{menuId}/items', [$menuItemsController, 'index']);
+            Route::post('menus/{menuId}/items', [$menuItemsController, 'store']);
+            Route::post('menus/{menuId}/items/reorder', [$menuItemsController, 'reorder']);
+            Route::post('menu-items', [$menuItemsController, 'store']);
+            Route::put('menu-items/{id}', [$menuItemsController, 'update']);
+            Route::delete('menu-items/{id}', [$menuItemsController, 'destroy']);
+            Route::post('menu-items/reorder', [$menuItemsController, 'reorder']);
+            Route::post('menu-items/{id}/toggle-active', [$menuItemsController, 'toggleActive']);
+        }
+
+
 
         // Filter routes (only if shop module is installed)
         if (class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TFilter')) {

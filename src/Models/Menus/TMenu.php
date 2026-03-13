@@ -13,6 +13,7 @@ class TMenu extends Model
         'name',
         'code',
         'location',
+        'custom_code',
         'is_active',
         'description',
     ];
@@ -23,6 +24,7 @@ class TMenu extends Model
 
     const LOCATION_HEADER = 'header';
     const LOCATION_FOOTER = 'footer';
+    const LOCATION_CUSTOM = 'custom';
 
     /**
      * Get all menu items

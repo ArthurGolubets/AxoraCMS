@@ -10,15 +10,11 @@ use HolartWeb\AxoraCMS\Models\TAdminAction;
 class MenuItemsController extends Controller
 {
     /**
-     * Get all items for a menu
+     * Get all items for a menu (flat array, frontend builds tree)
      */
     public function index($menuId)
     {
         $items = TMenuItem::where('menu_id', $menuId)
-            ->whereNull('parent_id')
-            ->with(['children' => function ($query) {
-                $query->orderBy('sort');
-            }])
             ->orderBy('sort')
             ->get();
 
@@ -28,10 +24,10 @@ class MenuItemsController extends Controller
     /**
      * Create new menu item
      */
-    public function store(Request $request)
+    public function store(Request $request, $menuId = null)
     {
         $validated = $request->validate([
-            'menu_id' => 'required|exists:t_menus,id',
+            'menu_id' => 'sometimes|required|exists:t_menus,id',
             'parent_id' => 'nullable|exists:t_menu_items,id',
             'title' => 'required|string|max:255',
             'url' => 'nullable|string',
@@ -41,6 +37,11 @@ class MenuItemsController extends Controller
             'is_active' => 'boolean',
             'extra_attributes' => 'nullable|array',
         ]);
+
+        // Use menuId from URL if provided, otherwise use from request body
+        if ($menuId) {
+            $validated['menu_id'] = $menuId;
+        }
 
         $item = TMenuItem::create($validated);
 

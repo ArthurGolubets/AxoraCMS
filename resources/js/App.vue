@@ -221,6 +221,12 @@
                 Настройки шаблона
               </a>
             </router-link>
+            <router-link to="/menus" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/menus'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                Настройка меню
+              </a>
+            </router-link>
           </div>
         </div>
 

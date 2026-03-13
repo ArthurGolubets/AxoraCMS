@@ -26,23 +26,36 @@ class SeoInstallCommand extends Command
         // Determine package path
         $packagePath = base_path('vendor/holartweb/axora-cms');
         if (!file_exists($packagePath)) {
-            $packagePath = base_path('packages/holartweb/axora-cms');
+            $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
         // Step 1: Run migrations
         $this->info('Step 1: Running SEO migrations...');
 
-        // Determine migration path
-        $migrationPath = 'vendor/holartweb/axora-cms/database/migrations/seo';
-        if (!file_exists(base_path($migrationPath))) {
-            $migrationPath = 'packages/holartweb/axora-cms/database/migrations/seo';
+        // Determine SEO migration path
+        $seoMigrationPath = 'vendor/holartweb/axora-cms/database/migrations/seo';
+        if (!file_exists(base_path($seoMigrationPath))) {
+            $seoMigrationPath = 'packages/holartweb/holart-cms/database/migrations/seo';
         }
 
         Artisan::call('migrate', [
-            '--path' => $migrationPath,
+            '--path' => $seoMigrationPath,
             '--force' => true
         ]);
-        $this->info('✓ Migrations completed');
+        $this->info('✓ SEO migrations completed');
+
+        // Run menus migrations
+        $this->info('Running menus migrations...');
+        $menusMigrationPath = 'vendor/holartweb/axora-cms/database/migrations/menus';
+        if (!file_exists(base_path($menusMigrationPath))) {
+            $menusMigrationPath = 'packages/holartweb/holart-cms/database/migrations/menus';
+        }
+
+        Artisan::call('migrate', [
+            '--path' => $menusMigrationPath,
+            '--force' => true
+        ]);
+        $this->info('✓ Menus migrations completed');
         $this->newLine();
 
         // Step 2: Register middleware automatically

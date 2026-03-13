@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'name' => env('HOLART_CMS_NAME', 'AxoraCMS'),
+    'name' => env('AXORA_CMS_NAME', 'AxoraCMS'),
 
     /*
     |--------------------------------------------------------------------------
@@ -24,7 +24,7 @@ return [
     |
     */
 
-    'theme_color' => env('HOLART_CMS_THEME_COLOR', 'red'),
+    'theme_color' => env('AXORA_CMS_THEME_COLOR', 'red'),
 
     /*
     |--------------------------------------------------------------------------
@@ -36,7 +36,7 @@ return [
     |
     */
 
-    'route_prefix' => env('HOLART_CMS_PREFIX', 'admin'),
+    'route_prefix' => env('AXORA_CMS_PREFIX', 'admin'),
 
     /*
     |--------------------------------------------------------------------------
@@ -81,6 +81,6 @@ return [
     |
     */
 
-    'show_modules' => env('HOLART_CMS_SHOW_MODULES', false),
+    'show_modules' => env('AXORA_CMS_SHOW_MODULES', false),
 
 ];

@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code')->unique();
-            $table->enum('location', ['header', 'footer']);
+            $table->enum('location', ['header', 'footer', 'custom'])->default('custom');
+            $table->string('custom_code')->nullable();
             $table->boolean('is_active')->default(true);
             $table->text('description')->nullable();
             $table->timestamps();

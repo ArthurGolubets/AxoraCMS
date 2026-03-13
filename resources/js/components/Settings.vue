@@ -33,7 +33,7 @@
       <!-- Компания -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Информация о компании</h3>
-        
+
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название компании</label>
@@ -52,6 +52,29 @@
               <button @click.prevent="removePhone(index)" type="button" class="px-4 py-2 bg-red-600 text-white rounded-r-lg hover:bg-red-700">×</button>
             </div>
             <button @click.prevent="addPhone" type="button" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить телефон</button>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Социальные сети</label>
+            <div v-for="(social, index) in settings.social_links" :key="index" class="mb-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Тип</label>
+                  <select v-model="social.type" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
+                    <option value="VK">VK</option>
+                    <option value="Telegram">Telegram</option>
+                    <option value="Whatsapp">Whatsapp</option>
+                    <option value="Instagram">Instagram</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Ссылка</label>
+                  <input v-model="social.url" type="text" placeholder="https://..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
+                </div>
+              </div>
+              <button @click.prevent="removeSocialLink(index)" type="button" class="w-full mt-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Удалить</button>
+            </div>
+            <button @click.prevent="addSocialLink" type="button" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить социальную сеть</button>
           </div>
 
           <div>
@@ -106,6 +129,35 @@
             <input v-model="settings.default_meta_keywords" type="text" placeholder="ключевые, слова, через, запятую" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Используется, если у страницы, каталога или товара не указаны meta keywords
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Меню сайта (только если установлен модуль СЕО) -->
+      <div v-if="hasSeoModule" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Меню сайта</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Меню в шапке</label>
+            <select v-model="settings.header_menu_id" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+              <option :value="null">Не выбрано</option>
+              <option v-for="menu in menus" :key="menu.id" :value="menu.id">{{ menu.name }}</option>
+            </select>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Меню будет отображаться в шапке сайта
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Меню в подвале</label>
+            <select v-model="settings.footer_menu_id" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+              <option :value="null">Не выбрано</option>
+              <option v-for="menu in menus" :key="menu.id" :value="menu.id">{{ menu.name }}</option>
+            </select>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Меню будет отображаться в подвале сайта
             </p>
           </div>
         </div>
@@ -171,19 +223,37 @@ const { success, error } = useModal();
 const { buttonStyle } = useTheme();
 
 const loading = ref(false);
+const hasSeoModule = ref(false);
+const menus = ref([]);
 const settings = ref({
   panel_name: '',
   theme_color: 'red',
   company_name: '',
   phones: [],
   work_hours: '',
+  social_links: [],
   addresses: [],
   default_meta_title: '',
   default_meta_description: '',
   default_meta_keywords: '',
   header_code: '',
-  footer_code: ''
+  footer_code: '',
+  header_menu_id: null,
+  footer_menu_id: null
 });
+
+const checkSeoModule = async () => {
+  try {
+    const response = await fetch('/admin/api/menus');
+    if (response.ok) {
+      hasSeoModule.value = true;
+      const data = await response.json();
+      menus.value = data.data || data;
+    }
+  } catch (err) {
+    hasSeoModule.value = false;
+  }
+};
 
 const fetchSettings = async () => {
   try {
@@ -204,7 +274,10 @@ const fetchSettings = async () => {
       ...settings.value,
       ...data,
       phones: data.phones || [],
-      addresses: addresses
+      social_links: data.social_links || [],
+      addresses: addresses,
+      header_menu_id: data.header_menu_id || null,
+      footer_menu_id: data.footer_menu_id || null
     };
   } catch (err) {
     console.error('Error fetching settings:', err);
@@ -263,7 +336,19 @@ const removeAddress = (index) => {
   settings.value.addresses.splice(index, 1);
 };
 
-onMounted(() => {
-  fetchSettings();
+const addSocialLink = () => {
+  settings.value.social_links.push({
+    type: 'VK',
+    url: ''
+  });
+};
+
+const removeSocialLink = (index) => {
+  settings.value.social_links.splice(index, 1);
+};
+
+onMounted(async () => {
+  await checkSeoModule();
+  await fetchSettings();
 });
 </script>

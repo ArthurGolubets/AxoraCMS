@@ -67,10 +67,23 @@ class SeoUninstallCommand extends Command
                 $this->info('✓ Dropped table: t_pages');
             }
 
+            // Drop menu tables
+            if (Schema::hasTable('t_menu_items')) {
+                Schema::dropIfExists('t_menu_items');
+                $this->info('✓ Dropped table: t_menu_items');
+            }
+
+            if (Schema::hasTable('t_menus')) {
+                Schema::dropIfExists('t_menus');
+                $this->info('✓ Dropped table: t_menus');
+            }
+
             // Delete migration records
             DB::table('migrations')
                 ->where('migration', 'like', '%create_t_pages_table%')
                 ->orWhere('migration', 'like', '%create_t_page_visits_table%')
+                ->orWhere('migration', 'like', '%create_t_menus_table%')
+                ->orWhere('migration', 'like', '%create_t_menu_items_table%')
                 ->delete();
 
             $this->newLine();

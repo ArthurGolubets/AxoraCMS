@@ -2,6 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
+use HolartWeb\AxoraCMS\Models\Menus\TMenu;
+use HolartWeb\AxoraCMS\Models\Menus\TMenuItem;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +46,44 @@ class PageDataService
         }
     }
 
+    private function getPageMenu(?int $id)
+    {
+        if (is_null($id)) {
+            return [];
+        }
+
+        // Получаем все пункты меню для данного меню
+        $items = TMenuItem::where('menu_id', $id)
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->get();
+
+        return $this->buildMenuTree($items);
+    }
+
+    private function buildMenuTree($items, $parentId = null)
+    {
+        $branch = [];
+
+        foreach ($items as $item) {
+            if ($item->parent_id == $parentId) {
+                $children = $this->buildMenuTree($items, $item->id);
+
+                $menuItem = [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'url' => $item->url,
+                    'target' => $item->target,
+                    'children' => $children
+                ];
+
+                $branch[] = $menuItem;
+            }
+        }
+
+        return $branch;
+    }
+
 
     private function getPageSettingsData() :?array{
         try {
@@ -54,6 +94,11 @@ class PageDataService
                 'work_time' => TPanelSettings::get('work_hours', ''),
                 'phones' => TPanelSettings::get('phones', []),
                 'address' => TPanelSettings::get('addresses', []),
+                'social_links' => TPanelSettings::get('social_links', []),
+                'menus' => [
+                    'header' => $this->getPageMenu( TPanelSettings::get('header_menu_id', null)),
+                    'footer' => $this->getPageMenu( TPanelSettings::get('footer_menu_id', null)),
+                ]
             ];
         }catch (\Exception $e) {
             return [
@@ -61,8 +106,13 @@ class PageDataService
                 'footer_scripts' => '',
                 'company_name' => '',
                 'work_time' => '',
-                'phones' => '',
-                'address' => '',
+                'phones' => [],
+                'address' => [],
+                'social_links' => [],
+                'menus' => [
+                    'header' => [],
+                    'footer' => [],
+                ]
             ];
         }
     }

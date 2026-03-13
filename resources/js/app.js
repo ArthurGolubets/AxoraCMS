@@ -31,11 +31,8 @@ import InfoBlockForm from './components/InfoBlockForm.vue';
 import InfoBlockFields from './components/InfoBlockFields.vue';
 import InfoBlockElements from './components/InfoBlockElements.vue';
 import InfoBlockElementForm from './components/InfoBlockElementForm.vue';
-import MenusList from './components/MenusList.vue';
-import MenuView from './components/MenuView.vue';
-import MenuCreate from './components/MenuCreate.vue';
-import MenuEdit from './components/MenuEdit.vue';
-import MenuBuilder from './components/MenuBuilder.vue';
+import MenuList from './components/Menus/MenuList.vue';
+import MenuItems from './components/Menus/MenuItems.vue';
 import FiltersList from './components/FiltersList.vue';
 import FilterForm from './components/FilterForm.vue';
 import FilterView from './components/FilterView.vue';
@@ -226,27 +223,12 @@ const router = createRouter({
         {
             path: '/menus',
             name: 'menus',
-            component: MenusList
+            component: MenuList
         },
         {
-            path: '/menus/create',
-            name: 'menu-create',
-            component: MenuCreate
-        },
-        {
-            path: '/menus/:id',
-            name: 'menu-view',
-            component: MenuView
-        },
-        {
-            path: '/menus/:id/edit',
-            name: 'menu-edit',
-            component: MenuEdit
-        },
-        {
-            path: '/menus/:id/builder',
-            name: 'menu-builder',
-            component: MenuBuilder
+            path: '/menus/:id/items',
+            name: 'menu-items',
+            component: MenuItems
         },
         {
             path: '/filters',
