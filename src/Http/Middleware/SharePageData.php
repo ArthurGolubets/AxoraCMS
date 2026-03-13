@@ -33,9 +33,11 @@ class SharePageData
 
         // Get page data for current route
         $pageData = $pageDataService->getPageData();
+        $settingsData = $pageDataService->getSettingsData();
 
         // Share with all views
         View::share('pageData', $pageData);
+        View::share('projectSettings', $settingsData);
 
         return $next($request);
     }

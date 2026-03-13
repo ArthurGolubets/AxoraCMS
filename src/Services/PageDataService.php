@@ -43,6 +43,30 @@ class PageDataService
             ];
         }
     }
+
+
+    private function getPageSettingsData() :?array{
+        try {
+            return [
+                'header_scripts' => TPanelSettings::get('header_code', ''),
+                'footer_scripts' => TPanelSettings::get('footer_code', ''),
+                'company_name' => TPanelSettings::get('company_name', ''),
+                'work_time' => TPanelSettings::get('work_hours', ''),
+                'phones' => TPanelSettings::get('phones', []),
+                'address' => TPanelSettings::get('addresses', []),
+            ];
+        }catch (\Exception $e) {
+            return [
+                'header_scripts' => '',
+                'footer_scripts' => '',
+                'company_name' => '',
+                'work_time' => '',
+                'phones' => '',
+                'address' => '',
+            ];
+        }
+    }
+
     /**
      * Get page data by current route
      *
@@ -96,6 +120,17 @@ class PageDataService
             'entity' => null,
         ];
     }
+
+    /**
+     * Get page data settings
+     *
+     * @return array|null
+     */
+    public function getSettingsData() :?array
+    {
+        return $this->getPageSettingsData();
+    }
+
 
     /**
      * Check if current route has inactive entity
