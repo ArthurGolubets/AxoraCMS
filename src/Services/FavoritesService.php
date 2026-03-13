@@ -3,16 +3,31 @@
 namespace HolartWeb\AxoraCMS\Services;
 
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 
 class FavoritesService
 {
     private const SESSION_KEY = 'holart_favorites';
 
     /**
+     * Check if commerce module is installed
+     *
+     * @throws \Exception
+     */
+    protected function checkCommerceModule(): void
+    {
+        if (!Schema::hasTable('t_products')) {
+            throw new \Exception('Commerce module is not installed');
+        }
+    }
+
+    /**
      * Добавить товар в избранное
      */
     public function addToFavorites(int $productId): bool
     {
+        $this->checkCommerceModule();
+
         $favorites = $this->getFavorites();
 
         if (!in_array($productId, $favorites)) {
@@ -29,6 +44,8 @@ class FavoritesService
      */
     public function removeFromFavorites(int $productId): bool
     {
+        $this->checkCommerceModule();
+
         $favorites = $this->getFavorites();
         $key = array_search($productId, $favorites);
 
@@ -47,6 +64,8 @@ class FavoritesService
      */
     public function clear(): void
     {
+        $this->checkCommerceModule();
+
         Session::forget(self::SESSION_KEY);
     }
 
@@ -55,6 +74,8 @@ class FavoritesService
      */
     public function getFavorites(): array
     {
+        $this->checkCommerceModule();
+
         return Session::get(self::SESSION_KEY, []);
     }
 
