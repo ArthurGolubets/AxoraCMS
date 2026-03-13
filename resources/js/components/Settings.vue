@@ -80,6 +80,37 @@
         </div>
       </div>
 
+      <!-- SEO по умолчанию -->
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">SEO по умолчанию</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title по умолчанию</label>
+            <input v-model="settings.default_meta_title" type="text" placeholder="Заголовок сайта" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Используется, если у страницы, каталога или товара не указан meta title
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description по умолчанию</label>
+            <textarea v-model="settings.default_meta_description" rows="3" placeholder="Описание вашего сайта" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></textarea>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Используется, если у страницы, каталога или товара не указан meta description
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Keywords по умолчанию</label>
+            <input v-model="settings.default_meta_keywords" type="text" placeholder="ключевые, слова, через, запятую" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Используется, если у страницы, каталога или товара не указаны meta keywords
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Код для вставки -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Код для вставки</h3>
@@ -147,6 +178,9 @@ const settings = ref({
   phones: [],
   work_hours: '',
   addresses: [],
+  default_meta_title: '',
+  default_meta_description: '',
+  default_meta_keywords: '',
   header_code: '',
   footer_code: ''
 });

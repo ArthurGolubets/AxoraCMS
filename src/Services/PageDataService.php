@@ -5,6 +5,7 @@ namespace HolartWeb\AxoraCMS\Services;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use HolartWeb\AxoraCMS\Models\TPanelSettings;
 
 class PageDataService
 {
@@ -18,6 +19,28 @@ class PageDataService
             return true;
         } catch (\Exception $e) {
             return false;
+        }
+    }
+
+    /**
+     * Get default SEO data from settings
+     *
+     * @return array
+     */
+    private function getDefaultSeoData(): array
+    {
+        try {
+            return [
+                'meta_title' => TPanelSettings::get('default_meta_title', ''),
+                'meta_description' => TPanelSettings::get('default_meta_description', ''),
+                'meta_keywords' => TPanelSettings::get('default_meta_keywords', ''),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'meta_title' => '',
+                'meta_description' => '',
+                'meta_keywords' => '',
+            ];
         }
     }
     /**
@@ -58,7 +81,20 @@ class PageDataService
             return $productData;
         }
 
-        return null;
+        // If nothing found, return default SEO data
+        $defaultSeo = $this->getDefaultSeoData();
+
+        return [
+            'type' => 'default',
+            'id' => null,
+            'title' => $defaultSeo['meta_title'],
+            'meta_title' => $defaultSeo['meta_title'],
+            'meta_description' => $defaultSeo['meta_description'],
+            'meta_keywords' => $defaultSeo['meta_keywords'],
+            'content' => null,
+            'slug' => null,
+            'entity' => null,
+        ];
     }
 
     /**
@@ -143,13 +179,15 @@ class PageDataService
             return null;
         }
 
+        $defaultSeo = $this->getDefaultSeoData();
+
         return [
             'type' => 'page',
             'id' => $page->id,
             'title' => $page->meta_title ?: $page->title,
-            'meta_title' => $page->meta_title ?: $page->title,
-            'meta_description' => $page->meta_description,
-            'meta_keywords' => $page->meta_keywords,
+            'meta_title' => $page->meta_title ?: $page->title ?: $defaultSeo['meta_title'],
+            'meta_description' => $page->meta_description ?: $defaultSeo['meta_description'],
+            'meta_keywords' => $page->meta_keywords ?: $defaultSeo['meta_keywords'],
             'content' => $page->content,
             'slug' => $page->slug,
             'entity' => $page,
@@ -197,13 +235,15 @@ class PageDataService
             return null;
         }
 
+        $defaultSeo = $this->getDefaultSeoData();
+
         return [
             'type' => 'catalog',
             'id' => $catalog->id,
             'title' => $catalog->title ?: $catalog->name,
-            'meta_title' => $catalog->title ?: $catalog->name,
-            'meta_description' => $catalog->description,
-            'meta_keywords' => $catalog->keywords,
+            'meta_title' => $catalog->title ?: $catalog->name ?: $defaultSeo['meta_title'],
+            'meta_description' => $catalog->description ?: $defaultSeo['meta_description'],
+            'meta_keywords' => $catalog->keywords ?: $defaultSeo['meta_keywords'],
             'content' => $catalog->content,
             'slug' => $catalog->slug,
             'entity' => $catalog,
@@ -251,13 +291,15 @@ class PageDataService
             return null;
         }
 
+        $defaultSeo = $this->getDefaultSeoData();
+
         return [
             'type' => 'product',
             'id' => $product->id,
             'title' => $product->title ?: $product->name,
-            'meta_title' => $product->title ?: $product->name,
-            'meta_description' => $product->description,
-            'meta_keywords' => $product->keywords,
+            'meta_title' => $product->title ?: $product->name ?: $defaultSeo['meta_title'],
+            'meta_description' => $product->description ?: $defaultSeo['meta_description'],
+            'meta_keywords' => $product->keywords ?: $defaultSeo['meta_keywords'],
             'content' => $product->content,
             'slug' => $product->slug,
             'entity' => $product,
