@@ -8,6 +8,42 @@ use Illuminate\Support\Collection;
 class FilterService
 {
     /**
+     * Get catalog IDs including children catalogs
+     */
+    private function getCatalogIdsWithChildren($catalogId): array
+    {
+        if ($catalogId === null) {
+            return [];
+        }
+
+        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+            return [$catalogId];
+        }
+
+        $catalog = \HolartWeb\AxoraCMS\Models\Shop\TCatalog::find($catalogId);
+        if (!$catalog) {
+            return [$catalogId];
+        }
+
+        $catalogIds = [$catalogId];
+        $this->collectChildrenIds($catalog, $catalogIds);
+
+        return $catalogIds;
+    }
+
+    /**
+     * Recursively collect all children catalog IDs
+     */
+    private function collectChildrenIds($catalog, &$catalogIds): void
+    {
+        $children = $catalog->children;
+        foreach ($children as $child) {
+            $catalogIds[] = $child->id;
+            $this->collectChildrenIds($child, $catalogIds);
+        }
+    }
+
+    /**
      * Get filters for a catalog with their values and product counts
      * If catalogId is null, returns filters for all products
      */
@@ -77,9 +113,10 @@ class FilterService
 
         $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
 
-        // Apply catalog filter only if catalogId is provided
+        // Apply catalog filter (including children) only if catalogId is provided
         if ($catalogId !== null) {
-            $query->where('catalog_id', $catalogId);
+            $catalogIds = $this->getCatalogIdsWithChildren($catalogId);
+            $query->whereIn('catalog_id', $catalogIds);
         }
 
         // Apply selected filters (excluding current filter to show available options)
@@ -116,9 +153,10 @@ class FilterService
         if ($query === null) {
             $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
 
-            // Apply catalog filter only if catalogId is provided
+            // Apply catalog filter (including children) only if catalogId is provided
             if ($catalogId !== null) {
-                $query->where('catalog_id', $catalogId);
+                $catalogIds = $this->getCatalogIdsWithChildren($catalogId);
+                $query->whereIn('catalog_id', $catalogIds);
             }
         }
 
@@ -238,9 +276,10 @@ class FilterService
 
         $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
 
-        // Apply catalog filter only if catalogId is provided
+        // Apply catalog filter (including children) only if catalogId is provided
         if ($catalogId !== null) {
-            $query->where('catalog_id', $catalogId);
+            $catalogIds = $this->getCatalogIdsWithChildren($catalogId);
+            $query->whereIn('catalog_id', $catalogIds);
         }
 
         // Apply other selected filters (excluding price)
