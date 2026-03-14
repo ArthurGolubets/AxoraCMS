@@ -66,7 +66,7 @@ class TFilter extends Model
     }
 
     /**
-     * Scope to get filters for a specific catalog (including parent catalogs)
+     * Scope to get filters for a specific catalog (including parent and children catalogs)
      */
     public function scopeForCatalog($query, $catalogId)
     {
@@ -87,11 +87,26 @@ class TFilter extends Model
             $current = $current->parent;
         }
 
-        // Include global filters and filters from current and parent catalogs
+        // Add all children catalog IDs
+        static::collectChildrenCatalogIds($catalog, $catalogIds);
+
+        // Include global filters and filters from current, parent and children catalogs
         return $query->where(function($q) use ($catalogIds) {
             $q->whereNull('catalog_id')
               ->orWhereIn('catalog_id', $catalogIds);
         });
+    }
+
+    /**
+     * Recursively collect all children catalog IDs
+     */
+    private static function collectChildrenCatalogIds($catalog, &$catalogIds)
+    {
+        $children = $catalog->children;
+        foreach ($children as $child) {
+            $catalogIds[] = $child->id;
+            static::collectChildrenCatalogIds($child, $catalogIds);
+        }
     }
 
     /**
