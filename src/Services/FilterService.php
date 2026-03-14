@@ -181,7 +181,7 @@ class FilterService
             }
 
             $query->whereHas('filterValues', function ($q) use ($filterId, $valueIds) {
-                $q->where('filter_id', $filterId)
+                $q->where('t_product_filter_values.filter_id', $filterId)
                   ->whereIn('t_filter_values.id', $valueIds);
             });
         }
