@@ -475,4 +475,53 @@ class InfoBlockService
             }
         }
     }
+
+    /**
+     * Get breadcrumbs for info block element
+     * Returns: Main - InfoBlock Name - Element Name
+     *
+     * @param string $infoBlockCode Info block code
+     * @param int|null $elementId Element ID (optional)
+     * @return array
+     * @throws \Exception
+     */
+    public function getBreadcrumbs(string $infoBlockCode, ?int $elementId = null): array
+    {
+        $this->checkInfoBlocksModule();
+
+        $breadcrumbs = [
+            [
+                'name' => 'Главная',
+                'url' => '/',
+            ]
+        ];
+
+        $infoBlock = $this->getInfoBlockByCode($infoBlockCode);
+        if (!$infoBlock) {
+            return $breadcrumbs;
+        }
+
+        // Add info block
+        $breadcrumbs[] = [
+            'id' => $infoBlock->id,
+            'name' => $infoBlock->name,
+            'code' => $infoBlock->code,
+            'url' => '/info/' . $infoBlock->code,
+        ];
+
+        // Add element if provided
+        if ($elementId !== null) {
+            $element = $this->getElementById($infoBlockCode, $elementId);
+            if ($element) {
+                $breadcrumbs[] = [
+                    'id' => $element->id,
+                    'name' => $element->name,
+                    'code' => $element->code,
+                    'url' => '/info/' . $infoBlock->code . '/' . $element->code,
+                ];
+            }
+        }
+
+        return $breadcrumbs;
+    }
 }

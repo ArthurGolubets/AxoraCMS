@@ -61,12 +61,14 @@ const previewUrl = computed(() => {
     return imageUrl.value;
   }
 
-  // If it's a storage path, prepend the storage URL
+  // If it's already a storage path
   if (imageUrl.value.startsWith('/storage/') || imageUrl.value.startsWith('storage/')) {
     return imageUrl.value.startsWith('/') ? imageUrl.value : '/' + imageUrl.value;
   }
 
-  return imageUrl.value;
+  // Otherwise, it's a relative path from storage (e.g., "catalogs/image.jpg")
+  // Prepend /storage/
+  return '/storage/' + imageUrl.value;
 });
 
 watch(() => props.modelValue, (newValue) => {

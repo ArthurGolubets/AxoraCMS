@@ -127,12 +127,14 @@ const getImageUrl = (imageString) => {
     return imageString;
   }
 
-  // If it's a storage path, prepend the storage URL
+  // If it's already a storage path
   if (imageString.startsWith('/storage/') || imageString.startsWith('storage/')) {
     return imageString.startsWith('/') ? imageString : '/' + imageString;
   }
 
-  return imageString;
+  // Otherwise, it's a relative path from storage (e.g., "products/image.jpg")
+  // Prepend /storage/
+  return '/storage/' + imageString;
 };
 
 const loadProduct = async () => {

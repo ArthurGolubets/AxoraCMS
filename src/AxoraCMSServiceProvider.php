@@ -54,6 +54,10 @@ class AxoraCMSServiceProvider extends ServiceProvider
                 return new \HolartWeb\AxoraCMS\Services\CatalogService();
             });
 
+            $this->app->singleton(\HolartWeb\AxoraCMS\Services\CommentsService::class, function ($app) {
+                return new \HolartWeb\AxoraCMS\Services\CommentsService();
+            });
+
             // Register middleware aliases only
             $this->app['router']->aliasMiddleware('admin.auth', \HolartWeb\AxoraCMS\Http\Middleware\RedirectIfNotAdmin::class);
             $this->app['router']->aliasMiddleware('share.page.data', \HolartWeb\AxoraCMS\Http\Middleware\SharePageData::class);

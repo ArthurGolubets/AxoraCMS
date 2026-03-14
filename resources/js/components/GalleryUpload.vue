@@ -135,11 +135,13 @@ const getImageUrl = (image) => {
     return image;
   }
 
-  // If it's a storage path, prepend the storage URL
+  // If it's already a storage path
   if (image.startsWith('/storage/') || image.startsWith('storage/')) {
     return image.startsWith('/') ? image : '/' + image;
   }
 
-  return image;
+  // Otherwise, it's a relative path from storage (e.g., "products/gallery/image.jpg")
+  // Prepend /storage/
+  return '/storage/' + image;
 };
 </script>

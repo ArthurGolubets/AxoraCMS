@@ -69,6 +69,25 @@ class TProduct extends Model
     }
 
     /**
+     * Get comments for this product
+     */
+    public function comments(): HasMany
+    {
+        if (class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
+            return $this->hasMany('HolartWeb\AxoraCMS\Models\Callback\TComments', 'product_id');
+        }
+        return $this->hasMany(Model::class, 'product_id');
+    }
+
+    /**
+     * Get moderated comments for this product
+     */
+    public function moderatedComments(): HasMany
+    {
+        return $this->comments()->where('is_moderated', true);
+    }
+
+    /**
      * Get filter values assigned to this product
      */
     public function filterValues()
@@ -151,5 +170,68 @@ class TProduct extends Model
         }
 
         return $slug;
+    }
+
+    /**
+     * Get average rating for this product
+     */
+    public function getAverageRating(): ?float
+    {
+        if (!class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
+            return null;
+        }
+
+        $avgRating = $this->moderatedComments()
+            ->whereNotNull('rating')
+            ->avg('rating');
+
+        return $avgRating ? round($avgRating, 1) : null;
+    }
+
+    /**
+     * Get rating statistics for this product
+     */
+    public function getRatingStats(): array
+    {
+        if (!class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
+            return [
+                'average' => null,
+                'count' => 0,
+                'distribution' => [],
+            ];
+        }
+
+        $comments = $this->moderatedComments()
+            ->whereNotNull('rating')
+            ->get();
+
+        if ($comments->isEmpty()) {
+            return [
+                'average' => null,
+                'count' => 0,
+                'distribution' => [],
+            ];
+        }
+
+        $distribution = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        foreach ($comments as $comment) {
+            if ($comment->rating >= 1 && $comment->rating <= 5) {
+                $distribution[$comment->rating]++;
+            }
+        }
+
+        return [
+            'average' => round($comments->avg('rating'), 1),
+            'count' => $comments->count(),
+            'distribution' => $distribution,
+        ];
+    }
+
+    /**
+     * Get rating attribute (alias for average rating)
+     */
+    public function getRatingAttribute(): ?float
+    {
+        return $this->getAverageRating();
     }
 }

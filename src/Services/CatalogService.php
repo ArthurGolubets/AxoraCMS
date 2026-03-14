@@ -462,29 +462,93 @@ class CatalogService
 
     /**
      * Get breadcrumbs for catalog
+     * Returns: Main - Catalog - Catalog Name (if catalogId provided)
+     * Returns: Main - Catalog (if catalogId is null)
      *
-     * @param int $catalogId
+     * @param int|null $catalogId
      * @return array
      */
-    public function getCatalogBreadcrumbs(int $catalogId): array
+    public function getCatalogBreadcrumbs(?int $catalogId = null): array
     {
-        $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
-            return [];
+        $breadcrumbs = [
+            [
+                'name' => 'Главная',
+                'url' => '/',
+            ],
+            [
+                'name' => 'Каталог',
+                'url' => '/catalog',
+            ]
+        ];
+
+        if ($catalogId === null) {
+            return $breadcrumbs;
         }
 
-        $breadcrumbs = [];
-        $catalog = $catalogModel::find($catalogId);
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return $breadcrumbs;
+        }
 
+        $catalog = $catalogModel::find($catalogId);
+        if (!$catalog) {
+            return $breadcrumbs;
+        }
+
+        $catalogPath = [];
         while ($catalog) {
-            array_unshift($breadcrumbs, [
+            array_unshift($catalogPath, [
                 'id' => $catalog->id,
                 'name' => $catalog->name,
                 'slug' => $catalog->slug,
+                'url' => '/catalog/' . $catalog->slug,
             ]);
 
             $catalog = $catalog->parent_id ? $catalogModel::find($catalog->parent_id) : null;
         }
+
+        return array_merge($breadcrumbs, $catalogPath);
+    }
+
+    /**
+     * Get breadcrumbs for product
+     * Returns: Main - Catalog - Catalog Name - Product Name
+     *
+     * @param int $productId
+     * @return array
+     */
+    public function getProductBreadcrumbs(int $productId): array
+    {
+        $productModel = $this->getProductModel();
+        if (!$productModel) {
+            return [
+                [
+                    'name' => 'Главная',
+                    'url' => '/',
+                ]
+            ];
+        }
+
+        $product = $productModel::find($productId);
+        if (!$product) {
+            return [
+                [
+                    'name' => 'Главная',
+                    'url' => '/',
+                ]
+            ];
+        }
+
+        // Get catalog breadcrumbs first
+        $breadcrumbs = $this->getCatalogBreadcrumbs($product->catalog_id);
+
+        // Add product
+        $breadcrumbs[] = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'url' => '/product/' . $product->slug,
+        ];
 
         return $breadcrumbs;
     }

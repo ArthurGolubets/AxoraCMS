@@ -53,8 +53,8 @@ class CommerceInstallCommand extends Command
         $this->info('✓ License verified successfully');
         $this->newLine();
 
-        // Step 3: Copy Commerce Models
-        $this->info('Step 3: Copying commerce models...');
+        // Step 3: Run Migrations
+        $this->info('Step 3: Running database migrations...');
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
@@ -62,60 +62,7 @@ class CommerceInstallCommand extends Command
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
-        $appModelsPath = app_path('Models');
-
-        $models = ['TOrders.php', 'TOrderItems.php', 'TPromocodes.php', 'TPaymentTransaction.php', 'TOrdersData.php'];
-        foreach ($models as $model) {
-            $source = $packagePath . '/src/Models/Commerce/' . $model;
-            $destination = $appModelsPath . '/' . $model;
-
-            if (file_exists($source)) {
-                copy($source, $destination);
-                $this->info("✓ Copied {$model}");
-            } else {
-                $this->warn("⚠ Source file not found: {$source}");
-            }
-        }
-        $this->newLine();
-
-        // Step 4: Copy Commerce Controllers
-        $this->info('Step 4: Copying commerce controllers...');
-        $appControllersPath = app_path('Http/Controllers');
-
-        $controllers = [
-            'OrdersController.php',
-            'PromocodesController.php',
-            'PaymentTransactionsController.php',
-            'OrdersDataController.php'
-        ];
-
-        foreach ($controllers as $controller) {
-            $source = $packagePath . '/src/Http/Controllers/Commerce/' . $controller;
-            $destination = $appControllersPath . '/' . $controller;
-
-            if (file_exists($source)) {
-                $content = file_get_contents($source);
-                // Update namespace from package to app
-                $content = str_replace(
-                    'namespace HolartWeb\AxoraCMS\Http\Controllers\Commerce;',
-                    'namespace App\Http\Controllers;',
-                    $content
-                );
-                $content = str_replace(
-                    'use Illuminate\Routing\Controller;',
-                    '',
-                    $content
-                );
-                file_put_contents($destination, $content);
-                $this->info("✓ Copied {$controller}");
-            } else {
-                $this->warn("⚠ Source file not found: {$source}");
-            }
-        }
-        $this->newLine();
-
-        // Step 5: Copy and Run Migrations
-        $this->info('Step 5: Copying and running database migrations...');
+        $this->info('Step 4: Copying and running database migrations...');
         $migrationFiles = [
             '2024_01_01_000030_create_t_orders_table.php',
             '2024_01_01_000031_create_t_order_items_table.php',
@@ -184,8 +131,8 @@ class CommerceInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 6: Build Frontend Assets
-        $this->info('Step 6: Building frontend assets...');
+        // Step 5: Build Frontend Assets
+        $this->info('Step 5: Building frontend assets...');
 
         if (file_exists($packagePath . '/package.json')) {
             $this->info('Installing npm dependencies...');
@@ -210,8 +157,8 @@ class CommerceInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 7: Publish Assets
-        $this->info('Step 7: Publishing assets...');
+        // Step 6: Publish Assets
+        $this->info('Step 6: Publishing assets...');
         Artisan::call('vendor:publish', [
             '--tag' => 'axora-cms-assets',
             '--force' => true,
@@ -219,8 +166,8 @@ class CommerceInstallCommand extends Command
         $this->info('✓ Assets published successfully');
         $this->newLine();
 
-        // Step 8: Clear Cache
-        $this->info('Step 8: Clearing application cache...');
+        // Step 7: Clear Cache
+        $this->info('Step 7: Clearing application cache...');
         Artisan::call('config:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
@@ -247,8 +194,16 @@ class CommerceInstallCommand extends Command
 
     protected function checkShopModuleInstalled(): bool
     {
-        return Schema::hasTable('t_catalogs') &&
-               Schema::hasTable('t_products');
+        // Check if shop module is registered in t_modules table
+        if (Schema::hasTable('t_modules')) {
+            $shopModule = TModule::where('module_name', 'shop')->first();
+            if ($shopModule) {
+                return true;
+            }
+        }
+
+        // Fallback to table check
+        return Schema::hasTable('t_catalogs') && Schema::hasTable('t_products');
     }
 
     protected function checkLicense(): bool

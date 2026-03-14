@@ -9,15 +9,20 @@ class FilterService
 {
     /**
      * Get filters for a catalog with their values and product counts
+     * If catalogId is null, returns filters for all products
      */
-    public function getFiltersForCatalog($catalogId, array $selectedFilters = []): array
+    public function getFiltersForCatalog($catalogId = null, array $selectedFilters = []): array
     {
-        $filters = TFilter::with('activeValues')
-            ->forCatalog($catalogId)
+        $query = TFilter::with('activeValues')
             ->active()
             ->orderBy('sort')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if ($catalogId !== null) {
+            $query->forCatalog($catalogId);
+        }
+
+        $filters = $query->get();
 
         // Add product counts for each filter value
         $filtersWithCounts = $filters->map(function ($filter) use ($catalogId, $selectedFilters) {
@@ -47,7 +52,16 @@ class FilterService
     }
 
     /**
+     * Generate filter for all products or specific catalog
+     */
+    public function generateFilter($catalogId = null, array $selectedFilters = []): array
+    {
+        return $this->getFiltersForCatalog($catalogId, $selectedFilters);
+    }
+
+    /**
      * Count products in catalog with specific filter value
+     * If catalogId is null, counts products across all catalogs
      */
     private function countProductsWithFilter($catalogId, $filterValueId, array $selectedFilters, $currentFilterId): int
     {
@@ -55,8 +69,12 @@ class FilterService
             return 0;
         }
 
-        $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query()
-            ->where('catalog_id', $catalogId);
+        $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
+
+        // Apply catalog filter only if catalogId is provided
+        if ($catalogId !== null) {
+            $query->where('catalog_id', $catalogId);
+        }
 
         // Apply selected filters (excluding current filter to show available options)
         foreach ($selectedFilters as $filterId => $valueIds) {
@@ -81,16 +99,21 @@ class FilterService
 
     /**
      * Filter products by selected filters
+     * If catalogId is null, filters products across all catalogs
      */
-    public function filterProducts($catalogId, array $selectedFilters, $query = null)
+    public function filterProducts($catalogId = null, array $selectedFilters = [], $query = null)
     {
         if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return collect([]);
         }
 
         if ($query === null) {
-            $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query()
-                ->where('catalog_id', $catalogId);
+            $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
+
+            // Apply catalog filter only if catalogId is provided
+            if ($catalogId !== null) {
+                $query->where('catalog_id', $catalogId);
+            }
         }
 
         // Apply each filter
@@ -106,6 +129,15 @@ class FilterService
         }
 
         return $query;
+    }
+
+    /**
+     * Get products filtered by selected filters (for catalog page without catalogId)
+     */
+    public function getFilteredProducts(array $selectedFilters = [], $catalogId = null)
+    {
+        $query = $this->filterProducts($catalogId, $selectedFilters);
+        return $query->where('is_active', true)->get();
     }
 
     /**
