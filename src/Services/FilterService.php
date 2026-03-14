@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Services;
 
 use HolartWeb\AxoraCMS\Models\Shop\TFilter;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class FilterService
@@ -251,9 +252,9 @@ class FilterService
     /**
      * Parse filter query string to array
      */
-    public function parseFilterQueryString(string $queryString): array
+    public function parseFilterQueryString(Request $request): array
     {
-        parse_str($queryString, $params);
+        $params = $request->all();
 
         $filters = [];
         if (isset($params['filter']) && is_array($params['filter'])) {
@@ -262,6 +263,13 @@ class FilterService
                     ? $values
                     : explode(',', $values);
             }
+        }
+
+        if (isset($params['min']) && isset($params['max'])) {
+            $filters['price'] = [
+                'min' => $params['min'],
+                'max' => $params['max']
+            ];
         }
 
         return $filters;
