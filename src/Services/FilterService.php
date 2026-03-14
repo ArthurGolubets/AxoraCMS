@@ -48,6 +48,12 @@ class FilterService
             ];
         });
 
+        // Add price filter
+        $priceFilter = $this->getPriceFilter($catalogId, $selectedFilters);
+        if ($priceFilter) {
+            $filtersWithCounts->push($priceFilter);
+        }
+
         return $filtersWithCounts->toArray();
     }
 
@@ -119,6 +125,17 @@ class FilterService
         // Apply each filter
         foreach ($selectedFilters as $filterId => $valueIds) {
             if (empty($valueIds)) {
+                continue;
+            }
+
+            // Handle price filter separately
+            if ($filterId === 'price') {
+                if (isset($valueIds['min'])) {
+                    $query->where('price', '>=', $valueIds['min']);
+                }
+                if (isset($valueIds['max'])) {
+                    $query->where('price', '<=', $valueIds['max']);
+                }
                 continue;
             }
 
@@ -208,5 +225,60 @@ class FilterService
         }
 
         return $filters;
+    }
+
+    /**
+     * Get price filter with min and max values
+     */
+    private function getPriceFilter($catalogId = null, array $selectedFilters = []): ?array
+    {
+        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+            return null;
+        }
+
+        $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
+
+        // Apply catalog filter only if catalogId is provided
+        if ($catalogId !== null) {
+            $query->where('catalog_id', $catalogId);
+        }
+
+        // Apply other selected filters (excluding price)
+        foreach ($selectedFilters as $filterId => $valueIds) {
+            if ($filterId === 'price') {
+                continue;
+            }
+
+            if (!empty($valueIds)) {
+                $query->whereHas('filterValues', function ($q) use ($valueIds) {
+                    $q->whereIn('t_filter_values.id', $valueIds);
+                });
+            }
+        }
+
+        // Get min and max prices
+        $minPrice = $query->min('price');
+        $maxPrice = $query->max('price');
+
+        if ($minPrice === null || $maxPrice === null) {
+            return null;
+        }
+
+        // Get selected price range
+        $selectedMin = $selectedFilters['price']['min'] ?? $minPrice;
+        $selectedMax = $selectedFilters['price']['max'] ?? $maxPrice;
+
+        return [
+            'id' => 'price',
+            'name' => 'Цена',
+            'code' => 'price',
+            'type' => 'range',
+            'values' => [
+                'min' => $minPrice,
+                'max' => $maxPrice,
+                'selected_min' => $selectedMin,
+                'selected_max' => $selectedMax,
+            ],
+        ];
     }
 }
