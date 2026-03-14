@@ -45,7 +45,7 @@ class FilterService
 
     /**
      * Get filters for a catalog with their values and product counts
-     * If catalogId is null, returns filters for all products
+     * If catalogId is null, returns all filters
      */
     public function getFiltersForCatalog($catalogId = null, array $selectedFilters = []): array
     {
@@ -54,6 +54,8 @@ class FilterService
             ->orderBy('sort')
             ->orderBy('name');
 
+        // If catalogId is provided, get filters for that catalog (including parents and children)
+        // If catalogId is null, get all filters
         if ($catalogId !== null) {
             $query->forCatalog($catalogId);
         }
