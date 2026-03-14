@@ -276,6 +276,46 @@ class FilterService
     }
 
     /**
+     * Get applied filters for a specific product (for characteristics display)
+     */
+    public function getProductFilters(int $productId): array
+    {
+        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+            return [];
+        }
+
+        $product = \HolartWeb\AxoraCMS\Models\Shop\TProduct::find($productId);
+        if (!$product) {
+            return [];
+        }
+
+        $filterValues = $product->filterValues()->with('filter')->get();
+
+        $filters = [];
+        foreach ($filterValues as $filterValue) {
+            $filterId = $filterValue->filter->id;
+
+            if (!isset($filters[$filterId])) {
+                $filters[$filterId] = [
+                    'id' => $filterValue->filter->id,
+                    'name' => $filterValue->filter->name,
+                    'code' => $filterValue->filter->code,
+                    'type' => $filterValue->filter->type,
+                    'values' => []
+                ];
+            }
+
+            $filters[$filterId]['values'][] = [
+                'id' => $filterValue->id,
+                'value' => $filterValue->value,
+                'code' => $filterValue->code,
+            ];
+        }
+
+        return array_values($filters);
+    }
+
+    /**
      * Get price filter with min and max values
      */
     private function getPriceFilter($catalogId = null, array $selectedFilters = []): ?array
