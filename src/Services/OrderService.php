@@ -4,6 +4,9 @@ namespace HolartWeb\AxoraCMS\Services;
 
 use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
 use HolartWeb\AxoraCMS\Models\Commerce\TOrderItems;
+use HolartWeb\AxoraCMS\Models\TModule;
+use HolartWeb\AxoraCMS\Services\Integrations\TelegramService;
+use HolartWeb\AxoraCMS\Services\Integrations\YookassaService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -42,6 +45,8 @@ class OrderService
 
         return DB::transaction(function () use ($orderData, $items, $userId) {
             // Calculate totals
+            $productsDataString = '';
+
             $goodsPrice = 0;
             foreach ($items as $item) {
                 $goodsPrice += $item['total_price'] ?? 0;
@@ -64,6 +69,8 @@ class OrderService
 
             // Create order items
             foreach ($items as $item) {
+                $productsDataString .= $item['product_name']." - ".$item['total_price']."руб. \n";
+
                 TOrderItems::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
@@ -73,6 +80,17 @@ class OrderService
                 ]);
             }
 
+            if(TModule::isInstalled('telegram')){
+                $orderDataString = "Заказ №".$order->id."\n";
+                $orderDataString .= "Имя: ".$order->name."\n";
+                $orderDataString .= "Телефон: ".$order->phone."\n";
+                $orderDataString .= "Адрес: ".$order->address."\n";
+                $orderDataString .= "Способ оплаты: ".$order->payment_status."\n";
+                $orderDataString .= "Способ доставки: ".$order->delivery_status."\n";
+                $orderDataString .= "Товары: \n \n".$productsDataString;
+                $message = $orderDataString;
+                (new TelegramService)->sendMessage($message);
+            }
             return $order->load('items');
         });
     }
@@ -463,5 +481,52 @@ class OrderService
                 $query->orderBy($field, $direction);
             }
         }
+    }
+
+    /**
+     * Generate payment link for order (only if Yookassa module is configured)
+     *
+     * @param int $orderId Order ID
+     * @return string|null Payment link or null if Yookassa is not configured
+     * @throws \Exception
+     */
+    public function generatePaymentLink(int $orderId, string $routeName = 'order.success'): ?string
+    {
+        $this->checkCommerceModule();
+
+        $yookassaService = new YookassaService();
+
+        if (!$yookassaService->isConfigured()) {
+            throw new \Exception('Yookassa module is not configured');
+        }
+
+        $order = $this->getOrderById($orderId);
+
+        if (!$order) {
+            throw new \Exception("Order not found: {$orderId}");
+        }
+
+        // Prepare items for payment
+        $items = [];
+        foreach ($order->items as $item) {
+            $items[] = [
+                'name' => $item->product_name,
+                'price' => (float) $item->total_price / $item->amount,
+                'quantity' => $item->amount,
+            ];
+        }
+
+        // Prepare payment data
+        $paymentData = [
+            'order_id' => $order->id,
+            'amount' => (float) $order->total_price,
+            'currency' => 'RUB',
+            'description' => "Оплата заказа №{$order->id}",
+            'email' => $order->email,
+            'phone' => $order->phone,
+            'items' => $items,
+        ];
+
+        return $yookassaService->createOrderPayment($paymentData,$routeName);
     }
 }

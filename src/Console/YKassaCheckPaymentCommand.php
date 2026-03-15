@@ -4,8 +4,7 @@ namespace HolartWeb\AxoraCMS\Console;
 
 use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
-use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
-use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
+use HolartWeb\AxoraCMS\Services\Integrations\YookassaService;
 use Illuminate\Support\Facades\Log;
 
 class YKassaCheckPaymentCommand extends Command
@@ -15,16 +14,11 @@ class YKassaCheckPaymentCommand extends Command
 
     public function handle(): int
     {
-        try {
-            // Проверяем, установлена ли интеграция ЮКасса
-            $shopId = TIntegrationSettings::get('yookassa', 'shop_id');
-            $secretKey = TIntegrationSettings::get('yookassa', 'secret_key');
+        $yookassaService = new YookassaService();
 
-            if (empty($shopId) || empty($secretKey)) {
-                return self::SUCCESS;
-            }
-        } catch (\Exception $e) {
-            // Database not configured or module not installed
+        // Проверяем, установлена ли интеграция ЮКасса
+        if (!$yookassaService->isConfigured()) {
+            $this->info('YooKassa is not configured.');
             return self::SUCCESS;
         }
 
@@ -35,12 +29,8 @@ class YKassaCheckPaymentCommand extends Command
         }
 
         try {
-            $client = new \YooKassa\Client();
-            $client->setAuth($shopId, $secretKey);
-
             // Получаем все транзакции со статусом pending
-            $pendingTransactions = TPaymentTransaction::where('status', 'pending')
-                ->where('payment_system', 'yookassa')
+            $pendingTransactions = TPaymentTransaction::where('status', TPaymentTransaction::STATUS_PENDING)
                 ->where('created_at', '>=', now()->subDays(7)) // Проверяем только за последние 7 дней
                 ->get();
 
@@ -55,38 +45,14 @@ class YKassaCheckPaymentCommand extends Command
 
             foreach ($pendingTransactions as $transaction) {
                 try {
-                    // Получаем информацию о платеже из ЮКассы
-                    $payment = $client->getPaymentInfo($transaction->external_id);
-
                     $oldStatus = $transaction->status;
-                    $newStatus = $this->mapYKassaStatus($payment->getStatus());
 
-                    if ($oldStatus !== $newStatus) {
-                        $transaction->status = $newStatus;
-                        $transaction->save();
+                    // Используем метод checkPayment из YookassaService
+                    $paymentStatus = $yookassaService->checkPayment($transaction);
 
-                        // Обновляем статус заказа, если платеж успешен
-                        if ($newStatus === 'completed') {
-                            $order = TOrders::find($transaction->order_id);
-                            if ($order && $order->status === 'pending') {
-                                $order->status = 'paid';
-                                $order->save();
-                                $this->info("Order #{$order->id} marked as paid.");
-                            }
-                        }
-
-                        // Если платеж отменен/истек
-                        if (in_array($newStatus, ['failed', 'cancelled'])) {
-                            $order = TOrders::find($transaction->order_id);
-                            if ($order && $order->status === 'pending') {
-                                $order->status = 'cancelled';
-                                $order->save();
-                                $this->info("Order #{$order->id} marked as cancelled.");
-                            }
-                        }
-
+                    if ($paymentStatus && $transaction->fresh()->status !== $oldStatus) {
                         $updated++;
-                        $this->info("Transaction #{$transaction->id}: {$oldStatus} -> {$newStatus}");
+                        $this->info("Transaction #{$transaction->id}: {$oldStatus} -> {$transaction->fresh()->status} (YooKassa: {$paymentStatus})");
                     }
                 } catch (\Exception $e) {
                     Log::error("YKassa check payment error for transaction #{$transaction->id}: " . $e->getMessage());
@@ -102,22 +68,5 @@ class YKassaCheckPaymentCommand extends Command
             $this->error('Error: ' . $e->getMessage());
             return self::FAILURE;
         }
-    }
-
-    /**
-     * Map YooKassa status to internal status
-     *
-     * @param string $ykassaStatus
-     * @return string
-     */
-    private function mapYKassaStatus(string $ykassaStatus): string
-    {
-        return match ($ykassaStatus) {
-            'pending' => 'pending',
-            'waiting_for_capture' => 'pending',
-            'succeeded' => 'completed',
-            'canceled' => 'cancelled',
-            default => 'failed',
-        };
     }
 }

@@ -3,9 +3,15 @@
 namespace HolartWeb\AxoraCMS\Services\Integrations;
 
 use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
+use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
+use HolartWeb\AxoraCMS\Models\TModule;
+use YooKassa\Client;
+use YooKassa\Model\Payment\ConfirmationType;
+use YooKassa\Request\Payments\CreatePaymentRequest;
 
 class YookassaService
 {
+    private $vatCodeData = 2; // https://yookassa.ru/developers/payment-acceptance/receipts/54fz/other-services/parameters-values
     /**
      * Get shop ID
      *
@@ -37,45 +43,144 @@ class YookassaService
     }
 
     /**
-     * Create payment
-     * TODO: Implement payment creation logic
+     * Create payment for order
      *
-     * @param array $data Payment data
-     * @return array|null
+     * @param array $params Payment parameters (order_id, amount, currency, description, email, phone, items)
+     * @return string|null Confirmation URL or null on error
      */
-    public function createPayment(array $data): ?array
+    public function createOrderPayment(array $params): ?string
     {
         if (!$this->isConfigured()) {
             return null;
         }
 
-        // TODO: Implement Yookassa API call for payment creation
-        // Example structure:
-        // - amount
-        // - currency
-        // - description
-        // - return_url
-        // - confirmation type
+        $client = new Client();
+        $client->setAuth($this->getShopId(), $this->getSecretKey());
 
-        return null;
+        $builder = CreatePaymentRequest::builder();
+        $builder->setAmount($params['amount'])
+                ->setCurrency($params['currency'])
+                ->setCapture(true)
+                ->setDescription($params['description'] ?? $this->getDefaultDescription())
+                ->setMetadata([
+                    'order_id' => $params['order_id'],
+                    'language' => 'ru',
+                ]);
+
+        $builder->setConfirmation([
+            'type' => ConfirmationType::REDIRECT,
+            'returnUrl' => $this->renderReturnUrl($params['order_id']),
+        ]);
+
+        if (!empty($params['email'])) {
+            $builder->setReceiptEmail($params['email']);
+        }
+
+        if (!empty($params['phone'])) {
+            $builder->setReceiptPhone($params['phone']);
+        }
+
+        if (!empty($params['items']) && count($params['items']) > 0) {
+            foreach ($params['items'] as $item) {
+                $builder->addReceiptItem(
+                    $item['name'],
+                    $item['price'],
+                    $item['quantity'],
+                    $this->vatCodeData,
+                    'full_payment',
+                    'commodity'
+                );
+            }
+        }
+
+        try {
+            $request = $builder->build();
+            $idempotenceKey = uniqid('', true);
+            $response = $client->createPayment($request, $idempotenceKey);
+
+            $confirmationUrl = $response->getConfirmation()->getConfirmationUrl();
+
+            if ($confirmationUrl) {
+                TPaymentTransaction::create([
+                    'order_id' => $params['order_id'],
+                    'transaction_id' => $response->getId(),
+                    'link' => $confirmationUrl,
+                    'status' => TPaymentTransaction::STATUS_PENDING,
+                ]);
+            }
+
+            return $confirmationUrl;
+        } catch (\Exception $e) {
+            // Log error instead of dd()
+            \Log::error('Yookassa payment creation error: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
-     * Get payment info
-     * TODO: Implement payment info retrieval
+     * Check payment status and update transaction
      *
-     * @param string $paymentId
-     * @return array|null
+     * @param TPaymentTransaction $transaction Payment transaction
+     * @return string|null Payment status or null on error
      */
-    public function getPayment(string $paymentId): ?array
+    public function checkPayment(TPaymentTransaction $transaction): ?string
     {
         if (!$this->isConfigured()) {
             return null;
         }
 
-        // TODO: Implement Yookassa API call to get payment info
+        $client = new Client();
+        $client->setAuth($this->getShopId(), $this->getSecretKey());
 
-        return null;
+        try {
+            $response = $client->getPaymentInfo($transaction->transaction_id);
+            $status = $response->getStatus();
+
+            if ($status === 'succeeded') {
+                $transaction->order->payment_status = 'paid';
+                $transaction->order->save();
+
+                $transaction->status = TPaymentTransaction::STATUS_SUCCESS;
+                $transaction->save();
+
+                // Send Telegram notification if module is installed
+                if (TModule::isInstalled('telegram')) {
+                    $order = $transaction->order;
+                    $message = "✅ Заказ №{$order->id} успешно оплачен\n\n";
+                    $message .= "Сумма: {$order->total_price} руб.\n";
+                    $message .= "Клиент: {$order->name}\n";
+                    $message .= "Телефон: {$order->phone}\n";
+                    $message .= "Email: {$order->email}";
+
+                    (new TelegramService())->sendMessage($message);
+                }
+            }
+
+            if ($status === 'canceled') {
+                $transaction->status = TPaymentTransaction::STATUS_CANCEL;
+                $transaction->save();
+
+                $transaction->order->payment_status = 'failed';
+                $transaction->order->save();
+
+                // Send Telegram notification if module is installed
+                if (TModule::isInstalled('telegram')) {
+                    $order = $transaction->order;
+                    $message = "❌ Оплата заказа №{$order->id} отменена\n\n";
+                    $message .= "Сумма: {$order->total_price} руб.\n";
+                    $message .= "Клиент: {$order->name}\n";
+                    $message .= "Телефон: {$order->phone}\n";
+                    $message .= "Email: {$order->email}";
+
+                    (new TelegramService())->sendMessage($message);
+                }
+            }
+
+            return $status;
+        } catch (\Exception $e) {
+            \Log::error('Yookassa payment check error: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
@@ -114,5 +219,26 @@ class YookassaService
         // TODO: Implement Yookassa API call for refund
 
         return null;
+    }
+
+    /**
+     * Get default payment description
+     *
+     * @return string
+     */
+    private function getDefaultDescription(): string
+    {
+        return "Оплата заказа на сайте " . config('app.url');
+    }
+
+    /**
+     * Render return URL for payment
+     *
+     * @param int $orderId Order ID
+     * @return string
+     */
+    private function renderReturnUrl(int $orderId): string
+    {
+        return route('order.success', ['id' => $orderId]);
     }
 }
