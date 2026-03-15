@@ -78,7 +78,8 @@ class YookassaService
         }
 
         if (!empty($params['phone'])) {
-            $builder->setReceiptPhone($params['phone']);
+            $phone = str_replace(['+', ' ', '(', ')', '-', ' '], '', $params['phone']);
+            $builder->setReceiptPhone($phone);
         }
 
         if (!empty($params['items']) && count($params['items']) > 0) {
