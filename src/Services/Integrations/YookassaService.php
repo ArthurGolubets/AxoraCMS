@@ -46,9 +46,10 @@ class YookassaService
      * Create payment for order
      *
      * @param array $params Payment parameters (order_id, amount, currency, description, email, phone, items)
+     * @param string $routeName Route name for return URL
      * @return string|null Confirmation URL or null on error
      */
-    public function createOrderPayment(array $params): ?string
+    public function createOrderPayment(array $params, string $routeName = 'order.success'): ?string
     {
         if (!$this->isConfigured()) {
             return null;
@@ -69,7 +70,7 @@ class YookassaService
 
         $builder->setConfirmation([
             'type' => ConfirmationType::REDIRECT,
-            'returnUrl' => $this->renderReturnUrl($params['order_id']),
+            'returnUrl' => $this->renderReturnUrl($params['order_id'], $routeName),
         ]);
 
         if (!empty($params['email'])) {
@@ -235,10 +236,11 @@ class YookassaService
      * Render return URL for payment
      *
      * @param int $orderId Order ID
+     * @param string $routeName Route name
      * @return string
      */
-    private function renderReturnUrl(int $orderId): string
+    private function renderReturnUrl(int $orderId, string $routeName = 'order.success'): string
     {
-        return route('order.success', ['id' => $orderId]);
+        return route($routeName, ['id' => $orderId]);
     }
 }
