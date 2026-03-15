@@ -168,7 +168,13 @@ class OrderService
     {
         $this->checkCommerceModule();
 
-        return TOrders::with(['items', 'promocode', 'paymentTransaction', 'user'])->find($id);
+        $relations = ['items', 'promocode', 'paymentTransaction'];
+
+        if (class_exists('App\Models\TUser')) {
+            $relations[] = 'user';
+        }
+
+        return TOrders::with($relations)->find($id);
     }
 
     /**
