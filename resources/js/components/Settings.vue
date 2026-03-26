@@ -55,6 +55,15 @@
           </div>
 
           <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">E-mail</label>
+            <div v-for="(email, index) in settings.emails" :key="index" class="flex mb-2">
+              <input v-model="settings.emails[index]" type="email" placeholder="example@domain.com" class="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-lg text-gray-900 dark:text-white">
+              <button @click.prevent="removeEmail(index)" type="button" class="px-4 py-2 bg-red-600 text-white rounded-r-lg hover:bg-red-700">×</button>
+            </div>
+            <button @click.prevent="addEmail" type="button" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить e-mail</button>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Социальные сети</label>
             <div v-for="(social, index) in settings.social_links" :key="index" class="mb-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
               <div class="grid grid-cols-2 gap-3">
@@ -65,6 +74,7 @@
                     <option value="Telegram">Telegram</option>
                     <option value="Whatsapp">Whatsapp</option>
                     <option value="Instagram">Instagram</option>
+                    <option value="Max">Max</option>
                   </select>
                 </div>
                 <div>
@@ -84,6 +94,10 @@
                 <div>
                   <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Адрес</label>
                   <input v-model="address.address" type="text" placeholder="г. Москва, ул. Ленина, д. 1" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Ссылка на карту</label>
+                  <input v-model="address.map_link" type="text" placeholder="https://maps.google.com/..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
@@ -230,6 +244,7 @@ const settings = ref({
   theme_color: 'red',
   company_name: '',
   phones: [],
+  emails: [],
   work_hours: '',
   social_links: [],
   addresses: [],
@@ -266,7 +281,8 @@ const fetchSettings = async () => {
       addresses = addresses.map(addr => ({
         address: addr,
         hours: '',
-        phone: ''
+        phone: '',
+        map_link: ''
       }));
     }
 
@@ -274,6 +290,7 @@ const fetchSettings = async () => {
       ...settings.value,
       ...data,
       phones: data.phones || [],
+      emails: data.emails || [],
       social_links: data.social_links || [],
       addresses: addresses,
       header_menu_id: data.header_menu_id || null,
@@ -324,11 +341,20 @@ const removePhone = (index) => {
   settings.value.phones.splice(index, 1);
 };
 
+const addEmail = () => {
+  settings.value.emails.push('');
+};
+
+const removeEmail = (index) => {
+  settings.value.emails.splice(index, 1);
+};
+
 const addAddress = () => {
   settings.value.addresses.push({
     address: '',
     hours: '',
-    phone: ''
+    phone: '',
+    map_link: ''
   });
 };
 
