@@ -171,44 +171,31 @@ class CatalogService
         }
 
         // Filter by characteristics
+        // addition_info structure: {"key": value} (object, not array)
         foreach ($characteristics as $code => $value) {
             if (is_bool($value)) {
+                // For boolean values, compare directly with JSON boolean
+                $jsonPath = '$.' . $code;
+                $boolValue = $value ? 'true' : 'false';
                 $query->whereRaw(
-                    "EXISTS (
-                        SELECT 1 FROM JSON_TABLE(
-                            addition_info,
-                            '$[*]' COLUMNS(
-                                code VARCHAR(255) PATH '$.code',
-                                value TEXT PATH '$.value'
-                            )
-                        ) AS jt
-                        WHERE jt.code = ? AND jt.value = ?
-                    )",
-                    [$code, $value ? 'true' : 'false']
+                    'JSON_EXTRACT(addition_info, ?) = CAST(? AS JSON)',
+                    [$jsonPath, $boolValue]
                 );
             } else {
-                $query->whereRaw(
-                    "JSON_SEARCH(addition_info, 'one', ?, null, '$[*].code') IS NOT NULL",
-                    [$code]
-                );
-
-                $query->whereRaw(
-                    "EXISTS (
-                        SELECT 1 FROM JSON_TABLE(
-                            addition_info,
-                            '$[*]' COLUMNS(
-                                code VARCHAR(255) PATH '$.code',
-                                value TEXT PATH '$.value',
-                                values JSON PATH '$.values'
-                            )
-                        ) AS jt
-                        WHERE jt.code = ? AND (
-                            jt.value = ? OR
-                            JSON_CONTAINS(jt.values, ?)
-                        )
-                    )",
-                    [$code, $value, json_encode($value)]
-                );
+                // For other values, compare as text or check if it's in array
+                $jsonPath = '$.' . $code;
+                $query->where(function($q) use ($jsonPath, $value) {
+                    // Check if the key exists and value matches
+                    $q->whereRaw(
+                        'JSON_EXTRACT(addition_info, ?) = ?',
+                        [$jsonPath, $value]
+                    )
+                    // Or if it's an array, check if value is in the array
+                    ->orWhereRaw(
+                        'JSON_CONTAINS(JSON_EXTRACT(addition_info, ?), ?)',
+                        [$jsonPath, json_encode($value)]
+                    );
+                });
             }
         }
 
@@ -254,44 +241,31 @@ class CatalogService
         }
 
         // Filter by characteristics
+        // addition_info structure: {"key": value} (object, not array)
         foreach ($characteristics as $code => $value) {
             if (is_bool($value)) {
+                // For boolean values, compare directly with JSON boolean
+                $jsonPath = '$.' . $code;
+                $boolValue = $value ? 'true' : 'false';
                 $query->whereRaw(
-                    "EXISTS (
-                        SELECT 1 FROM JSON_TABLE(
-                            addition_info,
-                            '$[*]' COLUMNS(
-                                code VARCHAR(255) PATH '$.code',
-                                value TEXT PATH '$.value'
-                            )
-                        ) AS jt
-                        WHERE jt.code = ? AND jt.value = ?
-                    )",
-                    [$code, $value ? 'true' : 'false']
+                    'JSON_EXTRACT(addition_info, ?) = CAST(? AS JSON)',
+                    [$jsonPath, $boolValue]
                 );
             } else {
-                $query->whereRaw(
-                    "JSON_SEARCH(addition_info, 'one', ?, null, '$[*].code') IS NOT NULL",
-                    [$code]
-                );
-
-                $query->whereRaw(
-                    "EXISTS (
-                        SELECT 1 FROM JSON_TABLE(
-                            addition_info,
-                            '$[*]' COLUMNS(
-                                code VARCHAR(255) PATH '$.code',
-                                value TEXT PATH '$.value',
-                                values JSON PATH '$.values'
-                            )
-                        ) AS jt
-                        WHERE jt.code = ? AND (
-                            jt.value = ? OR
-                            JSON_CONTAINS(jt.values, ?)
-                        )
-                    )",
-                    [$code, $value, json_encode($value)]
-                );
+                // For other values, compare as text or check if it's in array
+                $jsonPath = '$.' . $code;
+                $query->where(function($q) use ($jsonPath, $value) {
+                    // Check if the key exists and value matches
+                    $q->whereRaw(
+                        'JSON_EXTRACT(addition_info, ?) = ?',
+                        [$jsonPath, $value]
+                    )
+                    // Or if it's an array, check if value is in the array
+                    ->orWhereRaw(
+                        'JSON_CONTAINS(JSON_EXTRACT(addition_info, ?), ?)',
+                        [$jsonPath, json_encode($value)]
+                    );
+                });
             }
         }
 
