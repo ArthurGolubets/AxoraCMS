@@ -172,11 +172,6 @@ class CatalogService
 
         // Filter by characteristics
         foreach ($characteristics as $code => $value) {
-            $query->whereRaw(
-                "JSON_SEARCH(addition_info, 'one', ?, null, '$[*].code') IS NOT NULL",
-                [$code]
-            );
-
             if (is_bool($value)) {
                 $query->whereRaw(
                     "EXISTS (
@@ -184,14 +179,19 @@ class CatalogService
                             addition_info,
                             '$[*]' COLUMNS(
                                 code VARCHAR(255) PATH '$.code',
-                                value BOOLEAN PATH '$.value'
+                                value TEXT PATH '$.value'
                             )
                         ) AS jt
                         WHERE jt.code = ? AND jt.value = ?
                     )",
-                    [$code, $value ? 1 : 0]
+                    [$code, $value ? 'true' : 'false']
                 );
             } else {
+                $query->whereRaw(
+                    "JSON_SEARCH(addition_info, 'one', ?, null, '$[*].code') IS NOT NULL",
+                    [$code]
+                );
+
                 $query->whereRaw(
                     "EXISTS (
                         SELECT 1 FROM JSON_TABLE(
@@ -255,11 +255,6 @@ class CatalogService
 
         // Filter by characteristics
         foreach ($characteristics as $code => $value) {
-            $query->whereRaw(
-                "JSON_SEARCH(addition_info, 'one', ?, null, '$[*].code') IS NOT NULL",
-                [$code]
-            );
-
             if (is_bool($value)) {
                 $query->whereRaw(
                     "EXISTS (
@@ -267,14 +262,19 @@ class CatalogService
                             addition_info,
                             '$[*]' COLUMNS(
                                 code VARCHAR(255) PATH '$.code',
-                                value BOOLEAN PATH '$.value'
+                                value TEXT PATH '$.value'
                             )
                         ) AS jt
                         WHERE jt.code = ? AND jt.value = ?
                     )",
-                    [$code, $value ? 1 : 0]
+                    [$code, $value ? 'true' : 'false']
                 );
             } else {
+                $query->whereRaw(
+                    "JSON_SEARCH(addition_info, 'one', ?, null, '$[*].code') IS NOT NULL",
+                    [$code]
+                );
+
                 $query->whereRaw(
                     "EXISTS (
                         SELECT 1 FROM JSON_TABLE(
