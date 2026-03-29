@@ -793,4 +793,92 @@ class CatalogService
             'max' => $query->max('price') ?? 0,
         ];
     }
+
+    /**
+     * Search products by properties
+     *
+     * @param array $properties ['property_code' => 'value'] or ['property_id' => 'value']
+     * @param int|null $catalogId Optional catalog filter
+     * @param int|null $limit
+     * @param int $page
+     * @param bool $activeOnly
+     * @return LengthAwarePaginator|Collection
+     */
+    public function searchProductsByProperties(
+        array $properties,
+        ?int $catalogId = null,
+        ?int $limit = null,
+        int $page = 1,
+        bool $activeOnly = false
+    ) {
+        $productModel = $this->getProductModel();
+        if (!$productModel) {
+            return collect([]);
+        }
+
+        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
+            return collect([]);
+        }
+
+        $query = $productModel::query();
+
+        if ($catalogId) {
+            $query->where('catalog_id', $catalogId);
+        }
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        // Join with property values
+        foreach ($properties as $key => $value) {
+            $propertyValueClass = 'HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue';
+            $propertyClass = 'HolartWeb\AxoraCMS\Models\Shop\TCatalogProperty';
+
+            // Determine if key is property_id or property_code
+            if (is_numeric($key)) {
+                // Search by property_id
+                $query->whereHas('propertyValues', function($q) use ($key, $value) {
+                    $q->where('property_id', $key)
+                      ->where('value', $value);
+                });
+            } else {
+                // Search by property code
+                $query->whereHas('propertyValues', function($q) use ($key, $value, $propertyClass) {
+                    $q->whereHas('property', function($pq) use ($key) {
+                        $pq->where('code', $key);
+                    })->where('value', $value);
+                });
+            }
+        }
+
+        $query->orderBy('name');
+
+        if ($limit !== null) {
+            return $query->paginate($limit, ['*'], 'page', $page);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get all available properties for a catalog (including inherited)
+     *
+     * @param int $catalogId
+     * @return array
+     */
+    public function getCatalogProperties(int $catalogId): array
+    {
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return [];
+        }
+
+        $catalog = $catalogModel::find($catalogId);
+        if (!$catalog) {
+            return [];
+        }
+
+        return $catalog->getAllProperties()->toArray();
+    }
 }

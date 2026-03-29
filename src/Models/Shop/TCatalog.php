@@ -62,6 +62,37 @@ class TCatalog extends Model
     }
 
     /**
+     * Get properties for this catalog
+     */
+    public function properties(): HasMany
+    {
+        return $this->hasMany(TCatalogProperty::class, 'catalog_id')->orderBy('sort_order');
+    }
+
+    /**
+     * Get all properties including inherited from parent catalogs
+     */
+    public function getAllProperties()
+    {
+        $properties = collect();
+        $catalog = $this;
+
+        // Collect properties from current catalog and all parents
+        while ($catalog) {
+            $catalogProperties = $catalog->properties;
+            foreach ($catalogProperties as $property) {
+                // Add only if not already exists (child properties override parent)
+                if (!$properties->contains('code', $property->code)) {
+                    $properties->push($property);
+                }
+            }
+            $catalog = $catalog->parent;
+        }
+
+        return $properties->sortBy('sort_order')->values();
+    }
+
+    /**
      * Check if category has children
      */
     public function hasChildren(): bool

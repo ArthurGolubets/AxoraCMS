@@ -61,7 +61,7 @@ class ProductController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $product = TProduct::with(['catalog', 'variants'])->findOrFail($id);
+        $product = TProduct::with(['catalog', 'variants', 'propertyValues.property'])->findOrFail($id);
 
         // Get available filters for this product's catalog
         $availableFilters = [];
@@ -80,10 +80,27 @@ class ProductController extends Controller
             $assignedFilters = $product->getFiltersWithValues();
         }
 
+        // Get available properties for this product's catalog
+        $availableProperties = [];
+        if ($product->catalog && method_exists($product->catalog, 'getAllProperties')) {
+            $availableProperties = $product->catalog->getAllProperties()->map(function($prop) use ($product) {
+                $prop->is_inherited = $prop->catalog_id !== $product->catalog_id;
+                return $prop;
+            });
+        }
+
+        // Get property values
+        $propertyValues = [];
+        if (method_exists($product, 'getPropertiesWithValues')) {
+            $propertyValues = $product->getPropertiesWithValues();
+        }
+
         return response()->json([
             'product' => $product,
             'available_filters' => $availableFilters,
             'assigned_filters' => $assignedFilters,
+            'available_properties' => $availableProperties,
+            'property_values' => $propertyValues,
         ]);
     }
 
@@ -119,6 +136,7 @@ class ProductController extends Controller
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
             'addition_info' => 'nullable|array',
+            'property_values' => 'nullable|array',
         ]);
 
         // Generate slug if not provided
@@ -134,6 +152,10 @@ class ProductController extends Controller
         $filterValues = $validated['filter_values'] ?? [];
         unset($validated['filter_values']);
 
+        // Extract property values
+        $propertyValues = $validated['property_values'] ?? [];
+        unset($validated['property_values']);
+
         $product = TProduct::create($validated);
 
         // Create variants if provided
@@ -146,11 +168,28 @@ class ProductController extends Controller
             $product->syncFilterValues($filterValues);
         }
 
+        // Save property values if provided
+        if (!empty($propertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
+            foreach ($propertyValues as $propertyId => $value) {
+                if ($value !== null && $value !== '') {
+                    // Handle multiple values (arrays)
+                    if (is_array($value)) {
+                        $value = json_encode($value);
+                    }
+
+                    $product->propertyValues()->create([
+                        'property_id' => $propertyId,
+                        'value' => $value,
+                    ]);
+                }
+            }
+        }
+
         // Log activity
         TAdminAction::log('created', 'product', $product->id,
             'Создан товар "' . $product->name . '" (SKU: ' . $product->sku . ')');
 
-        return response()->json($product->load('variants'), 201);
+        return response()->json($product->load(['variants', 'propertyValues.property']), 201);
     }
 
     /**
@@ -182,6 +221,7 @@ class ProductController extends Controller
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
             'addition_info' => 'nullable|array',
+            'property_values' => 'nullable|array',
         ]);
 
         // Handle variants update
@@ -208,6 +248,30 @@ class ProductController extends Controller
             }
         }
 
+        // Handle property values update
+        if (isset($validated['property_values']) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
+            $propertyValues = $validated['property_values'];
+            unset($validated['property_values']);
+
+            // Delete old property values
+            $product->propertyValues()->delete();
+
+            // Create new property values
+            foreach ($propertyValues as $propertyId => $value) {
+                if ($value !== null && $value !== '') {
+                    // Handle multiple values (arrays)
+                    if (is_array($value)) {
+                        $value = json_encode($value);
+                    }
+
+                    $product->propertyValues()->create([
+                        'property_id' => $propertyId,
+                        'value' => $value,
+                    ]);
+                }
+            }
+        }
+
         $oldData = $product->getOriginal();
         $product->update($validated);
 
@@ -218,7 +282,7 @@ class ProductController extends Controller
             'new' => $product->getAttributes()
         ]);
 
-        return response()->json($product->load('variants'));
+        return response()->json($product->load(['variants', 'propertyValues.property']));
     }
 
     /**

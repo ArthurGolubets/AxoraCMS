@@ -61,6 +61,41 @@ class TProduct extends Model
     }
 
     /**
+     * Get property values for this product
+     */
+    public function propertyValues(): HasMany
+    {
+        return $this->hasMany(TProductPropertyValue::class, 'product_id');
+    }
+
+    /**
+     * Get property values with their definitions
+     */
+    public function getPropertiesWithValues()
+    {
+        $catalog = $this->catalog;
+        if (!$catalog) {
+            return collect();
+        }
+
+        // Get all available properties from catalog hierarchy
+        $availableProperties = $catalog->getAllProperties();
+
+        // Get filled property values
+        $filledValues = $this->propertyValues()->with('property')->get()->keyBy('property_id');
+
+        // Combine properties with their values
+        return $availableProperties->map(function($property) use ($filledValues) {
+            $value = $filledValues->get($property->id);
+            return [
+                'property' => $property,
+                'value' => $value ? $value->value : null,
+                'value_id' => $value ? $value->id : null,
+            ];
+        });
+    }
+
+    /**
      * Check if product has variants
      */
     public function hasVariants(): bool

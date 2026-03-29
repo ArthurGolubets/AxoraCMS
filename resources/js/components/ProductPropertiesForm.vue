@@ -1,0 +1,175 @@
+<template>
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Свойства товара</h3>
+
+    <div v-if="availableProperties.length === 0" class="text-gray-500 dark:text-gray-400 text-center py-8">
+      Для этой категории не настроены свойства. Добавьте свойства в настройках категории.
+    </div>
+
+    <div v-else class="space-y-4">
+      <div
+        v-for="property in availableProperties"
+        :key="property.id"
+        class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+      >
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ property.name }}
+          <span class="text-gray-500 text-xs ml-1">({{ property.code }})</span>
+          <span v-if="property.is_inherited" class="ml-2 text-xs text-blue-600 dark:text-blue-400">
+            унаследовано
+          </span>
+        </label>
+
+        <!-- String type -->
+        <div v-if="property.type === 'string'">
+          <input
+            v-if="!property.is_multiple"
+            v-model="propertyValues[property.id]"
+            type="text"
+            :placeholder="`Введите ${property.name.toLowerCase()}`"
+            class="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
+          >
+          <div v-else class="space-y-2">
+            <div
+              v-for="(value, idx) in getMultipleValues(property.id)"
+              :key="idx"
+              class="flex gap-2"
+            >
+              <input
+                v-model="getMultipleValues(property.id)[idx]"
+                type="text"
+                :placeholder="`Значение ${idx + 1}`"
+                class="flex-1 px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
+              >
+              <button
+                @click="removeMultipleValue(property.id, idx)"
+                type="button"
+                class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              @click="addMultipleValue(property.id)"
+              type="button"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            >
+              + Добавить значение
+            </button>
+          </div>
+        </div>
+
+        <!-- Text type -->
+        <div v-else-if="property.type === 'text'">
+          <textarea
+            v-model="propertyValues[property.id]"
+            rows="4"
+            :placeholder="`Введите ${property.name.toLowerCase()}`"
+            class="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
+          ></textarea>
+        </div>
+
+        <!-- Number type -->
+        <div v-else-if="property.type === 'number'">
+          <input
+            v-if="!property.is_multiple"
+            v-model.number="propertyValues[property.id]"
+            type="number"
+            step="any"
+            :placeholder="`Введите ${property.name.toLowerCase()}`"
+            class="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
+          >
+          <div v-else class="space-y-2">
+            <div
+              v-for="(value, idx) in getMultipleValues(property.id)"
+              :key="idx"
+              class="flex gap-2"
+            >
+              <input
+                v-model.number="getMultipleValues(property.id)[idx]"
+                type="number"
+                step="any"
+                :placeholder="`Значение ${idx + 1}`"
+                class="flex-1 px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
+              >
+              <button
+                @click="removeMultipleValue(property.id, idx)"
+                type="button"
+                class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              @click="addMultipleValue(property.id)"
+              type="button"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            >
+              + Добавить значение
+            </button>
+          </div>
+        </div>
+
+        <p v-if="property.is_inherited" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Свойство унаследовано из родительской категории
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'ProductPropertiesForm',
+  props: {
+    availableProperties: {
+      type: Array,
+      default: () => []
+    },
+    initialValues: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  data() {
+    return {
+      propertyValues: {}
+    }
+  },
+  watch: {
+    initialValues: {
+      immediate: true,
+      handler(newVal) {
+        this.propertyValues = JSON.parse(JSON.stringify(newVal || {}))
+      }
+    },
+    propertyValues: {
+      deep: true,
+      handler(newVal) {
+        this.$emit('update:values', newVal)
+      }
+    }
+  },
+  methods: {
+    getMultipleValues(propertyId) {
+      if (!this.propertyValues[propertyId]) {
+        this.$set(this.propertyValues, propertyId, [''])
+      }
+      if (!Array.isArray(this.propertyValues[propertyId])) {
+        this.$set(this.propertyValues, propertyId, [this.propertyValues[propertyId]])
+      }
+      return this.propertyValues[propertyId]
+    },
+    addMultipleValue(propertyId) {
+      const values = this.getMultipleValues(propertyId)
+      values.push('')
+    },
+    removeMultipleValue(propertyId, index) {
+      const values = this.getMultipleValues(propertyId)
+      if (values.length > 1) {
+        values.splice(index, 1)
+      }
+    }
+  }
+}
+</script>
