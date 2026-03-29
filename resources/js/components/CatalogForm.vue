@@ -130,6 +130,16 @@
         </div>
       </div>
 
+      <!-- Properties Tab -->
+      <div v-show="activeTab === 'properties'" class="space-y-6">
+        <CatalogPropertiesManager
+          :catalog-id="route.params.id ? parseInt(route.params.id) : null"
+          :initial-properties="form.properties"
+          :inherited-properties="inheritedProperties"
+          @update:properties="form.properties = $event"
+        />
+      </div>
+
       <!-- Characteristics Tab -->
       <div v-show="activeTab === 'characteristics'" class="space-y-6">
         <ProductCharacteristics v-model="form.addition_info" applies-to="catalog" />
@@ -175,6 +185,7 @@ import ToggleSwitch from './ToggleSwitch.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
 import CatalogFiltersBlock from './CatalogFiltersBlock.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
+import CatalogPropertiesManager from './CatalogPropertiesManager.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -192,6 +203,7 @@ const tabs = [
   { id: 'main', label: 'Основное' },
   { id: 'seo', label: 'SEO' },
   { id: 'content', label: 'Контент' },
+  { id: 'properties', label: 'Свойства' },
   { id: 'characteristics', label: 'Характеристики' },
   { id: 'filters', label: 'Фильтры' }
 ];
@@ -207,7 +219,10 @@ const form = ref({
   content: '',
   is_active: true,
   addition_info: {},
+  properties: [],
 });
+
+const inheritedProperties = ref([]);
 
 const generateSlug = () => {
   const translitMap = {
@@ -294,7 +309,9 @@ const loadCatalog = async () => {
       content: data.catalog.content || '',
       is_active: data.catalog.is_active !== undefined ? data.catalog.is_active : true,
       addition_info: additionInfo,
+      properties: data.properties || [],
     };
+    inheritedProperties.value = data.inherited_properties || [];
     console.log('CatalogForm: Final form.value.addition_info:', form.value.addition_info);
   } catch (err) {
     console.error('Error loading catalog:', err);

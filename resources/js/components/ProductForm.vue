@@ -114,6 +114,15 @@
         </div>
       </div>
 
+      <!-- Properties Tab -->
+      <div v-show="activeTab === 'properties'" class="space-y-6">
+        <ProductPropertiesForm
+          :available-properties="availableProperties"
+          :initial-values="form.property_values"
+          @update:values="form.property_values = $event"
+        />
+      </div>
+
       <!-- Content Tab -->
       <div v-show="activeTab === 'content'" class="space-y-6">
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
@@ -159,6 +168,7 @@ import ToggleSwitch from './ToggleSwitch.vue';
 import ProductFiltersBlock from './ProductFiltersBlock.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
+import ProductPropertiesForm from './ProductPropertiesForm.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -176,6 +186,7 @@ const tabs = [
   { id: 'main', label: 'Основное' },
   { id: 'seo', label: 'SEO' },
   { id: 'variants', label: 'Варианты' },
+  { id: 'properties', label: 'Свойства' },
   { id: 'content', label: 'Контент' },
   { id: 'characteristics', label: 'Характеристики' },
   { id: 'filters', label: 'Фильтры' }
@@ -202,7 +213,10 @@ const form = ref({
   variants: [],
   filter_values: [],
   addition_info: {},
+  property_values: {},
 });
+
+const availableProperties = ref([]);
 
 const selectedCatalogName = computed(() => {
   const catalog = categories.value.find(c => c.id === form.value.catalog_id);
@@ -301,6 +315,23 @@ const loadProduct = async () => {
       }
     }
 
+    // Parse property values into object {property_id: value}
+    const propertyValues = {};
+    if (data.property_values) {
+      data.property_values.forEach(pv => {
+        const value = pv.value;
+        // Try to parse JSON for multiple values
+        try {
+          propertyValues[pv.property.id] = JSON.parse(value);
+        } catch (e) {
+          propertyValues[pv.property.id] = value;
+        }
+      });
+    }
+
+    // Set available properties
+    availableProperties.value = data.available_properties || [];
+
     form.value = {
       catalog_id: product.catalog_id,
       name: product.name || '',
@@ -321,7 +352,8 @@ const loadProduct = async () => {
       gallery: product.gallery || [],
       variants: product.variants || [],
       filter_values: filterValueIds,
-      addition_info: additionInfo
+      addition_info: additionInfo,
+      property_values: propertyValues
     };
   } catch (err) {
     await error('Ошибка при загрузке товара');
