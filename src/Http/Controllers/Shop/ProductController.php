@@ -95,7 +95,12 @@ class ProductController extends Controller
             $value = $pv->value;
             // Try to decode JSON for multiple values
             $decoded = json_decode($value, true);
-            $propertyValuesFormatted[$pv->property_id] = $decoded !== null ? $decoded : $value;
+            // Check if JSON decode was successful (not just checking for null)
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $propertyValuesFormatted[$pv->property_id] = $decoded;
+            } else {
+                $propertyValuesFormatted[$pv->property_id] = $value;
+            }
         }
 
         return response()->json([
@@ -173,9 +178,21 @@ class ProductController extends Controller
 
         // Save property values if provided
         if (!empty($propertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
+            \Log::info('Saving property values for product', [
+                'product_id' => $product->id,
+                'property_values' => $propertyValues
+            ]);
+
             foreach ($propertyValues as $propertyId => $value) {
+                \Log::info('Processing property', [
+                    'property_id' => $propertyId,
+                    'value' => $value,
+                    'is_array' => is_array($value)
+                ]);
+
                 // Skip null, empty string, or empty arrays
                 if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                    \Log::info('Skipping empty value for property', ['property_id' => $propertyId]);
                     continue;
                 }
 
@@ -187,11 +204,18 @@ class ProductController extends Controller
 
                     // Skip if array is empty after filtering
                     if (empty($value)) {
+                        \Log::info('Skipping empty array after filtering for property', ['property_id' => $propertyId]);
                         continue;
                     }
 
+                    \Log::info('Encoding array to JSON', ['property_id' => $propertyId, 'values' => $value]);
                     $value = json_encode($value, JSON_UNESCAPED_UNICODE);
                 }
+
+                \Log::info('Creating property value', [
+                    'property_id' => $propertyId,
+                    'final_value' => $value
+                ]);
 
                 $product->propertyValues()->create([
                     'property_id' => $propertyId,

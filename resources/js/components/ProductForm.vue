@@ -385,6 +385,9 @@ const handleSubmit = async () => {
     const url = isEdit.value ? `/admin/api/products/${route.params.id}` : '/admin/api/products';
     const method = isEdit.value ? 'PUT' : 'POST';
 
+    // Debug: log property values before sending
+    console.log('Property values being sent:', form.value.property_values);
+
     const response = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },

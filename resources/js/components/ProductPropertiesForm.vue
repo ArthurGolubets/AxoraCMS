@@ -192,6 +192,7 @@ export default {
       handler(newVal) {
         // Don't emit if we're updating from parent
         if (!this.isUpdatingFromParent) {
+          console.log('ProductPropertiesForm emitting updated values:', newVal)
           this.$emit('update:values', newVal)
         }
       }
