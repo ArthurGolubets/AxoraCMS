@@ -62,11 +62,40 @@
         <!-- Text type -->
         <div v-else-if="property.type === 'text'">
           <textarea
+            v-if="!property.is_multiple"
             v-model="propertyValues[property.id]"
             rows="4"
             :placeholder="`Введите ${property.name.toLowerCase()}`"
             class="w-full px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
           ></textarea>
+          <div v-else class="space-y-2">
+            <div
+              v-for="(value, idx) in getMultipleValues(property.id)"
+              :key="idx"
+              class="flex gap-2"
+            >
+              <textarea
+                v-model="getMultipleValues(property.id)[idx]"
+                rows="3"
+                :placeholder="`Значение ${idx + 1}`"
+                class="flex-1 px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
+              ></textarea>
+              <button
+                @click="removeMultipleValue(property.id, idx)"
+                type="button"
+                class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg self-start"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              @click="addMultipleValue(property.id)"
+              type="button"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            >
+              + Добавить значение
+            </button>
+          </div>
         </div>
 
         <!-- Number type -->

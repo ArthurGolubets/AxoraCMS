@@ -41,6 +41,7 @@
       <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-900">
           <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Изображение</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Товар</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Категория</th>
@@ -51,6 +52,19 @@
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
           <tr v-for="product in products.data" :key="product.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-6 py-4">
+              <img
+                v-if="product.main_image"
+                :src="getImageUrl(product.main_image)"
+                :alt="product.name"
+                class="w-12 h-12 object-cover rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+              >
+              <div v-else class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+            </td>
             <td class="px-6 py-4">
               <div class="font-medium text-gray-900 dark:text-white">{{ product.name }}</div>
               <div class="flex items-center space-x-2 mt-1">
@@ -167,6 +181,23 @@ const loadCategories = async () => {
   } catch (err) {
     console.error('Error loading categories:', err);
   }
+};
+
+const getImageUrl = (imageString) => {
+  if (!imageString) return '';
+
+  // If it's a base64 string or full URL, return as is
+  if (imageString.startsWith('data:') || imageString.startsWith('http')) {
+    return imageString;
+  }
+
+  // If it's already a storage path
+  if (imageString.startsWith('/storage/') || imageString.startsWith('storage/')) {
+    return imageString.startsWith('/') ? imageString : '/' + imageString;
+  }
+
+  // Otherwise, prepend /storage/
+  return '/storage/' + imageString;
 };
 
 const changePage = (page) => {
