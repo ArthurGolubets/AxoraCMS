@@ -253,8 +253,8 @@ const loadFilters = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      // Filter only active filters and ensure they have values
-      availableFilters.value = data.filter(f => f.is_active && f.values && f.values.length > 0);
+      // Filter only active filters - range type doesn't need values
+      availableFilters.value = data.filter(f => f.is_active && (f.type === 'range' || (f.values && f.values.length > 0)));
 
       // Set flag to prevent emit during initial load
       isUpdatingFromParent.value = true;

@@ -197,8 +197,8 @@
             </div>
           </div>
 
-          <!-- Filter Values -->
-          <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <!-- Filter Values (not needed for range type) -->
+          <div v-if="filterForm.type !== 'range'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
             <div class="flex items-center justify-between mb-3">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Значения фильтра
