@@ -91,7 +91,7 @@ class FilterController extends Controller
             'is_active' => 'boolean',
             'description' => 'nullable|string',
             'values' => 'nullable|array',
-            'values.*.value' => 'required|string',
+            'values.*.value' => 'required_unless:type,range|string',
             'values.*.code' => 'nullable|string',
             'values.*.sort' => 'nullable|integer',
             'values.*.is_active' => 'boolean',
@@ -108,9 +108,11 @@ class FilterController extends Controller
 
         $filter = TFilter::create($validated);
 
-        // Create filter values
-        foreach ($values as $valueData) {
-            $filter->values()->create($valueData);
+        // Create filter values (skip for range type as they don't need predefined values)
+        if ($filter->type !== 'range') {
+            foreach ($values as $valueData) {
+                $filter->values()->create($valueData);
+            }
         }
 
         // Log activity
@@ -144,10 +146,12 @@ class FilterController extends Controller
             $values = $validated['values'];
             unset($validated['values']);
 
-            // Sync values (delete old, create new)
+            // Sync values (delete old, create new) - skip for range type
             $filter->values()->delete();
-            foreach ($values as $valueData) {
-                $filter->values()->create($valueData);
+            if ($filter->type !== 'range') {
+                foreach ($values as $valueData) {
+                    $filter->values()->create($valueData);
+                }
             }
         }
 
