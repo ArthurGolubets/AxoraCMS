@@ -153,20 +153,38 @@ export default {
   },
   data() {
     return {
-      properties: []
+      properties: [],
+      isUpdatingFromParent: false
     }
+  },
+  mounted() {
+    // Initialize properties from prop on mount
+    this.isUpdatingFromParent = true
+    this.properties = JSON.parse(JSON.stringify(this.initialProperties || []))
+    this.$nextTick(() => {
+      this.isUpdatingFromParent = false
+    })
   },
   watch: {
     initialProperties: {
-      immediate: true,
       handler(newVal) {
-        this.properties = JSON.parse(JSON.stringify(newVal || []))
+        // Only update if change comes from parent (like after save)
+        if (!this.isUpdatingFromParent && JSON.stringify(newVal) !== JSON.stringify(this.properties)) {
+          this.isUpdatingFromParent = true
+          this.properties = JSON.parse(JSON.stringify(newVal || []))
+          this.$nextTick(() => {
+            this.isUpdatingFromParent = false
+          })
+        }
       }
     },
     properties: {
       deep: true,
       handler(newVal) {
-        this.$emit('update:properties', newVal)
+        // Don't emit if we're updating from parent
+        if (!this.isUpdatingFromParent) {
+          this.$emit('update:properties', newVal)
+        }
       }
     }
   },
