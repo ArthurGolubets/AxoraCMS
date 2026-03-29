@@ -344,19 +344,8 @@ const loadProduct = async () => {
       }
     }
 
-    // Parse property values into object {property_id: value}
-    const propertyValues = {};
-    if (data.property_values) {
-      data.property_values.forEach(pv => {
-        const value = pv.value;
-        // Try to parse JSON for multiple values
-        try {
-          propertyValues[pv.property.id] = JSON.parse(value);
-        } catch (e) {
-          propertyValues[pv.property.id] = value;
-        }
-      });
-    }
+    // Property values already formatted as {property_id: value} from backend
+    const propertyValues = data.property_values || {};
 
     // Set available properties
     availableProperties.value = data.available_properties || [];

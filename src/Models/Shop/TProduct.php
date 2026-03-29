@@ -96,6 +96,35 @@ class TProduct extends Model
     }
 
     /**
+     * Get formatted properties for display
+     * Returns array of properties with name and values
+     * Format: [['name' => 'Property Name', 'values' => ['value1', 'value2']], ...]
+     */
+    public function getFormattedProperties(): array
+    {
+        $result = [];
+
+        // Get property values with properties loaded
+        $propertyValues = $this->propertyValues()->with('property')->get();
+
+        foreach ($propertyValues as $pv) {
+            $property = $pv->property;
+
+            // Decode JSON if it's an array
+            $value = $pv->value;
+            $decoded = json_decode($value, true);
+            $values = $decoded !== null && is_array($decoded) ? $decoded : [$value];
+
+            $result[] = [
+                'name' => $property->name,
+                'values' => $values,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Check if product has variants
      */
     public function hasVariants(): bool

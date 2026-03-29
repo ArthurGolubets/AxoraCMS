@@ -89,10 +89,13 @@ class ProductController extends Controller
             });
         }
 
-        // Get property values
-        $propertyValues = [];
-        if (method_exists($product, 'getPropertiesWithValues')) {
-            $propertyValues = $product->getPropertiesWithValues();
+        // Get property values - format for Vue: {property_id: value}
+        $propertyValuesFormatted = [];
+        foreach ($product->propertyValues as $pv) {
+            $value = $pv->value;
+            // Try to decode JSON for multiple values
+            $decoded = json_decode($value, true);
+            $propertyValuesFormatted[$pv->property_id] = $decoded !== null ? $decoded : $value;
         }
 
         return response()->json([
@@ -100,7 +103,7 @@ class ProductController extends Controller
             'available_filters' => $availableFilters,
             'assigned_filters' => $assignedFilters,
             'available_properties' => $availableProperties,
-            'property_values' => $propertyValues,
+            'property_values' => $propertyValuesFormatted,
         ]);
     }
 
@@ -171,17 +174,29 @@ class ProductController extends Controller
         // Save property values if provided
         if (!empty($propertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
             foreach ($propertyValues as $propertyId => $value) {
-                if ($value !== null && $value !== '') {
-                    // Handle multiple values (arrays)
-                    if (is_array($value)) {
-                        $value = json_encode($value);
+                // Skip null, empty string, or empty arrays
+                if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                    continue;
+                }
+
+                // For arrays, filter out empty values and encode
+                if (is_array($value)) {
+                    $value = array_values(array_filter($value, function($v) {
+                        return $v !== null && $v !== '';
+                    }));
+
+                    // Skip if array is empty after filtering
+                    if (empty($value)) {
+                        continue;
                     }
 
-                    $product->propertyValues()->create([
-                        'property_id' => $propertyId,
-                        'value' => $value,
-                    ]);
+                    $value = json_encode($value, JSON_UNESCAPED_UNICODE);
                 }
+
+                $product->propertyValues()->create([
+                    'property_id' => $propertyId,
+                    'value' => $value,
+                ]);
             }
         }
 
@@ -258,17 +273,29 @@ class ProductController extends Controller
 
             // Create new property values
             foreach ($propertyValues as $propertyId => $value) {
-                if ($value !== null && $value !== '') {
-                    // Handle multiple values (arrays)
-                    if (is_array($value)) {
-                        $value = json_encode($value);
+                // Skip null, empty string, or empty arrays
+                if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                    continue;
+                }
+
+                // For arrays, filter out empty values and encode
+                if (is_array($value)) {
+                    $value = array_values(array_filter($value, function($v) {
+                        return $v !== null && $v !== '';
+                    }));
+
+                    // Skip if array is empty after filtering
+                    if (empty($value)) {
+                        continue;
                     }
 
-                    $product->propertyValues()->create([
-                        'property_id' => $propertyId,
-                        'value' => $value,
-                    ]);
+                    $value = json_encode($value, JSON_UNESCAPED_UNICODE);
                 }
+
+                $product->propertyValues()->create([
+                    'property_id' => $propertyId,
+                    'value' => $value,
+                ]);
             }
         }
 
