@@ -200,10 +200,10 @@ export default {
   methods: {
     getMultipleValues(propertyId) {
       if (!this.propertyValues[propertyId]) {
-        this.$set(this.propertyValues, propertyId, [''])
+        this.propertyValues[propertyId] = ['']
       }
       if (!Array.isArray(this.propertyValues[propertyId])) {
-        this.$set(this.propertyValues, propertyId, [this.propertyValues[propertyId]])
+        this.propertyValues[propertyId] = [this.propertyValues[propertyId]]
       }
       return this.propertyValues[propertyId]
     },
