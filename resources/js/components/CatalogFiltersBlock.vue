@@ -415,7 +415,8 @@ const closeFilterModal = () => {
 };
 
 const saveFilter = async () => {
-  if (filterForm.value.values.length === 0) {
+  // Range type doesn't need values
+  if (filterForm.value.type !== 'range' && filterForm.value.values.length === 0) {
     alert('Добавьте хотя бы одно значение фильтра');
     return;
   }
