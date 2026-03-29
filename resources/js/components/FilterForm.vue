@@ -126,8 +126,8 @@
         </div>
       </div>
 
-      <!-- Filter Values -->
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+      <!-- Filter Values (not needed for range type) -->
+      <div v-if="form.type !== 'range'" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Значения фильтра</h3>
           <ThemeButton variant="primary" size="sm" @click="addValue" type="button">

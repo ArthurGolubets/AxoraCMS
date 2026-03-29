@@ -81,22 +81,17 @@
             </div>
 
             <!-- Range type -->
-            <div v-else-if="filter.type === 'range'" class="space-y-2">
-              <label
-                v-for="value in filter.values"
-                :key="value.id"
-                class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-900 rounded cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  :value="value.id"
-                  v-model="selectedValues[filter.id]"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span class="ml-2 text-sm text-gray-900 dark:text-white">
-                  {{ value.value }}
-                </span>
-              </label>
+            <div v-else-if="filter.type === 'range'">
+              <input
+                type="number"
+                step="any"
+                v-model.number="selectedValues[filter.id]"
+                :placeholder="`Введите значение для ${filter.name}`"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              />
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Введите числовое значение для фильтра диапазона
+              </p>
             </div>
           </div>
         </div>
@@ -159,22 +154,17 @@
             </div>
 
             <!-- Range type -->
-            <div v-else-if="filter.type === 'range'" class="space-y-2">
-              <label
-                v-for="value in filter.values"
-                :key="value.id"
-                class="flex items-center p-2 hover:bg-white dark:hover:bg-gray-900 rounded cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  :value="value.id"
-                  v-model="selectedValues[filter.id]"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span class="ml-2 text-sm text-gray-900 dark:text-white">
-                  {{ value.value }}
-                </span>
-              </label>
+            <div v-else-if="filter.type === 'range'">
+              <input
+                type="number"
+                step="any"
+                v-model.number="selectedValues[filter.id]"
+                :placeholder="`Введите значение для ${filter.name}`"
+                class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-indigo-300 dark:border-indigo-600 rounded-lg text-gray-900 dark:text-white"
+              />
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Введите числовое значение для фильтра диапазона
+              </p>
             </div>
           </div>
         </div>
@@ -230,12 +220,19 @@ const selectedValuesArray = computed(() => {
   const values = [];
   Object.keys(selectedValues.value).forEach(filterId => {
     const filterValue = selectedValues.value[filterId];
+    const filter = availableFilters.value.find(f => f.id == filterId);
+
     if (Array.isArray(filterValue)) {
-      // Multiple selection (checkbox, range)
+      // Multiple selection (checkbox)
       values.push(...filterValue);
-    } else if (filterValue) {
-      // Single selection (select/radio)
-      values.push(filterValue);
+    } else if (filterValue !== null && filterValue !== '') {
+      // Single selection (select/radio) or range (numeric value)
+      if (filter && filter.type === 'range') {
+        // For range, store as "filter_id:value" format
+        values.push(`${filterId}:${filterValue}`);
+      } else {
+        values.push(filterValue);
+      }
     }
   });
   return values;
@@ -267,6 +264,8 @@ const loadFilters = async () => {
       availableFilters.value.forEach(filter => {
         if (filter.type === 'select') {
           newSelectedValues[filter.id] = null;
+        } else if (filter.type === 'range') {
+          newSelectedValues[filter.id] = null; // Numeric value for range
         } else {
           newSelectedValues[filter.id] = [];
         }
@@ -347,6 +346,8 @@ watch(() => props.initialValues, (newValues) => {
   availableFilters.value.forEach(filter => {
     if (filter.type === 'select') {
       newSelectedValues[filter.id] = null;
+    } else if (filter.type === 'range') {
+      newSelectedValues[filter.id] = null; // Numeric value for range
     } else {
       newSelectedValues[filter.id] = [];
     }
