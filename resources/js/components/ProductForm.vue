@@ -388,10 +388,21 @@ const handleSubmit = async () => {
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-    // Extract product ID from route - it's in params.id but we need to ensure it's just the ID
-    const productId = route.params.id;
+    // Extract just the numeric ID from route params
+    const productId = route.params.id ? String(route.params.id).replace(/\/edit$/, '') : null;
+
+    console.log('=== SUBMITTING PRODUCT ===');
+    console.log('route.params.id raw:', route.params.id);
+    console.log('productId cleaned:', productId);
+    console.log('isEdit:', isEdit.value);
+    console.log('route.path:', route.path);
+    console.log('route.params:', route.params);
+
     const url = isEdit.value ? `/admin/api/products/${productId}` : '/admin/api/products';
     const method = isEdit.value ? 'PUT' : 'POST';
+
+    console.log('Final URL:', url);
+    console.log('Method:', method);
 
     const response = await fetch(url, {
       method,

@@ -415,11 +415,18 @@ const closeFilterModal = () => {
 };
 
 const saveFilter = async () => {
+  console.log('=== SAVING FILTER ===');
+  console.log('filterForm.value.type:', filterForm.value.type);
+  console.log('filterForm.value.values.length:', filterForm.value.values.length);
+
   // Range type doesn't need values
   if (filterForm.value.type !== 'range' && filterForm.value.values.length === 0) {
+    console.log('VALIDATION FAILED: No values for non-range filter');
     alert('Добавьте хотя бы одно значение фильтра');
     return;
   }
+
+  console.log('VALIDATION PASSED');
 
   saving.value = true;
   try {
@@ -433,6 +440,10 @@ const saveFilter = async () => {
       ...filterForm.value,
       catalog_id: props.catalogId ? parseInt(props.catalogId) : null,
     };
+
+    console.log('Request URL:', url);
+    console.log('Request method:', method);
+    console.log('Payload:', payload);
 
     const response = await fetch(url, {
       method,
