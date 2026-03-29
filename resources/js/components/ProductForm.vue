@@ -119,7 +119,7 @@
         <ProductPropertiesForm
           :available-properties="availableProperties"
           :initial-values="form.property_values"
-          @update:values="form.property_values = $event"
+          @update:values="(newValues) => { console.log('ProductForm received property values:', newValues); form.property_values = newValues; }"
         />
       </div>
 
@@ -346,6 +346,11 @@ const loadProduct = async () => {
 
     // Property values already formatted as {property_id: value} from backend
     const propertyValues = data.property_values || {};
+
+    console.log('=== LOADING PRODUCT ===');
+    console.log('API response property_values:', data.property_values);
+    console.log('Available properties:', data.available_properties);
+    console.log('Parsed propertyValues:', propertyValues);
 
     // Set available properties
     availableProperties.value = data.available_properties || [];

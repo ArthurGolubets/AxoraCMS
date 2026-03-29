@@ -91,25 +91,41 @@ class ProductController extends Controller
 
         // Get property values - format for Vue: {property_id: value}
         $propertyValuesFormatted = [];
+
+        \Log::info('Product propertyValues count: ' . $product->propertyValues->count());
+
         foreach ($product->propertyValues as $pv) {
+            \Log::info('PropertyValue:', [
+                'id' => $pv->id,
+                'product_id' => $pv->product_id,
+                'property_id' => $pv->property_id,
+                'value' => $pv->value
+            ]);
+
             $value = $pv->value;
-            // Try to decode JSON for multiple values
             $decoded = json_decode($value, true);
-            // Check if JSON decode was successful (not just checking for null)
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            $jsonError = json_last_error();
+
+            if ($jsonError === JSON_ERROR_NONE && is_array($decoded)) {
                 $propertyValuesFormatted[$pv->property_id] = $decoded;
             } else {
                 $propertyValuesFormatted[$pv->property_id] = $value;
             }
         }
 
-        return response()->json([
+        \Log::info('Formatted property values:', $propertyValuesFormatted);
+
+        $response = [
             'product' => $product,
             'available_filters' => $availableFilters,
             'assigned_filters' => $assignedFilters,
             'available_properties' => $availableProperties,
             'property_values' => $propertyValuesFormatted,
-        ]);
+        ];
+
+        \Log::info('Full API response property_values:', $response['property_values']);
+
+        return response()->json($response);
     }
 
     /**
