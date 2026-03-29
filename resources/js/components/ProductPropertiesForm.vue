@@ -163,16 +163,14 @@ export default {
   data() {
     return {
       propertyValues: {},
-      isUpdatingFromParent: false
+      isUpdatingFromParent: true  // Start as true to prevent initial emit
     }
   },
-  mounted() {
-    // Initialize values from prop on mount
-    this.isUpdatingFromParent = true
-    this.propertyValues = JSON.parse(JSON.stringify(this.initialValues || {}))
+  created() {
+    // Initialize BEFORE mounting to prevent watcher from firing
+    console.log('ProductPropertiesForm created with initialValues:', this.initialValues)
 
-    console.log('ProductPropertiesForm mounted with initialValues:', this.initialValues)
-    console.log('ProductPropertiesForm propertyValues after init:', this.propertyValues)
+    this.propertyValues = JSON.parse(JSON.stringify(this.initialValues || {}))
 
     // Ensure arrays exist for multiple-value properties before first render
     this.availableProperties.forEach(prop => {
@@ -184,10 +182,13 @@ export default {
       }
     })
 
-    console.log('ProductPropertiesForm after array conversion:', this.propertyValues)
-
+    console.log('ProductPropertiesForm after init:', this.propertyValues)
+  },
+  mounted() {
+    // Allow watchers to work after component is fully mounted
     this.$nextTick(() => {
       this.isUpdatingFromParent = false
+      console.log('ProductPropertiesForm ready, watchers enabled')
     })
   },
   watch: {
