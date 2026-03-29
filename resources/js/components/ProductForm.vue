@@ -398,15 +398,24 @@ const handleSubmit = async () => {
     console.log('route.path:', route.path);
     console.log('route.params:', route.params);
 
-    const url = isEdit.value ? `/admin/api/products/${productId}` : '/admin/api/products';
+    // Use absolute URL to prevent redirects
+    const baseUrl = window.location.origin;
+    const apiPath = isEdit.value ? `/admin/api/products/${productId}` : '/admin/api/products';
+    const url = `${baseUrl}${apiPath}`;
     const method = isEdit.value ? 'PUT' : 'POST';
 
+    console.log('Base URL:', baseUrl);
+    console.log('API Path:', apiPath);
     console.log('Final URL:', url);
     console.log('Method:', method);
 
     const response = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': token,
+        'Accept': 'application/json'
+      },
       body: JSON.stringify(form.value),
     });
 
