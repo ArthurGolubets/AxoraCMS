@@ -131,7 +131,7 @@
       </div>
 
       <!-- Properties Tab -->
-      <div v-show="activeTab === 'properties'" class="space-y-6">
+      <div v-if="activeTab === 'properties'" class="space-y-6">
         <CatalogPropertiesManager
           :catalog-id="route.params.id ? parseInt(route.params.id) : null"
           :initial-properties="form.properties"

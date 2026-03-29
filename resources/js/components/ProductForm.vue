@@ -115,7 +115,7 @@
       </div>
 
       <!-- Properties Tab -->
-      <div v-show="activeTab === 'properties'" class="space-y-6">
+      <div v-if="activeTab === 'properties'" class="space-y-6">
         <ProductPropertiesForm
           :available-properties="availableProperties"
           :initial-values="form.property_values"

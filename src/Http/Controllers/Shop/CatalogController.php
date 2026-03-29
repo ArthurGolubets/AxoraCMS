@@ -134,6 +134,11 @@ class CatalogController extends Controller
         // Create properties
         if (!empty($properties) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalogProperty')) {
             foreach ($properties as $property) {
+                // Skip empty properties (when code or name is empty)
+                if (empty($property['code']) || empty($property['name'])) {
+                    continue;
+                }
+
                 $catalog->properties()->create([
                     'code' => $property['code'],
                     'name' => $property['name'],
@@ -191,6 +196,11 @@ class CatalogController extends Controller
 
             // Update or create properties
             foreach ($properties as $property) {
+                // Skip empty properties
+                if (empty($property['code']) || empty($property['name'])) {
+                    continue;
+                }
+
                 if (isset($property['id'])) {
                     // Update existing
                     $catalog->properties()->where('id', $property['id'])->update([
