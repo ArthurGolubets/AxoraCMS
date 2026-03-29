@@ -31,12 +31,12 @@
           >
           <div v-else class="space-y-2">
             <div
-              v-for="(value, idx) in getMultipleValues(property.id)"
+              v-for="(value, idx) in (ensureArrayExists(property.id), propertyValues[property.id])"
               :key="idx"
               class="flex gap-2"
             >
               <input
-                v-model="getMultipleValues(property.id)[idx]"
+                v-model="propertyValues[property.id][idx]"
                 type="text"
                 :placeholder="`Значение ${idx + 1}`"
                 class="flex-1 px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
@@ -70,12 +70,12 @@
           ></textarea>
           <div v-else class="space-y-2">
             <div
-              v-for="(value, idx) in getMultipleValues(property.id)"
+              v-for="(value, idx) in (ensureArrayExists(property.id), propertyValues[property.id])"
               :key="idx"
               class="flex gap-2"
             >
               <textarea
-                v-model="getMultipleValues(property.id)[idx]"
+                v-model="propertyValues[property.id][idx]"
                 rows="3"
                 :placeholder="`Значение ${idx + 1}`"
                 class="flex-1 px-4 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white"
@@ -110,12 +110,12 @@
           >
           <div v-else class="space-y-2">
             <div
-              v-for="(value, idx) in getMultipleValues(property.id)"
+              v-for="(value, idx) in (ensureArrayExists(property.id), propertyValues[property.id])"
               :key="idx"
               class="flex gap-2"
             >
               <input
-                v-model.number="getMultipleValues(property.id)[idx]"
+                v-model.number="propertyValues[property.id][idx]"
                 type="number"
                 step="any"
                 :placeholder="`Значение ${idx + 1}`"
@@ -170,6 +170,22 @@ export default {
     // Initialize values from prop on mount
     this.isUpdatingFromParent = true
     this.propertyValues = JSON.parse(JSON.stringify(this.initialValues || {}))
+
+    console.log('ProductPropertiesForm mounted with initialValues:', this.initialValues)
+    console.log('ProductPropertiesForm propertyValues after init:', this.propertyValues)
+
+    // Ensure arrays exist for multiple-value properties before first render
+    this.availableProperties.forEach(prop => {
+      if (prop.is_multiple && this.propertyValues[prop.id] !== undefined) {
+        // Convert to array if needed, but DON'T create empty array if no value
+        if (!Array.isArray(this.propertyValues[prop.id])) {
+          this.propertyValues[prop.id] = [this.propertyValues[prop.id]]
+        }
+      }
+    })
+
+    console.log('ProductPropertiesForm after array conversion:', this.propertyValues)
+
     this.$nextTick(() => {
       this.isUpdatingFromParent = false
     })
@@ -200,23 +216,44 @@ export default {
   },
   methods: {
     getMultipleValues(propertyId) {
+      // Don't mutate during render - just return what exists or create array
+      const value = this.propertyValues[propertyId]
+
+      // If no value, return array with empty string for new entries
+      if (value === undefined || value === null || value === '') {
+        return ['']
+      }
+
+      // If already array, return as is
+      if (Array.isArray(value)) {
+        return value
+      }
+
+      // If single value, wrap in array
+      return [value]
+    },
+    ensureArrayExists(propertyId) {
+      // Only mutate when explicitly called (not during render)
       if (!this.propertyValues[propertyId]) {
         this.propertyValues[propertyId] = ['']
-      }
-      if (!Array.isArray(this.propertyValues[propertyId])) {
+      } else if (!Array.isArray(this.propertyValues[propertyId])) {
         this.propertyValues[propertyId] = [this.propertyValues[propertyId]]
       }
-      return this.propertyValues[propertyId]
     },
     addMultipleValue(propertyId) {
-      const values = this.getMultipleValues(propertyId)
-      values.push('')
+      this.ensureArrayExists(propertyId)
+      this.propertyValues[propertyId].push('')
     },
     removeMultipleValue(propertyId, index) {
-      const values = this.getMultipleValues(propertyId)
+      this.ensureArrayExists(propertyId)
+      const values = this.propertyValues[propertyId]
       if (values.length > 1) {
         values.splice(index, 1)
       }
+    },
+    updateMultipleValue(propertyId, index, newValue) {
+      this.ensureArrayExists(propertyId)
+      this.propertyValues[propertyId][index] = newValue
     }
   }
 }
