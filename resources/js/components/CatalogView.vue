@@ -113,16 +113,24 @@
           @click="$router.push(`/products/${product.id}`)"
           class="py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition flex items-center justify-between"
         >
-          <div class="flex-1">
-            <div class="flex items-center space-x-3">
-              <h4 class="font-medium text-gray-900 dark:text-white">{{ product.name }}</h4>
-              <div class="flex items-center space-x-1">
-                <span v-if="product.is_new" class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded">Новинка</span>
-                <span v-if="product.is_hot" class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded">Хит</span>
-                <span v-if="product.is_recommended" class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded">Рекомендованный</span>
+          <div class="flex items-center space-x-4 flex-1">
+            <img
+              v-if="product.main_image"
+              :src="getImageUrl(product.main_image)"
+              :alt="product.name"
+              class="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+            >
+            <div class="flex-1">
+              <div class="flex items-center space-x-3">
+                <h4 class="font-medium text-gray-900 dark:text-white">{{ product.name }}</h4>
+                <div class="flex items-center space-x-1">
+                  <span v-if="product.is_new" class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded">Новинка</span>
+                  <span v-if="product.is_hot" class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded">Хит</span>
+                  <span v-if="product.is_recommended" class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded">Рекомендованный</span>
+                </div>
               </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Артикул: {{ product.sku }}</p>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Артикул: {{ product.sku }}</p>
           </div>
           <div class="flex items-center space-x-4">
             <div class="text-right">

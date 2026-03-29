@@ -158,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
@@ -281,6 +281,35 @@ const filterCategories = () => {
   }
 };
 
+// Load properties when catalog changes
+const loadCatalogProperties = async (catalogId) => {
+  if (!catalogId) {
+    availableProperties.value = [];
+    return;
+  }
+
+  try {
+    const response = await fetch(`/admin/api/catalogs/${catalogId}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    availableProperties.value = data.all_properties || [];
+  } catch (err) {
+    console.error('Error loading catalog properties:', err);
+  }
+};
+
+// Watch for catalog_id changes to load properties
+watch(() => form.value.catalog_id, async (newCatalogId, oldCatalogId) => {
+  if (newCatalogId && newCatalogId !== oldCatalogId) {
+    await loadCatalogProperties(newCatalogId);
+    // Clear property values when catalog changes
+    if (oldCatalogId) {
+      form.value.property_values = {};
+    }
+  }
+});
+
 const loadProduct = async () => {
   try {
     const response = await fetch(`/admin/api/products/${route.params.id}`);
@@ -388,9 +417,13 @@ const handleSubmit = async () => {
   }
 };
 
-onMounted(() => {
-  loadCategories();
-  if (isEdit.value) loadProduct();
-  if (route.query.catalog_id) form.value.catalog_id = parseInt(route.query.catalog_id);
+onMounted(async () => {
+  await loadCategories();
+  if (isEdit.value) {
+    await loadProduct();
+  } else if (route.query.catalog_id) {
+    form.value.catalog_id = parseInt(route.query.catalog_id);
+    await loadCatalogProperties(form.value.catalog_id);
+  }
 });
 </script>
