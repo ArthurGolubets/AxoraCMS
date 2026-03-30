@@ -114,13 +114,14 @@
         </div>
       </div>
 
-      <!-- Properties Tab -->
+      <!-- Properties and Characteristics Tab -->
       <div v-if="activeTab === 'properties'" class="space-y-6">
         <ProductPropertiesForm
           :available-properties="availableProperties"
           :initial-values="form.property_values"
           @update:values="(newValues) => { console.log('ProductForm received property values:', newValues); form.property_values = newValues; }"
         />
+        <ProductCharacteristics v-model="form.addition_info" applies-to="product" />
       </div>
 
       <!-- Content Tab -->
@@ -128,11 +129,6 @@
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <TinyMCEEditor v-model="form.content" label="Контент" :height="400" />
         </div>
-      </div>
-
-      <!-- Characteristics Tab -->
-      <div v-show="activeTab === 'characteristics'" class="space-y-6">
-        <ProductCharacteristics v-model="form.addition_info" applies-to="product" />
       </div>
 
       <!-- Filters Tab -->
@@ -188,9 +184,8 @@ const tabs = [
   { id: 'main', label: 'Основное' },
   { id: 'seo', label: 'SEO' },
   { id: 'variants', label: 'Варианты' },
-  { id: 'properties', label: 'Свойства' },
+  { id: 'properties', label: 'Свойства и характеристики' },
   { id: 'content', label: 'Контент' },
-  { id: 'characteristics', label: 'Характеристики' },
   { id: 'filters', label: 'Фильтры' }
 ];
 

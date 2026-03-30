@@ -74,7 +74,18 @@ class ShopUninstallCommand extends Command
             try {
                 Schema::disableForeignKeyConstraints();
 
-                // Drop filter-related tables first (they have foreign keys)
+                // Drop property-related tables first (they have foreign keys)
+                if (Schema::hasTable('t_product_property_values')) {
+                    Schema::dropIfExists('t_product_property_values');
+                    $this->info('✓ Dropped t_product_property_values table');
+                }
+
+                if (Schema::hasTable('t_catalog_properties')) {
+                    Schema::dropIfExists('t_catalog_properties');
+                    $this->info('✓ Dropped t_catalog_properties table');
+                }
+
+                // Drop filter-related tables (they have foreign keys)
                 if (Schema::hasTable('t_product_filter_values')) {
                     Schema::dropIfExists('t_product_filter_values');
                     $this->info('✓ Dropped t_product_filter_values table');
@@ -119,9 +130,12 @@ class ShopUninstallCommand extends Command
                 '2024_01_01_000011_create_t_products_table.php',
                 '2024_01_01_000012_create_t_product_variants_table.php',
                 '2024_01_01_000013_add_main_image_to_products.php',
+                '2024_01_01_000018_add_range_filter_values_to_t_products_table.php',
                 '2026_03_03_000070_create_t_filters_table.php',
                 '2026_03_03_000071_create_t_filter_values_table.php',
                 '2026_03_03_000072_create_t_product_filter_values_table.php',
+                '2026_03_29_000090_create_t_catalog_properties_table.php',
+                '2026_03_29_000091_create_t_product_property_values_table.php',
             ];
 
             try {
