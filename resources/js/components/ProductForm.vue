@@ -142,6 +142,7 @@
           :catalogId="form.catalog_id"
           :catalogName="selectedCatalogName"
           :initialValues="form.filter_values || []"
+          :initialRangeValues="form.range_filter_values || {}"
           @update:filterValues="form.filter_values = $event"
           @update:rangeFilterValues="form.range_filter_values = $event"
         />
@@ -329,6 +330,9 @@ const loadProduct = async () => {
     const filterValueIds = product.filter_values?.map(fv => fv.id) ||
                           data.assigned_filters?.flatMap(f => f.values?.map(v => v.id) || []) || [];
 
+    // Extract range filter values
+    const rangeFilterValues = product.range_filter_values || {};
+
     // Parse addition_info if it's a string
     let additionInfo = {};
     if (product.addition_info) {
@@ -377,6 +381,7 @@ const loadProduct = async () => {
       gallery: product.gallery || [],
       variants: product.variants || [],
       filter_values: filterValueIds,
+      range_filter_values: rangeFilterValues,
       addition_info: additionInfo,
       property_values: propertyValues
     };

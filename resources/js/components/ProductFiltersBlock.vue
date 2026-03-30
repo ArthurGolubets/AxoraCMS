@@ -198,6 +198,10 @@ const props = defineProps({
   initialValues: {
     type: Array,
     default: () => []
+  },
+  initialRangeValues: {
+    type: Object,
+    default: () => ({})
   }
 });
 
@@ -300,6 +304,16 @@ const loadFilters = async () => {
               }
               newSelectedValues[filter.id].push(valueId);
             }
+          }
+        });
+      }
+
+      // Apply initial range values if provided
+      if (props.initialRangeValues && Object.keys(props.initialRangeValues).length > 0) {
+        Object.keys(props.initialRangeValues).forEach(filterId => {
+          const filter = availableFilters.value.find(f => f.id == filterId && f.type === 'range');
+          if (filter) {
+            newSelectedValues[filterId] = props.initialRangeValues[filterId];
           }
         });
       }
