@@ -159,6 +159,8 @@ class ProductController extends Controller
             'variants.*.attributes' => 'nullable|array',
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
+            'range_filter_values' => 'nullable|array',
+            'range_filter_values.*' => 'numeric',
             'addition_info' => 'nullable|array',
             'property_values' => 'nullable|array',
         ]);
@@ -175,6 +177,10 @@ class ProductController extends Controller
         // Extract filter values
         $filterValues = $validated['filter_values'] ?? [];
         unset($validated['filter_values']);
+
+        // Extract range filter values
+        $rangeFilterValues = $validated['range_filter_values'] ?? [];
+        unset($validated['range_filter_values']);
 
         // Extract property values
         $propertyValues = $validated['property_values'] ?? [];
@@ -275,6 +281,8 @@ class ProductController extends Controller
             'variants' => 'nullable|array',
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
+            'range_filter_values' => 'nullable|array',
+            'range_filter_values.*' => 'numeric',
             'addition_info' => 'nullable|array',
             'property_values' => 'nullable|array',
         ]);

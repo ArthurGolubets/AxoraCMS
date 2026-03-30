@@ -201,7 +201,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:filterValues']);
+const emit = defineEmits(['update:filterValues', 'update:rangeFilterValues']);
 
 const availableFilters = ref([]);
 const selectedValues = ref({});
@@ -222,24 +222,37 @@ const selectedValuesArray = computed(() => {
     const filterValue = selectedValues.value[filterId];
     const filter = availableFilters.value.find(f => f.id == filterId);
 
+    // Skip range filters - they are handled separately
+    if (filter && filter.type === 'range') {
+      return;
+    }
+
     if (Array.isArray(filterValue)) {
       // Multiple selection (checkbox)
       values.push(...filterValue);
     } else if (filterValue !== null && filterValue !== '') {
-      // Single selection (select/radio) or range (numeric value)
-      if (filter && filter.type === 'range') {
-        // For range, store as "filter_id:value" format
-        values.push(`${filterId}:${filterValue}`);
-      } else {
-        values.push(filterValue);
-      }
+      // Single selection (select/radio)
+      values.push(filterValue);
     }
   });
   return values;
 });
 
+const rangeFilterValues = computed(() => {
+  const ranges = {};
+  Object.keys(selectedValues.value).forEach(filterId => {
+    const filterValue = selectedValues.value[filterId];
+    const filter = availableFilters.value.find(f => f.id == filterId);
+
+    if (filter && filter.type === 'range' && filterValue !== null && filterValue !== '') {
+      ranges[filterId] = filterValue;
+    }
+  });
+  return ranges;
+});
+
 const selectedValuesCount = computed(() => {
-  return selectedValuesArray.value.length;
+  return selectedValuesArray.value.length + Object.keys(rangeFilterValues.value).length;
 });
 
 const loadFilters = async () => {
@@ -314,6 +327,7 @@ watch(selectedValues, () => {
   // Don't emit if we're currently updating from parent to prevent circular updates
   if (!isUpdatingFromParent.value) {
     emit('update:filterValues', selectedValuesArray.value);
+    emit('update:rangeFilterValues', rangeFilterValues.value);
   }
 }, { deep: true });
 
