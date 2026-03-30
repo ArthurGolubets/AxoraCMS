@@ -85,6 +85,11 @@ class ShopUninstallCommand extends Command
                     $this->info('✓ Dropped t_catalog_properties table');
                 }
 
+                if (Schema::hasTable('t_characteristic_definitions')) {
+                    Schema::dropIfExists('t_characteristic_definitions');
+                    $this->info('✓ Dropped t_characteristic_definitions table');
+                }
+
                 // Drop filter-related tables (they have foreign keys)
                 if (Schema::hasTable('t_product_filter_values')) {
                     Schema::dropIfExists('t_product_filter_values');
@@ -134,6 +139,7 @@ class ShopUninstallCommand extends Command
                 '2026_03_03_000070_create_t_filters_table.php',
                 '2026_03_03_000071_create_t_filter_values_table.php',
                 '2026_03_03_000072_create_t_product_filter_values_table.php',
+                '2026_03_09_000080_create_t_characteristic_definitions_table.php',
                 '2026_03_29_000090_create_t_catalog_properties_table.php',
                 '2026_03_29_000091_create_t_product_property_values_table.php',
             ];
