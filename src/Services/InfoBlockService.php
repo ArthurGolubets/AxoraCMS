@@ -524,4 +524,34 @@ class InfoBlockService
 
         return $breadcrumbs;
     }
+
+    /**
+     * Get enum options for info block fields
+     *
+     * @param string $code Info block code
+     * @return array ['field_code' => [['code' => '...', 'title' => '...'], ...], ...]
+     * @throws \Exception
+     */
+    public function getEnumOptions(string $code): array
+    {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        $enums = [];
+
+        foreach ($infoBlock->fields as $field) {
+            if ($field->type === 'enum') {
+                $options = $field->settings['options'] ?? [];
+                $enums[$field->code] = array_map(fn($option) => [
+                    'code'  => $option['code'],
+                    'title' => $option['title'],
+                ], $options);
+            }
+        }
+
+        return $enums;
+    }
 }

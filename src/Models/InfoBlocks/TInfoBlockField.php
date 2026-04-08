@@ -50,6 +50,7 @@ class TInfoBlockField extends Model
             'file' => 'Файл',
             'entity' => 'Привязка к элементу',
             'user' => 'Привязка к пользователю',
+            'enum' => 'Список',
         ];
     }
 
@@ -74,6 +75,9 @@ class TInfoBlockField extends Model
             case 'date':
             case 'datetime':
                 return strtotime($value) !== false;
+            case 'enum':
+                $options = $this->settings['options'] ?? [];
+                return in_array($value, $options);
             default:
                 return true;
         }
@@ -98,6 +102,7 @@ class TInfoBlockField extends Model
             case 'string':
             case 'text':
             case 'image':
+            case 'enum':
             case 'file':
                 return (string) $value;
             default:

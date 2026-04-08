@@ -94,6 +94,35 @@
               <option v-for="type in fieldTypes" :key="type.value" :value="type.value">{{ type.label }}</option>
             </select>
           </div>
+          <div v-if="fieldForm.type === 'enum'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="flex items-center justify-between mb-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Варианты выбора
+              </label>
+              <button type="button" @click="addEnumOption"
+                      class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                + Добавить вариант
+              </button>
+            </div>
+            <div class="space-y-2">
+              <div v-for="(option, index) in fieldForm.options" :key="index"
+                   class="flex items-center space-x-2">
+                <input v-model="option.title" type="text" placeholder="Название"
+                       class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" />
+                <input v-model="option.code" type="text" placeholder="Код"
+                       class="w-32 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm font-mono" />
+                <button type="button" @click="removeEnumOption(index)"
+                        class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+              <p v-if="fieldForm.options.length === 0" class="text-sm text-gray-400 dark:text-gray-500">
+                Добавьте хотя бы один вариант
+              </p>
+            </div>
+          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сортировка</label>
             <input v-model.number="fieldForm.sort" type="number" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
@@ -144,7 +173,8 @@ const fieldForm = ref({
   type: 'string',
   sort: 500,
   is_required: false,
-  is_multiple: false
+  is_multiple: false,
+  options: []
 });
 
 const fieldTypes = [
@@ -158,7 +188,8 @@ const fieldTypes = [
   { value: 'image', label: 'Изображение' },
   { value: 'file', label: 'Файл' },
   { value: 'entity', label: 'Привязка к сущности' },
-  { value: 'user', label: 'Пользователь' }
+  { value: 'user', label: 'Пользователь' },
+  { value: 'enum', label: 'Список' }
 ];
 
 const getFieldTypeLabel = (type) => {
@@ -182,6 +213,14 @@ const generateFieldCode = () => {
     code = code.replace(/[^a-z0-9_]/g, '');
     fieldForm.value.code = code;
   }
+};
+
+const addEnumOption = () => {
+  fieldForm.value.options.push({ code: '', title: '' });
+};
+
+const removeEnumOption = (index) => {
+  fieldForm.value.options.splice(index, 1);
 };
 
 const loadInfoBlock = async () => {
@@ -221,7 +260,8 @@ const editField = (field) => {
     type: field.type,
     sort: field.sort,
     is_required: field.is_required,
-    is_multiple: field.is_multiple
+    is_multiple: field.is_multiple,
+    options: field.settings?.options || []
   };
   showFieldModal.value = true;
 };
@@ -235,13 +275,22 @@ const closeFieldModal = () => {
     type: 'string',
     sort: 500,
     is_required: false,
-    is_multiple: false
+    is_multiple: false,
+    options: []
   };
 };
 
 const saveField = async () => {
   saving.value = true;
   try {
+
+    const payload = { ...fieldForm.value };
+
+    if (payload.type === 'enum') {
+      payload.settings = { options: payload.options };
+    }
+    delete payload.options;
+
     const url = editingField.value
       ? `/admin/api/infoblocks/${route.params.id}/fields/${editingField.value.id}`
       : `/admin/api/infoblocks/${route.params.id}/fields`;

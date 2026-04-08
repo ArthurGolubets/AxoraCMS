@@ -42,7 +42,7 @@ class InfoBlockFieldsController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|regex:/^[a-z0-9_]+$/',
-            'type' => 'required|in:string,text,number,double,bool,date,datetime,image,file,entity,user',
+            'type' => 'required|in:string,text,number,double,bool,date,datetime,image,file,entity,user,enum',
             'sort' => 'nullable|integer',
             'is_required' => 'boolean',
             'is_multiple' => 'boolean',
@@ -76,7 +76,7 @@ class InfoBlockFieldsController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|regex:/^[a-z0-9_]+$/',
-            'type' => 'required|in:string,text,number,double,bool,date,datetime,image,file,entity,user',
+            'type' => 'required|in:string,text,number,double,bool,date,datetime,image,file,entity,user,enum',
             'sort' => 'nullable|integer',
             'is_required' => 'boolean',
             'is_multiple' => 'boolean',

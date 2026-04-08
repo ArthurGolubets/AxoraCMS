@@ -174,6 +174,23 @@
               :required="field.is_required"
             />
 
+            <!-- Enum -->
+            <select
+                v-else-if="field.type === 'enum'"
+                v-model="form.properties[field.code]"
+                :required="field.is_required"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+            >
+              <option value="">— Выберите значение —</option>
+              <option
+                  v-for="option in (field.settings?.options || [])"
+                  :key="option.code"
+                  :value="option.code"
+              >
+                {{ option.title }}
+              </option>
+            </select>
+
             <!-- Default -->
             <input
               v-else
