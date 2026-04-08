@@ -77,7 +77,8 @@ class TInfoBlockField extends Model
                 return strtotime($value) !== false;
             case 'enum':
                 $options = $this->settings['options'] ?? [];
-                return in_array($value, $options);
+                $codes = array_column($options, 'code');
+                return in_array($value, $codes);
             default:
                 return true;
         }
@@ -109,4 +110,15 @@ class TInfoBlockField extends Model
                 return $value;
         }
     }
+    public function getEnumTitle($code): ?string
+    {
+        $options = $this->settings['options'] ?? [];
+        foreach ($options as $option) {
+            if ($option['code'] === $code) {
+                return $option['title'];
+            }
+        }
+        return null;
+    }
+
 }

@@ -72,10 +72,13 @@ class InfoBlockService
 
         // Return paginated or all results
         if ($perPage !== null) {
-            return $query->paginate($perPage, ['*'], 'page', $page);
+            $result = $query->paginate($perPage, ['*'], 'page', $page);
+            $result->getCollection()->transform(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+            return $result;
         }
 
-        return $query->get();
+        $elements = $query->get();
+        return $elements->map(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
     }
 
     /**
@@ -553,5 +556,34 @@ class InfoBlockService
         }
 
         return $enums;
+    }
+
+    protected function enrichEnumProperties($element, $fields): mixed
+    {
+        $properties = $element->properties ?? [];
+
+        foreach ($fields as $field) {
+            if ($field->type !== 'enum') continue;
+
+            $code = $properties[$field->code] ?? null;
+            if ($code === null) continue;
+
+            $options = $field->settings['options'] ?? [];
+            $title = null;
+            foreach ($options as $option) {
+                if ($option['code'] === $code) {
+                    $title = $option['title'];
+                    break;
+                }
+            }
+
+            $properties[$field->code] = [
+                'code'  => $code,
+                'title' => $title,
+            ];
+        }
+
+        $element->properties = $properties;
+        return $element;
     }
 }
