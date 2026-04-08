@@ -304,7 +304,7 @@ const saveField = async () => {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
         'Accept': 'application/json'
       },
-      body: JSON.stringify(fieldForm.value)
+      body: JSON.stringify(payload)
     });
 
     if (response.ok) {
