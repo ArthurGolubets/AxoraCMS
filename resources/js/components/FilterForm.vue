@@ -222,6 +222,35 @@
         </div>
       </div>
 
+      <!-- Range Settings -->
+      <div v-if="form.type === 'range'" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Настройки диапазона</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Минимальное значение (от)
+            </label>
+            <input
+                v-model.number="rangeFrom"
+                type="number"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                placeholder="0"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Максимальное значение (до)
+            </label>
+            <input
+                v-model.number="rangeTo"
+                type="number"
+                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                placeholder="1000000"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Actions -->
       <div class="flex items-center justify-between">
         <ThemeButton variant="secondary" @click="$router.push('/filters')" type="button">
@@ -258,6 +287,30 @@ const form = ref({
   is_active: true,
   description: '',
   values: [],
+});
+
+const rangeFrom = computed({
+  get: () => form.value.values.find(v => v.code === 'from')?.value ?? '',
+  set: (val) => {
+    const idx = form.value.values.findIndex(v => v.code === 'from');
+    if (idx !== -1) {
+      form.value.values[idx].value = val;
+    } else {
+      form.value.values.push({ value: val, code: 'from', sort: 100, is_active: true });
+    }
+  }
+});
+
+const rangeTo = computed({
+  get: () => form.value.values.find(v => v.code === 'to')?.value ?? '',
+  set: (val) => {
+    const idx = form.value.values.findIndex(v => v.code === 'to');
+    if (idx !== -1) {
+      form.value.values[idx].value = val;
+    } else {
+      form.value.values.push({ value: val, code: 'to', sort: 200, is_active: true });
+    }
+  }
 });
 
 const loadCatalogs = async () => {
