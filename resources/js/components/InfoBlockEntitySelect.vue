@@ -20,7 +20,7 @@
     </div>
 
     <!-- InfoBlock Selection (if entity type is infoblock) -->
-    <div v-if="selectedEntityType === 'infoblock'" class="mb-3">
+    <div v-if="selectedEntityType === 'infoblock' && !entityTypeFixed" class="mb-3">
       <select
         v-model="selectedInfoBlock"
         @change="loadEntities"

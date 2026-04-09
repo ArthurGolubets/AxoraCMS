@@ -1,7 +1,7 @@
 {
     "name": "holartweb/axora-cms",
     "description": "AxoraCMS — современная, гибкая и удобная CMS для создания быстрых, масштабируемых и красивых сайтов.",
-    "version": "1.1.8.3",
+    "version": "1.1.8.4",
     "type": "library",
     "license": "MIT",
     "keywords": ["laravel", "admin", "cms", "vue"],
