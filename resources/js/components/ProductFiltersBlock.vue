@@ -60,6 +60,15 @@
               </label>
             </div>
 
+            <!-- Entity type -->
+            <div v-else-if="filter.type === 'entity'">
+              <InfoBlockEntitySelect
+                  v-model="selectedValues[filter.id]"
+                  :entity-type-fixed="filter.settings?.entity_type"
+                  :info-block-id="filter.settings?.entity_id"
+              />
+            </div>
+
             <!-- Checkbox type -->
             <div v-else-if="filter.type === 'checkbox'" class="space-y-2">
               <label
@@ -166,6 +175,15 @@
                 Введите числовое значение для фильтра диапазона
               </p>
             </div>
+
+            <!-- Entity type -->
+            <div v-else-if="filter.type === 'entity'">
+              <InfoBlockEntitySelect
+                  v-model="selectedValues[filter.id]"
+                  :entity-type-fixed="filter.settings?.entity_type"
+                  :info-block-id="filter.settings?.entity_id"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -185,6 +203,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import InfoBlockEntitySelect from './InfoBlockEntitySelect.vue';
 
 const props = defineProps({
   catalogId: {
@@ -271,7 +290,7 @@ const loadFilters = async () => {
     if (response.ok) {
       const data = await response.json();
       // Filter only active filters - range type doesn't need values
-      availableFilters.value = data.filter(f => f.is_active && (f.type === 'range' || (f.values && f.values.length > 0)));
+      availableFilters.value = data.filter(f => f.is_active && (f.type === 'range' || f.type === 'entity' || (f.values && f.values.length > 0)));
 
       // Set flag to prevent emit during initial load
       isUpdatingFromParent.value = true;
@@ -281,6 +300,8 @@ const loadFilters = async () => {
       availableFilters.value.forEach(filter => {
         if (filter.type === 'select') {
           newSelectedValues[filter.id] = null;
+        } else if (filter.type === 'entity') {
+            newSelectedValues[filter.id] = null;
         } else if (filter.type === 'range') {
           newSelectedValues[filter.id] = null; // Numeric value for range
         } else {
