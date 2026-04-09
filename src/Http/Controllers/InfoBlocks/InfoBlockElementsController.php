@@ -61,13 +61,17 @@ class InfoBlockElementsController extends Controller
             'code' => 'nullable|string|regex:/^[a-z0-9_]+$/',
             'is_active' => 'boolean',
             'sort' => 'nullable|integer',
-            'properties' => 'required|array',
+            'properties' => 'nullable|array',
         ]);
 
         // Validate properties against fields
         $properties = $validated['properties'] ?? [];
         foreach ($infoBlock->fields as $field) {
-            if ($field->is_required && !isset($properties[$field->code])) {
+            if ($field->is_required && (
+                    !isset($properties[$field->code]) ||
+                    $properties[$field->code] === '' ||
+                    $properties[$field->code] === null
+                )) {
                 return response()->json([
                     'message' => 'Поле "' . $field->name . '" обязательно для заполнения'
                 ], 422);
@@ -102,13 +106,17 @@ class InfoBlockElementsController extends Controller
             'code' => 'nullable|string|regex:/^[a-z0-9_]+$/',
             'is_active' => 'boolean',
             'sort' => 'nullable|integer',
-            'properties' => 'required|array',
+            'properties' => 'nullable|array',
         ]);
 
         // Validate properties against fields
         $properties = $validated['properties'] ?? [];
         foreach ($infoBlock->fields as $field) {
-            if ($field->is_required && !isset($properties[$field->code])) {
+            if ($field->is_required && (
+                    !isset($properties[$field->code]) ||
+                    $properties[$field->code] === '' ||
+                    $properties[$field->code] === null
+                )) {
                 return response()->json([
                     'message' => 'Поле "' . $field->name . '" обязательно для заполнения'
                 ], 422);
