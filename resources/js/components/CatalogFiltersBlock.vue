@@ -23,7 +23,8 @@
               :class="{
                 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200': filter.type === 'select',
                 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200': filter.type === 'checkbox',
-                'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200': filter.type === 'range'
+                'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200': filter.type === 'range',
+                'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200': filter.type === 'entity',
               }">
               {{ typeLabels[filter.type] }}
             </span>
@@ -158,7 +159,7 @@
                 <option value="select">Выбор (dropdown)</option>
                 <option value="checkbox">Флажки (multiple)</option>
                 <option value="range">Диапазон (min-max)</option>
-                <option value="entity">Привязка к сущности (entity)</option>
+                <option value="entity">Сущность (entity)</option>
               </select>
             </div>
 
@@ -379,7 +380,7 @@ const typeLabels = {
   select: 'Выбор',
   checkbox: 'Флажки',
   range: 'Диапазон',
-  entity: 'Привязка к сущности'
+  entity: 'Сущность'
 };
 
 const filterForm = ref({
