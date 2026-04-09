@@ -105,7 +105,7 @@
               </button>
             </div>
             <div class="space-y-2">
-              <div v-for="(option, index) in fieldForm.options" :key="index"
+              <div v-for="(option, index) in fieldForm.settings.options" :key="index"
                    class="flex items-center space-x-2">
                 <input v-model="option.title" type="text" placeholder="Название"
                        class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" />
@@ -118,9 +118,35 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="fieldForm.options.length === 0" class="text-sm text-gray-400 dark:text-gray-500">
+              <p v-if="!fieldForm.settings.options || fieldForm.settings.options.length === 0" class="text-sm text-gray-400 dark:text-gray-500">
                 Добавьте хотя бы один вариант
               </p>
+            </div>
+          </div>
+          <div v-if="fieldForm.type === 'entity'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Тип сущности *
+              </label>
+              <select v-model="fieldForm.settings.entity_type"
+                      class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+                <option value="">— Выберите тип —</option>
+                <option value="infoblock">Элемент инфоблока</option>
+                <option value="product">Товар</option>
+                <option value="catalog">Категория</option>
+              </select>
+            </div>
+            <div v-if="fieldForm.settings.entity_type === 'infoblock'">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Инфоблок *
+              </label>
+              <select v-model="fieldForm.settings.entity_id"
+                      class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+                <option :value="null">— Выберите инфоблок —</option>
+                <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">
+                  {{ ib.name }}
+                </option>
+              </select>
             </div>
           </div>
           <div>
@@ -152,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch  } from 'vue';
 import { useRoute } from 'vue-router';
 import ThemeButton from './ThemeButton.vue';
 import { useModal } from '../composables/useModal';
@@ -166,6 +192,7 @@ const loading = ref(false);
 const showFieldModal = ref(false);
 const editingField = ref(null);
 const saving = ref(false);
+const infoBlocks = ref([]);
 
 const fieldForm = ref({
   name: '',
@@ -174,7 +201,7 @@ const fieldForm = ref({
   sort: 500,
   is_required: false,
   is_multiple: false,
-  options: []
+  settings: {}
 });
 
 const fieldTypes = [
@@ -216,11 +243,14 @@ const generateFieldCode = () => {
 };
 
 const addEnumOption = () => {
-  fieldForm.value.options.push({ code: '', title: '' });
+  if (!fieldForm.value.settings.options) {
+    fieldForm.value.settings.options = [];
+  }
+  fieldForm.value.settings.options.push({ code: '', title: '' });
 };
 
 const removeEnumOption = (index) => {
-  fieldForm.value.options.splice(index, 1);
+  fieldForm.value.settings.options.splice(index, 1);
 };
 
 const loadInfoBlock = async () => {
@@ -233,6 +263,19 @@ const loadInfoBlock = async () => {
     }
   } catch (error) {
     console.error('Failed to load info block:', error);
+  }
+};
+const loadInfoBlocks = async () => {
+  try {
+    const response = await fetch('/admin/api/infoblocks', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      infoBlocks.value = data.data || data;
+    }
+  } catch (error) {
+    console.error('Failed to load infoblocks:', error);
   }
 };
 
@@ -261,7 +304,7 @@ const editField = (field) => {
     sort: field.sort,
     is_required: field.is_required,
     is_multiple: field.is_multiple,
-    options: field.settings?.options || []
+    settings: field.settings || {}
   };
   showFieldModal.value = true;
 };
@@ -276,7 +319,7 @@ const closeFieldModal = () => {
     sort: 500,
     is_required: false,
     is_multiple: false,
-    options: []
+    settings: {}
   };
 };
 
@@ -285,11 +328,6 @@ const saveField = async () => {
   try {
 
     const payload = { ...fieldForm.value };
-
-    if (payload.type === 'enum') {
-      payload.settings = { options: payload.options };
-    }
-    delete payload.options;
 
     const url = editingField.value
       ? `/admin/api/infoblocks/${route.params.id}/fields/${editingField.value.id}`
@@ -352,5 +390,11 @@ const deleteField = async (field) => {
 onMounted(() => {
   loadInfoBlock();
   loadFields();
+  loadInfoBlocks();
+
 });
+watch(() => fieldForm.value.type, () => {
+  fieldForm.value.settings = {};
+});
+
 </script>
