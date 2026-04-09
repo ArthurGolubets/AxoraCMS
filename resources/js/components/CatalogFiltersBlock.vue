@@ -259,6 +259,35 @@
               </div>
             </div>
           </div>
+
+          <!-- Range Settings -->
+          <div v-if="filterForm.type === 'range'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="flex items-center justify-between mb-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Настройки диапазона
+              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">От</label>
+                <input
+                    v-model.number="rangeFrom"
+                    type="number"
+                    class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="0"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">До</label>
+                <input
+                    v-model.number="rangeTo"
+                    type="number"
+                    class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                    placeholder="1000000"
+                />
+              </div>
+            </div>
+          </div>
         </form>
       </template>
       <template #footer>
@@ -332,6 +361,30 @@ const filterForm = ref({
   is_active: true,
   description: '',
   values: [],
+});
+
+const rangeFrom = computed({
+  get: () => filterForm.value.values.find(v => v.code === 'from')?.value ?? '',
+  set: (val) => {
+    const idx = filterForm.value.values.findIndex(v => v.code === 'from');
+    if (idx !== -1) {
+      filterForm.value.values[idx].value = val;
+    } else {
+      filterForm.value.values.push({ value: val, code: 'from', sort: 100, is_active: true });
+    }
+  }
+});
+
+const rangeTo = computed({
+  get: () => filterForm.value.values.find(v => v.code === 'to')?.value ?? '',
+  set: (val) => {
+    const idx = filterForm.value.values.findIndex(v => v.code === 'to');
+    if (idx !== -1) {
+      filterForm.value.values[idx].value = val;
+    } else {
+      filterForm.value.values.push({ value: val, code: 'to', sort: 200, is_active: true });
+    }
+  }
 });
 
 const loadFilters = async () => {
