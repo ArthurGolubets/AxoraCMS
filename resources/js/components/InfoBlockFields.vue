@@ -296,6 +296,7 @@ const loadFields = async () => {
 };
 
 const editField = (field) => {
+  isEditing = true;
   editingField.value = field;
   fieldForm.value = {
     name: field.name,
@@ -393,8 +394,12 @@ onMounted(() => {
   loadInfoBlocks();
 
 });
+let isEditing = false;
 watch(() => fieldForm.value.type, () => {
-  fieldForm.value.settings = {};
+  if (!isEditing) {
+    fieldForm.value.settings = {};
+  }
+  isEditing = false;
 });
 
 </script>
