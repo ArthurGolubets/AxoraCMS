@@ -162,9 +162,11 @@
 
             <!-- Entity -->
             <InfoBlockEntitySelect
-              v-else-if="field.type === 'entity'"
-              v-model="form.properties[field.code]"
-              :required="field.is_required"
+                v-else-if="field.type === 'entity'"
+                v-model="form.properties[field.code]"
+                :required="field.is_required"
+                :entity-type-fixed="field.settings?.entity_type"
+                :info-block-id="field.settings?.entity_id"
             />
 
             <!-- User -->
