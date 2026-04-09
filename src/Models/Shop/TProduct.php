@@ -29,7 +29,8 @@ class TProduct extends Model
         'content',
         'gallery',
         'addition_info',
-        'range_filter_values'
+        'range_filter_values',
+        'entity_filter_values',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class TProduct extends Model
         'addition_info' => 'array',
         'gallery' => 'array',
         'range_filter_values' => 'array',
+        'entity_filter_values' => 'array',
     ];
 
     /**

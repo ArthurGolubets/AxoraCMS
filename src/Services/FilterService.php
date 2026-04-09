@@ -180,6 +180,14 @@ class FilterService
                 continue;
             }
 
+            // Check filter type
+            $filter = TFilter::find($filterId);
+            if ($filter && $filter->type === 'entity') {
+                $entityId = is_array($valueIds) ? $valueIds[0] : $valueIds;
+                $query->whereJsonContains('entity_filter_values->' . $filterId, $entityId);
+                continue;
+            }
+
             $query->whereHas('filterValues', function ($q) use ($filterId, $valueIds) {
                 $q->where('t_product_filter_values.filter_id', $filterId)
                   ->whereIn('t_filter_values.id', $valueIds);

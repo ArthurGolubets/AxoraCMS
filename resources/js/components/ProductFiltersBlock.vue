@@ -221,10 +221,13 @@ const props = defineProps({
   initialRangeValues: {
     type: Object,
     default: () => ({})
+  },
+  initialEntityValues: {
+    type: Object, default: () => ({})
   }
 });
 
-const emit = defineEmits(['update:filterValues', 'update:rangeFilterValues']);
+const emit = defineEmits(['update:filterValues', 'update:rangeFilterValues', 'update:entityFilterValues']);
 
 const availableFilters = ref([]);
 const selectedValues = ref({});
@@ -246,7 +249,7 @@ const selectedValuesArray = computed(() => {
     const filter = availableFilters.value.find(f => f.id == filterId);
 
     // Skip range filters - they are handled separately
-    if (filter && filter.type === 'range') {
+    if (filter && (filter.type === 'range' || filter.type === 'entity')) {
       return;
     }
 
@@ -275,7 +278,19 @@ const rangeFilterValues = computed(() => {
 });
 
 const selectedValuesCount = computed(() => {
-  return selectedValuesArray.value.length + Object.keys(rangeFilterValues.value).length;
+  return selectedValuesArray.value.length + Object.keys(rangeFilterValues.value).length  + Object.keys(entityFilterValues.value).length;
+});
+
+const entityFilterValues = computed(() => {
+  const entities = {};
+  Object.keys(selectedValues.value).forEach(filterId => {
+    const filterValue = selectedValues.value[filterId];
+    const filter = availableFilters.value.find(f => f.id === parseInt(filterId));
+    if (filter && filter.type === 'entity' && filterValue !== null && filterValue !== '') {
+      entities[filterId] = filterValue;
+    }
+  });
+  return entities;
 });
 
 const loadFilters = async () => {
@@ -339,6 +354,16 @@ const loadFilters = async () => {
         });
       }
 
+
+      if (props.initialEntityValues && Object.keys(props.initialEntityValues).length > 0) {
+        Object.keys(props.initialEntityValues).forEach(filterId => {
+          const filter = availableFilters.value.find(f => f.id == filterId && f.type === 'entity');
+          if (filter) {
+            newSelectedValues[filterId] = props.initialEntityValues[filterId];
+          }
+        });
+      }
+
       selectedValues.value = newSelectedValues;
 
       // Reset flag after a tick to ensure Vue has finished updating
@@ -363,6 +388,7 @@ watch(selectedValues, () => {
   if (!isUpdatingFromParent.value) {
     emit('update:filterValues', selectedValuesArray.value);
     emit('update:rangeFilterValues', rangeFilterValues.value);
+    emit('update:entityFilterValues', entityFilterValues.value);
   }
 }, { deep: true });
 

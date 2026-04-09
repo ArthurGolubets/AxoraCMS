@@ -141,6 +141,8 @@
           :initialRangeValues="form.range_filter_values || {}"
           @update:filterValues="form.filter_values = $event"
           @update:rangeFilterValues="form.range_filter_values = $event"
+          :initialEntityValues="form.entity_filter_values || {}"
+          @update:entityFilterValues="form.entity_filter_values = $event"
         />
         <div v-else class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <p class="text-gray-500 dark:text-gray-400">Выберите категорию, чтобы увидеть доступные фильтры</p>
@@ -212,6 +214,7 @@ const form = ref({
   range_filter_values: {},
   addition_info: {},
   property_values: {},
+  entity_filter_values: {},
 });
 
 const availableProperties = ref([]);
@@ -378,7 +381,8 @@ const loadProduct = async () => {
       filter_values: filterValueIds,
       range_filter_values: rangeFilterValues,
       addition_info: additionInfo,
-      property_values: propertyValues
+      property_values: propertyValues,
+      entity_filter_values: product.entity_filter_values || {},
     };
   } catch (err) {
     await error('Ошибка при загрузке товара');

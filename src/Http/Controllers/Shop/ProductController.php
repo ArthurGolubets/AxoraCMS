@@ -163,6 +163,8 @@ class ProductController extends Controller
             'range_filter_values.*' => 'numeric',
             'addition_info' => 'nullable|array',
             'property_values' => 'nullable|array',
+            'entity_filter_values' => 'nullable|array',
+            'entity_filter_values.*' => 'nullable|integer',
         ]);
 
         // Generate slug if not provided
@@ -285,6 +287,8 @@ class ProductController extends Controller
             'range_filter_values.*' => 'numeric',
             'addition_info' => 'nullable|array',
             'property_values' => 'nullable|array',
+            'entity_filter_values' => 'nullable|array',
+            'entity_filter_values.*' => 'nullable|integer',
         ]);
 
         // Handle variants update
