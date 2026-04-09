@@ -158,6 +158,7 @@
                 <option value="select">Выбор (dropdown)</option>
                 <option value="checkbox">Флажки (multiple)</option>
                 <option value="range">Диапазон (min-max)</option>
+                <option value="entity">Привязка к сущности (entity)</option>
               </select>
             </div>
 
@@ -198,7 +199,7 @@
           </div>
 
           <!-- Filter Values (not needed for range type) -->
-          <div v-if="filterForm.type !== 'range'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div v-if="filterForm.type !== 'range' && filterForm.type !== 'entity'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
             <div class="flex items-center justify-between mb-3">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Значения фильтра
@@ -288,6 +289,32 @@
               </div>
             </div>
           </div>
+          <div v-if="filterForm.type === 'entity'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Тип сущности *
+              </label>
+              <select v-model="filterForm.settings.entity_type"
+                      class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+                <option value="">— Выберите тип —</option>
+                <option value="infoblock">Элемент инфоблока</option>
+                <option value="product">Товар</option>
+                <option value="catalog">Категория</option>
+              </select>
+            </div>
+            <div v-if="filterForm.settings.entity_type === 'infoblock'">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Инфоблок *
+              </label>
+              <select v-model="filterForm.settings.entity_id"
+                      class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+                <option :value="null">— Выберите инфоблок —</option>
+                <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">
+                  {{ ib.name }}
+                </option>
+              </select>
+            </div>
+          </div>
         </form>
       </template>
       <template #footer>
@@ -346,11 +373,13 @@ const editingFilter = ref(null);
 const saving = ref(false);
 const deleteModal = ref({ show: false, filter: null });
 const deleting = ref(false);
+const infoBlocks = ref([])
 
 const typeLabels = {
   select: 'Выбор',
   checkbox: 'Флажки',
-  range: 'Диапазон'
+  range: 'Диапазон',
+  entity: 'Привязка к сущности'
 };
 
 const filterForm = ref({
@@ -361,6 +390,7 @@ const filterForm = ref({
   is_active: true,
   description: '',
   values: [],
+  settings: {},
 });
 
 const rangeFrom = computed({
@@ -407,6 +437,21 @@ const loadFilters = async () => {
   }
 };
 
+const loadInfoBlocks = async () => {
+  try {
+    const response = await fetch('/admin/api/infoblocks', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      infoBlocks.value = data.data || data;
+    }
+  } catch (error) {
+    console.error('Failed to load infoblocks:', error);
+  }
+};
+
+
 const generateCodeFromName = () => {
   if (filterForm.value.name) {
     filterForm.value.code = filterForm.value.name
@@ -449,6 +494,7 @@ const editFilter = (filter) => {
     is_active: filter.is_active,
     description: filter.description || '',
     values: filter.values ? [...filter.values] : [],
+    settings: filter.settings || {}
   };
   showFilterModal.value = true;
 };
@@ -464,6 +510,7 @@ const closeFilterModal = () => {
     is_active: true,
     description: '',
     values: [],
+    settings: {},
   };
 };
 
@@ -473,7 +520,7 @@ const saveFilter = async () => {
   console.log('filterForm.value.values.length:', filterForm.value.values.length);
 
   // Range type doesn't need values
-  if (filterForm.value.type !== 'range' && filterForm.value.values.length === 0) {
+  if (filterForm.value.type !== 'range' && filterForm.value.type !== 'entity' && filterForm.value.values.length === 0) {
     console.log('VALIDATION FAILED: No values for non-range filter');
     alert('Добавьте хотя бы одно значение фильтра');
     return;
@@ -565,6 +612,8 @@ watch(() => props.catalogId, () => {
 onMounted(() => {
   if (props.catalogId) {
     loadFilters();
+    loadInfoBlocks();
+
   }
 });
 </script>

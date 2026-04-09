@@ -16,11 +16,13 @@ class TFilter extends Model
         'sort',
         'is_active',
         'description',
+        'settings',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'sort' => 'integer',
+        'settings' => 'array',
     ];
 
     /**
