@@ -78,12 +78,36 @@ class FilterService
                 ];
             });
 
+            $filterValues = $values;
+
+            if ($filter->type === 'entity' && !empty($filter->settings['entity_id'])) {
+                $infoblockId = $filter->settings['entity_id'];
+                if (class_exists('HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement')) {
+                    $elements = \HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement::where('info_block_id', $infoblockId)
+                        ->where('is_active', true)
+                        ->orderBy('sort')
+                        ->get();
+
+                    $filterValues = $elements->map(function ($element) use ($selectedFilters, $filter) {
+                        return [
+                            'id' => $element->id,
+                            'value' => $element->name,
+                            'code' => $element->code,
+                            'count' => 0,
+                            'is_selected' => isset($selectedFilters[$filter->id]) &&
+                                in_array($element->id, (array)$selectedFilters[$filter->id]),
+                        ];
+                    });
+                }
+            }
+
             return [
                 'id' => $filter->id,
                 'name' => $filter->name,
                 'code' => $filter->code,
                 'type' => $filter->type,
-                'values' => $values,
+                'settings' => $filter->settings,
+                'values' => $filterValues,
             ];
         });
 
