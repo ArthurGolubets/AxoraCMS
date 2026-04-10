@@ -365,17 +365,17 @@ class FilterService
         }
 
         // Apply other selected filters (excluding price)
-        foreach ($selectedFilters as $filterId => $valueIds) {
-            if ($filterId === 'price') {
-                continue;
-            }
-
-            if (!empty($valueIds)) {
-                $query->whereHas('filterValues', function ($q) use ($valueIds) {
-                    $q->whereIn('t_filter_values.id', $valueIds);
-                });
-            }
-        }
+//        foreach ($selectedFilters as $filterId => $valueIds) {
+//            if ($filterId === 'price') {
+//                continue;
+//            }
+//
+//            if (!empty($valueIds)) {
+//                $query->whereHas('filterValues', function ($q) use ($valueIds) {
+//                    $q->whereIn('t_filter_values.id', $valueIds);
+//                });
+//            }
+//        }
 
         // Get min and max prices
         $minPrice = $query->min('price');
