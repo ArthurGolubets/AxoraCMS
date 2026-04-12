@@ -14,6 +14,7 @@ class TCatalogProperty extends Model
         'catalog_id',
         'code',
         'name',
+        'group_id',
         'type',
         'is_multiple',
         'sort_order',
@@ -21,6 +22,7 @@ class TCatalogProperty extends Model
 
     protected $casts = [
         'catalog_id' => 'integer',
+        'group_id' => 'integer',
         'is_multiple' => 'boolean',
         'sort_order' => 'integer',
     ];
@@ -39,5 +41,10 @@ class TCatalogProperty extends Model
     public function propertyValues(): HasMany
     {
         return $this->hasMany(TProductPropertyValue::class, 'property_id');
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(TCatalogPropertyGroup::class, 'group_id');
     }
 }

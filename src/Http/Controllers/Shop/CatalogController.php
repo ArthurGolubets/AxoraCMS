@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
+use HolartWeb\AxoraCMS\Models\Shop\TCatalogPropertyGroup;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -19,19 +20,17 @@ class CatalogController extends Controller
         $search = $request->get('search');
 
         if ($search) {
-            // Search in both catalogs and products
             $catalogs = TCatalog::where('name', 'like', "%{$search}%")
                 ->orWhereHas('products', function($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
-                          ->orWhere('sku', 'like', "%{$search}%");
+                        ->orWhere('sku', 'like', "%{$search}%");
                 })
                 ->with(['children', 'products' => function($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
-                          ->orWhere('sku', 'like', "%{$search}%");
+                        ->orWhere('sku', 'like', "%{$search}%");
                 }])
                 ->get();
         } else {
-            // Get root categories (no parent)
             $catalogs = TCatalog::with(['children', 'products'])
                 ->whereNull('parent_id')
                 ->get();
@@ -90,12 +89,16 @@ class CatalogController extends Controller
             return !$ownProperties->contains('id', $prop->id);
         })->map(function($prop) {
             $prop->is_inherited = true;
-            // Get catalog name for inherited property
             if ($prop->catalog) {
                 $prop->catalog_name = $prop->catalog->name;
             }
             return $prop;
         });
+
+        // Get property groups for this catalog
+        $propertyGroups = TCatalogPropertyGroup::where('catalog_id', $id)
+            ->orderBy('sort_order')
+            ->get();
 
         return response()->json([
             'catalog' => $catalog,
@@ -104,6 +107,7 @@ class CatalogController extends Controller
             'properties' => $ownProperties,
             'inherited_properties' => $inheritedProperties,
             'all_properties' => $allProperties,
+            'property_groups' => $propertyGroups,
         ]);
     }
 
@@ -124,19 +128,41 @@ class CatalogController extends Controller
             'is_active' => 'nullable|boolean',
             'addition_info' => 'nullable|array',
             'properties' => 'nullable|array',
+            'property_groups' => 'nullable|array',
         ]);
 
         $properties = $validated['properties'] ?? [];
-        unset($validated['properties']);
+        $propertyGroups = $validated['property_groups'] ?? [];
+        unset($validated['properties'], $validated['property_groups']);
 
         $catalog = TCatalog::create($validated);
+
+        // Create property groups
+        $groupIdMap = []; // temp_id => real_id
+        foreach ($propertyGroups as $group) {
+            if (empty($group['name'])) continue;
+
+            $created = TCatalogPropertyGroup::create([
+                'catalog_id' => $catalog->id,
+                'code' => $group['code'] ?? Str::slug($group['name'], '_'),
+                'name' => $group['name'],
+                'sort_order' => $group['sort_order'] ?? 500,
+            ]);
+
+            if (isset($group['temp_id'])) {
+                $groupIdMap[$group['temp_id']] = $created->id;
+            }
+        }
 
         // Create properties
         if (!empty($properties) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalogProperty')) {
             foreach ($properties as $property) {
-                // Skip empty properties (when code or name is empty)
-                if (empty($property['code']) || empty($property['name'])) {
-                    continue;
+                if (empty($property['code']) || empty($property['name'])) continue;
+
+                // Resolve group_id: temp_id -> real_id
+                $groupId = null;
+                if (!empty($property['group_id'])) {
+                    $groupId = $groupIdMap[$property['group_id']] ?? $property['group_id'];
                 }
 
                 $catalog->properties()->create([
@@ -145,11 +171,11 @@ class CatalogController extends Controller
                     'type' => $property['type'] ?? 'string',
                     'is_multiple' => $property['is_multiple'] ?? false,
                     'sort_order' => $property['sort_order'] ?? 500,
+                    'group_id' => $groupId,
                 ]);
             }
         }
 
-        // Log activity
         TAdminAction::log('created', 'catalog', $catalog->id,
             'Создана категория "' . $catalog->name . '"');
 
@@ -175,60 +201,101 @@ class CatalogController extends Controller
             'is_active' => 'nullable|boolean',
             'addition_info' => 'nullable|array',
             'properties' => 'nullable|array',
+            'property_groups' => 'nullable|array',
         ]);
 
-        // Prevent circular reference
         if (isset($validated['parent_id']) && $validated['parent_id'] == $id) {
             return response()->json(['message' => 'Категория не может быть родителем самой себя'], 422);
         }
 
         $properties = $validated['properties'] ?? null;
-        unset($validated['properties']);
+        $propertyGroups = $validated['property_groups'] ?? null;
+        unset($validated['properties'], $validated['property_groups']);
 
         $oldData = $catalog->getOriginal();
         $catalog->update($validated);
 
-        // Update properties if provided
+        // Update property groups
+        if ($propertyGroups !== null) {
+            $groupIdMap = []; // temp_id => real_id
+
+            $incomingGroupIds = collect($propertyGroups)->pluck('id')->filter();
+
+            // Delete groups not in the incoming list (set null handled by DB onDelete)
+            TCatalogPropertyGroup::where('catalog_id', $id)
+                ->whereNotIn('id', $incomingGroupIds)
+                ->delete();
+
+            foreach ($propertyGroups as $group) {
+                if (empty($group['name'])) continue;
+
+                if (isset($group['id'])) {
+                    // Update existing
+                    TCatalogPropertyGroup::where('id', $group['id'])
+                        ->where('catalog_id', $id)
+                        ->update([
+                            'code' => $group['code'] ?? Str::slug($group['name'], '_'),
+                            'name' => $group['name'],
+                            'sort_order' => $group['sort_order'] ?? 500,
+                        ]);
+                    $groupIdMap[$group['id']] = $group['id'];
+                } else {
+                    // Create new
+                    $created = TCatalogPropertyGroup::create([
+                        'catalog_id' => $id,
+                        'code' => $group['code'] ?? Str::slug($group['name'], '_'),
+                        'name' => $group['name'],
+                        'sort_order' => $group['sort_order'] ?? 500,
+                    ]);
+
+                    if (isset($group['temp_id'])) {
+                        $groupIdMap[$group['temp_id']] = $created->id;
+                    }
+                }
+            }
+        }
+
+        // Update properties
         if ($properties !== null && class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalogProperty')) {
-            // Delete removed properties
             $propertyIds = collect($properties)->pluck('id')->filter();
             $catalog->properties()->whereNotIn('id', $propertyIds)->delete();
 
-            // Update or create properties
             foreach ($properties as $property) {
-                // Skip empty properties
-                if (empty($property['code']) || empty($property['name'])) {
-                    continue;
+                if (empty($property['code']) || empty($property['name'])) continue;
+
+                // Resolve group_id
+                $groupId = null;
+                if (!empty($property['group_id'])) {
+                    $groupId = isset($groupIdMap) ? ($groupIdMap[$property['group_id']] ?? $property['group_id']) : $property['group_id'];
                 }
 
                 if (isset($property['id'])) {
-                    // Update existing
                     $catalog->properties()->where('id', $property['id'])->update([
                         'code' => $property['code'],
                         'name' => $property['name'],
                         'type' => $property['type'] ?? 'string',
                         'is_multiple' => $property['is_multiple'] ?? false,
                         'sort_order' => $property['sort_order'] ?? 500,
+                        'group_id' => $groupId,
                     ]);
                 } else {
-                    // Create new
                     $catalog->properties()->create([
                         'code' => $property['code'],
                         'name' => $property['name'],
                         'type' => $property['type'] ?? 'string',
                         'is_multiple' => $property['is_multiple'] ?? false,
                         'sort_order' => $property['sort_order'] ?? 500,
+                        'group_id' => $groupId,
                     ]);
                 }
             }
         }
 
-        // Log activity
         TAdminAction::log('updated', 'catalog', $catalog->id,
             'Обновлена категория "' . $catalog->name . '"', [
-            'old' => $oldData,
-            'new' => $catalog->getAttributes()
-        ]);
+                'old' => $oldData,
+                'new' => $catalog->getAttributes()
+            ]);
 
         return response()->json($catalog->load('properties'));
     }
@@ -241,14 +308,12 @@ class CatalogController extends Controller
         $catalog = TCatalog::findOrFail($id);
         $catalogName = $catalog->name;
 
-        // Check if has products
         if ($catalog->products()->exists()) {
             return response()->json([
                 'message' => 'Невозможно удалить категорию с товарами'
             ], 422);
         }
 
-        // Check if has children
         if ($catalog->hasChildren()) {
             return response()->json([
                 'message' => 'Невозможно удалить категорию с подкатегориями'
@@ -257,7 +322,6 @@ class CatalogController extends Controller
 
         $catalog->delete();
 
-        // Log activity
         TAdminAction::log('deleted', 'catalog', $id,
             'Удалена категория "' . $catalogName . '"');
 
@@ -271,13 +335,11 @@ class CatalogController extends Controller
     {
         $catalog = TCatalog::findOrFail($id);
 
-        // Load children recursively with products and counts
         $children = $catalog->children()
             ->with(['products'])
             ->withCount(['children', 'products'])
             ->get();
 
-        // Recursively load all descendants
         foreach ($children as $child) {
             $this->loadDescendants($child);
         }

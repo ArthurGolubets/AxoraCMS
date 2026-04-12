@@ -15,11 +15,11 @@
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="-mb-px flex space-x-8">
         <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          type="button"
-          :class="[
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            type="button"
+            :class="[
             activeTab === tab.id
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
@@ -40,15 +40,15 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Родительская категория</label>
               <input
-                v-model="categorySearch"
-                @input="filterCategories"
-                type="text"
-                placeholder="Поиск категории..."
-                class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="categorySearch"
+                  @input="filterCategories"
+                  type="text"
+                  placeholder="Поиск категории..."
+                  class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
               <select
-                v-model="form.parent_id"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="form.parent_id"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
                 <option :value="null">Корневая категория</option>
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -58,21 +58,21 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
               <input
-                v-model="form.name"
-                @input="generateSlug"
-                type="text"
-                required
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="form.name"
+                  @input="generateSlug"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Slug *</label>
               <input
-                v-model="form.slug"
-                type="text"
-                required
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="form.slug"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
             </div>
 
@@ -95,28 +95,28 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
               <input
-                v-model="form.title"
-                type="text"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="form.title"
+                  type="text"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
               <textarea
-                v-model="form.description"
-                rows="3"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="form.description"
+                  rows="3"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               ></textarea>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Keywords</label>
               <input
-                v-model="form.keywords"
-                type="text"
-                placeholder="Через запятую"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="form.keywords"
+                  type="text"
+                  placeholder="Через запятую"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
             </div>
           </div>
@@ -133,10 +133,12 @@
       <!-- Properties Tab -->
       <div v-if="activeTab === 'properties'" class="space-y-6">
         <CatalogPropertiesManager
-          :catalog-id="route.params.id ? parseInt(route.params.id) : null"
-          :initial-properties="form.properties"
-          :inherited-properties="inheritedProperties"
-          @update:properties="form.properties = $event"
+            :catalog-id="route.params.id ? parseInt(route.params.id) : null"
+            :initial-properties="form.properties"
+            :initial-groups="form.property_groups"
+            :inherited-properties="inheritedProperties"
+            @update:properties="form.properties = $event"
+            @update:groups="form.property_groups = $event"
         />
       </div>
 
@@ -156,17 +158,17 @@
       <!-- Actions -->
       <div class="flex justify-end space-x-3">
         <button
-          type="button"
-          @click="$router.back()"
-          class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition"
+            type="button"
+            @click="$router.back()"
+            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition"
         >
           Отмена
         </button>
         <button
-          type="submit"
-          :disabled="loading"
-          :style="buttonStyle"
-          class="px-6 py-3 text-white rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+            type="submit"
+            :disabled="loading"
+            :style="buttonStyle"
+            class="px-6 py-3 text-white rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {{ loading ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Создать') }}
         </button>
@@ -220,6 +222,7 @@ const form = ref({
   is_active: true,
   addition_info: {},
   properties: [],
+  property_groups: [],
 });
 
 const inheritedProperties = ref([]);
@@ -239,14 +242,14 @@ const generateSlug = () => {
   };
 
   const slug = form.value.name
-    .split('')
-    .map(char => translitMap[char] || char)
-    .join('')
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
+      .split('')
+      .map(char => translitMap[char] || char)
+      .join('')
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
   form.value.slug = slug;
 };
 
@@ -267,7 +270,7 @@ const filterCategories = () => {
   } else {
     const search = categorySearch.value.toLowerCase();
     filteredCategories.value = availableCategories.value.filter(cat =>
-      cat.name.toLowerCase().includes(search)
+        cat.name.toLowerCase().includes(search)
     );
   }
 };
@@ -276,25 +279,18 @@ const loadCatalog = async () => {
   try {
     const response = await fetch(`/admin/api/catalogs/${route.params.id}`);
     const data = await response.json();
-    console.log('CatalogForm: Loaded catalog data:', data);
 
-    // Parse addition_info if it's a string
     let additionInfo = {};
     if (data.catalog.addition_info) {
-      console.log('CatalogForm: Raw addition_info:', data.catalog.addition_info, 'Type:', typeof data.catalog.addition_info);
       if (typeof data.catalog.addition_info === 'string') {
         try {
           const parsed = JSON.parse(data.catalog.addition_info);
           additionInfo = Array.isArray(parsed) ? {} : parsed;
-          console.log('CatalogForm: Parsed addition_info:', additionInfo);
         } catch (e) {
-          console.error('Failed to parse addition_info:', e);
           additionInfo = {};
         }
       } else if (typeof data.catalog.addition_info === 'object') {
-        // Could be array (old format) or object (new format)
         additionInfo = Array.isArray(data.catalog.addition_info) ? {} : data.catalog.addition_info;
-        console.log('CatalogForm: addition_info is object:', additionInfo);
       }
     }
 
@@ -310,9 +306,9 @@ const loadCatalog = async () => {
       is_active: data.catalog.is_active !== undefined ? data.catalog.is_active : true,
       addition_info: additionInfo,
       properties: data.properties || [],
+      property_groups: data.property_groups || [],
     };
     inheritedProperties.value = data.inherited_properties || [];
-    console.log('CatalogForm: Final form.value.addition_info:', form.value.addition_info);
   } catch (err) {
     console.error('Error loading catalog:', err);
     await error('Ошибка при загрузке категории');
@@ -322,7 +318,6 @@ const loadCatalog = async () => {
 const handleSubmit = async () => {
   loading.value = true;
   try {
-    // Ensure slug is generated if empty
     if (!form.value.slug || form.value.slug.trim() === '') {
       const translitMap = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
@@ -338,14 +333,14 @@ const handleSubmit = async () => {
       };
 
       form.value.slug = form.value.name
-        .split('')
-        .map(char => translitMap[char] || char)
-        .join('')
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+          .split('')
+          .map(char => translitMap[char] || char)
+          .join('')
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim();
     }
 
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -383,7 +378,6 @@ onMounted(() => {
     loadCatalog();
   }
 
-  // Set parent_id from query parameter
   if (route.query.parent_id) {
     form.value.parent_id = parseInt(route.query.parent_id);
   }
