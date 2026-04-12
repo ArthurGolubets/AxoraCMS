@@ -59,6 +59,7 @@ class InfoBlockElementsController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|regex:/^[a-z0-9_]+$/',
+            'content' => 'nullable|string',
             'is_active' => 'boolean',
             'sort' => 'nullable|integer',
             'properties' => 'nullable|array',
@@ -104,6 +105,7 @@ class InfoBlockElementsController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|regex:/^[a-z0-9_]+$/',
+            'content' => 'nullable|string',
             'is_active' => 'boolean',
             'sort' => 'nullable|integer',
             'properties' => 'nullable|array',
