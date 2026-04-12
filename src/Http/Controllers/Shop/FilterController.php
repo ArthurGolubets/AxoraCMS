@@ -85,7 +85,7 @@ class FilterController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|unique:t_filters,code',
-            'type' => 'required|in:select,checkbox,range,entity',
+            'type' => 'required|in:select,checkbox,range,entity,string',
             'catalog_id' => 'nullable|exists:t_catalogs,id',
             'sort' => 'nullable|integer',
             'is_active' => 'boolean',
@@ -110,7 +110,7 @@ class FilterController extends Controller
         $filter = TFilter::create($validated);
 
         // Create filter values (skip for range type as they don't need predefined values)
-        if ($filter->type !== 'range' && $filter->type !== 'entity') {
+        if ($filter->type !== 'range' && $filter->type !== 'entity' && $filter->type !== 'string') {
             foreach ($values as $valueData) {
                 $filter->values()->create($valueData);
             }
@@ -134,7 +134,7 @@ class FilterController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|unique:t_filters,code,' . $id,
-            'type' => 'required|in:select,checkbox,range,entity',
+            'type' => 'required|in:select,checkbox,range,entity,string',
             'catalog_id' => 'nullable|exists:t_catalogs,id',
             'sort' => 'nullable|integer',
             'is_active' => 'boolean',
@@ -150,7 +150,7 @@ class FilterController extends Controller
 
             // Sync values (delete old, create new) - skip for range type
             $filter->values()->delete();
-            if ($filter->type !== 'range' && $filter->type !== 'entity') {
+            if ($filter->type !== 'range' && $filter->type !== 'entity' && $filter->type !== 'string') {
                 foreach ($values as $valueData) {
                     $filter->values()->create($valueData);
                 }

@@ -14,17 +14,18 @@
       </h4>
       <div class="space-y-2">
         <div
-          v-for="filter in categoryFilters"
-          :key="filter.id"
-          class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+            v-for="filter in categoryFilters"
+            :key="filter.id"
+            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
         >
           <div class="flex items-center gap-3 flex-1">
             <span class="px-2 py-1 text-xs font-medium rounded"
-              :class="{
+                  :class="{
                 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200': filter.type === 'select',
                 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200': filter.type === 'checkbox',
                 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200': filter.type === 'range',
                 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200': filter.type === 'entity',
+                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200': filter.type === 'string',
               }">
               {{ typeLabels[filter.type] }}
             </span>
@@ -38,18 +39,18 @@
           </div>
           <div class="flex gap-2">
             <button
-              @click="editFilter(filter)"
-              class="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-              title="Редактировать"
+                @click="editFilter(filter)"
+                class="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                title="Редактировать"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
             </button>
             <button
-              @click="confirmDeleteFilter(filter)"
-              class="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-              title="Удалить"
+                @click="confirmDeleteFilter(filter)"
+                class="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                title="Удалить"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -67,12 +68,12 @@
       </h4>
       <div class="space-y-2">
         <div
-          v-for="filter in inheritedFilters"
-          :key="filter.id"
-          class="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg"
+            v-for="filter in inheritedFilters"
+            :key="filter.id"
+            class="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg"
         >
           <span class="px-2 py-1 text-xs font-medium rounded"
-            :class="{
+                :class="{
               'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200': filter.type === 'select',
               'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200': filter.type === 'checkbox',
               'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200': filter.type === 'range'
@@ -125,12 +126,12 @@
                 Название фильтра *
               </label>
               <input
-                v-model="filterForm.name"
-                @input="generateCodeFromName"
-                type="text"
-                required
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Например: Объем данных"
+                  v-model="filterForm.name"
+                  @input="generateCodeFromName"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  placeholder="Например: Объем данных"
               />
             </div>
 
@@ -139,11 +140,11 @@
                 Символьный код *
               </label>
               <input
-                v-model="filterForm.code"
-                type="text"
-                required
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono"
-                placeholder="storage_capacity"
+                  v-model="filterForm.code"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono"
+                  placeholder="storage_capacity"
               />
             </div>
 
@@ -152,14 +153,15 @@
                 Тип фильтра *
               </label>
               <select
-                v-model="filterForm.type"
-                required
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="filterForm.type"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
                 <option value="select">Выбор (dropdown)</option>
                 <option value="checkbox">Флажки (multiple)</option>
                 <option value="range">Диапазон (min-max)</option>
                 <option value="entity">Сущность (entity)</option>
+                <option value="string">Строка (string)</option>
               </select>
             </div>
 
@@ -168,9 +170,9 @@
                 Порядок сортировки
               </label>
               <input
-                v-model.number="filterForm.sort"
-                type="number"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model.number="filterForm.sort"
+                  type="number"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               />
             </div>
 
@@ -179,19 +181,19 @@
                 Описание
               </label>
               <textarea
-                v-model="filterForm.description"
-                rows="2"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                placeholder="Описание фильтра (необязательно)"
+                  v-model="filterForm.description"
+                  rows="2"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  placeholder="Описание фильтра (необязательно)"
               ></textarea>
             </div>
 
             <div class="flex items-center">
               <input
-                v-model="filterForm.is_active"
-                type="checkbox"
-                id="filter_is_active"
-                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  v-model="filterForm.is_active"
+                  type="checkbox"
+                  id="filter_is_active"
+                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
               />
               <label for="filter_is_active" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Фильтр активен
@@ -200,15 +202,15 @@
           </div>
 
           <!-- Filter Values (not needed for range type) -->
-          <div v-if="filterForm.type !== 'range' && filterForm.type !== 'entity'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div v-if="filterForm.type !== 'range' && filterForm.type !== 'entity' && filterForm.type !== 'string'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
             <div class="flex items-center justify-between mb-3">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Значения фильтра
               </label>
               <button
-                @click="addFilterValue"
-                type="button"
-                class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  @click="addFilterValue"
+                  type="button"
+                  class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
               >
                 + Добавить значение
               </button>
@@ -220,39 +222,39 @@
 
             <div v-else class="space-y-2 max-h-60 overflow-y-auto">
               <div
-                v-for="(value, index) in filterForm.values"
-                :key="index"
-                class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded"
+                  v-for="(value, index) in filterForm.values"
+                  :key="index"
+                  class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded"
               >
                 <input
-                  v-model="value.value"
-                  type="text"
-                  required
-                  class="flex-1 px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
-                  placeholder="Значение"
+                    v-model="value.value"
+                    type="text"
+                    required
+                    class="flex-1 px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
+                    placeholder="Значение"
                 />
                 <input
-                  v-model="value.code"
-                  type="text"
-                  class="w-32 px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white font-mono"
-                  placeholder="Код"
+                    v-model="value.code"
+                    type="text"
+                    class="w-32 px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white font-mono"
+                    placeholder="Код"
                 />
                 <input
-                  v-model.number="value.sort"
-                  type="number"
-                  class="w-20 px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
-                  placeholder="500"
+                    v-model.number="value.sort"
+                    type="number"
+                    class="w-20 px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
+                    placeholder="500"
                 />
                 <input
-                  v-model="value.is_active"
-                  type="checkbox"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                  title="Активно"
+                    v-model="value.is_active"
+                    type="checkbox"
+                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    title="Активно"
                 />
                 <button
-                  @click="removeFilterValue(index)"
-                  type="button"
-                  class="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    @click="removeFilterValue(index)"
+                    type="button"
+                    class="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -380,7 +382,8 @@ const typeLabels = {
   select: 'Выбор',
   checkbox: 'Флажки',
   range: 'Диапазон',
-  entity: 'Сущность'
+  entity: 'Сущность',
+  string: 'Строка'
 };
 
 const filterForm = ref({
@@ -456,19 +459,19 @@ const loadInfoBlocks = async () => {
 const generateCodeFromName = () => {
   if (filterForm.value.name) {
     filterForm.value.code = filterForm.value.name
-      .toLowerCase()
-      .replace(/[а-яё]/g, (char) => {
-        const translit = {
-          'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-          'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-          'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-          'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
-          'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
-        };
-        return translit[char] || char;
-      })
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
+        .toLowerCase()
+        .replace(/[а-яё]/g, (char) => {
+          const translit = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+            'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+          };
+          return translit[char] || char;
+        })
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
   }
 };
 
@@ -532,8 +535,8 @@ const saveFilter = async () => {
   saving.value = true;
   try {
     const url = editingFilter.value
-      ? `/admin/api/filters/${editingFilter.value.id}`
-      : '/admin/api/filters';
+        ? `/admin/api/filters/${editingFilter.value.id}`
+        : '/admin/api/filters';
 
     const method = editingFilter.value ? 'PUT' : 'POST';
 
