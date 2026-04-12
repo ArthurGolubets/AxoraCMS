@@ -342,25 +342,6 @@ export default {
     this.isUpdatingFromParent = true;
     this.properties = JSON.parse(JSON.stringify(this.initialProperties || []));
     this.groups = JSON.parse(JSON.stringify(this.initialGroups || []));
-
-    // Ensure default group exists
-    if (this.groups.length === 0) {
-      this.groups.push({
-        temp_id: `temp_${tempIdCounter++}`,
-        name: 'Основные',
-        code: 'main',
-        sort_order: 100,
-      });
-    }
-
-    // Assign ungrouped properties to default group
-    const defaultGroup = this.groups[0];
-    this.properties.forEach(p => {
-      if (!p.group_id) {
-        p.group_id = defaultGroup.id || defaultGroup.temp_id;
-      }
-    });
-
     this.$nextTick(() => {
       this.isUpdatingFromParent = false;
     });
@@ -380,9 +361,21 @@ export default {
         if (!this.isUpdatingFromParent && JSON.stringify(newVal) !== JSON.stringify(this.groups)) {
           this.isUpdatingFromParent = true;
           this.groups = JSON.parse(JSON.stringify(newVal || []));
+
+          // If no groups loaded, create default
+          if (this.groups.length === 0) {
+            this.groups.push({
+              temp_id: `temp_${tempIdCounter++}`,
+              name: 'Основные',
+              code: 'main',
+              sort_order: 100,
+            });
+          }
+
           this.$nextTick(() => { this.isUpdatingFromParent = false; });
         }
-      }
+      },
+      immediate: true
     },
     properties: {
       deep: true,
