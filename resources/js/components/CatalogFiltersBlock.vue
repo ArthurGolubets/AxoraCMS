@@ -524,7 +524,7 @@ const saveFilter = async () => {
   console.log('filterForm.value.values.length:', filterForm.value.values.length);
 
   // Range type doesn't need values
-  if (filterForm.value.type !== 'range' && filterForm.value.type !== 'entity' && filterForm.value.values.length === 0) {
+  if (filterForm.value.type !== 'range' && filterForm.value.type !== 'entity' && filterForm.value.type !== 'string' && filterForm.value.values.length === 0) {
     console.log('VALIDATION FAILED: No values for non-range filter');
     alert('Добавьте хотя бы одно значение фильтра');
     return;
