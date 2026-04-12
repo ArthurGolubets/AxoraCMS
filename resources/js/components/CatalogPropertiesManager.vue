@@ -235,6 +235,8 @@ export default {
       const hasGroups = this.initialGroups.length > 0;
       const hasProperties = this.initialProperties.length > 0;
 
+      console.log('[tryInit] called', { catalogId: this.catalogId, hasGroups, hasProperties, initialGroups: JSON.parse(JSON.stringify(this.initialGroups)), initialProperties: JSON.parse(JSON.stringify(this.initialProperties)) });
+
       if (this.catalogId === null) {
         this.groups = [{ temp_id: `temp_${tempIdCounter++}`, name: 'Основные', code: 'main', sort_order: 100 }];
         this.properties = [];
