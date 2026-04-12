@@ -8,7 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('t_catalog_properties', function (Blueprint $table) {
-            $table->foreignId('group_id')->nullable()->constrained('t_catalog_property_groups')->onDelete('set null');
+            $table->foreignId('group_id')
+                ->after('catalog_id')
+                ->nullable()->constrained('t_catalog_property_groups')->onDelete('set null');
         });
     }
 

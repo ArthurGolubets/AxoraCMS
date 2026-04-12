@@ -334,7 +334,8 @@ export default {
   },
   computed: {
     ungroupedProperties() {
-      return this.properties.filter(p => !p.group_id);
+      const groupKeys = new Set(this.groups.map(g => String(g.id || g.temp_id)));
+      return this.properties.filter(p => !p.group_id || !groupKeys.has(String(p.group_id)));
     }
   },
   mounted() {
@@ -402,8 +403,8 @@ export default {
   },
   methods: {
     propertiesInGroup(group) {
-      const groupKey = group.id || group.temp_id;
-      return this.properties.filter(p => p.group_id === groupKey);
+      const groupKey = String(group.id || group.temp_id);
+      return this.properties.filter(p => String(p.group_id) === groupKey);
     },
 
     addGroup() {
@@ -429,8 +430,8 @@ export default {
 
     removeGroup(gIndex) {
       const group = this.groups[gIndex];
-      const groupKey = group.id || group.temp_id;
-      const hasProperties = this.properties.some(p => p.group_id === groupKey);
+      const groupKey = String(group.id || group.temp_id);
+      const hasProperties = this.properties.some(p => String(p.group_id) === groupKey);
 
       if (hasProperties) {
         alert('Нельзя удалить группу, в которой есть свойства. Сначала удалите или перенесите свойства.');
