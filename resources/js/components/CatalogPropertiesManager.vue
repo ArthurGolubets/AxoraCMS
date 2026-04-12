@@ -235,30 +235,28 @@ export default {
       const hasGroups = this.initialGroups.length > 0;
       const hasProperties = this.initialProperties.length > 0;
 
-      // For existing catalog: wait until API data arrives (groups or properties)
-      // For new catalog (catalogId === null): init immediately with defaults
-      if (hasGroups || hasProperties || this.catalogId === null) {
+      if (this.catalogId === null) {
+        this.groups = [{ temp_id: `temp_${tempIdCounter++}`, name: 'Основные', code: 'main', sort_order: 100 }];
+        this.properties = [];
+        this.initialized = true;
+        return;
+      }
+
+      if (hasGroups && hasProperties) {
         this.groups = JSON.parse(JSON.stringify(this.initialGroups));
         this.properties = JSON.parse(JSON.stringify(this.initialProperties));
-
-        console.log('[tryInit] called', {
-          catalogId: this.catalogId,
-          hasGroups,
-          hasProperties,
-          initialGroups: JSON.parse(JSON.stringify(this.initialGroups)),
-          initialProperties: JSON.parse(JSON.stringify(this.initialProperties)),
-        });
-
-        if (this.groups.length === 0) {
-          this.groups.push({
-            temp_id: `temp_${tempIdCounter++}`,
-            name: 'Основные',
-            code: 'main',
-            sort_order: 100,
-          });
-        }
-
         this.initialized = true;
+        return;
+      }
+
+      if (hasGroups) {
+        this.$nextTick(() => {
+          if (!this.initialized) {
+            this.groups = JSON.parse(JSON.stringify(this.initialGroups));
+            this.properties = JSON.parse(JSON.stringify(this.initialProperties));
+            this.initialized = true;
+          }
+        });
       }
     },
 
