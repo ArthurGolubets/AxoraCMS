@@ -1,330 +1,396 @@
 <template>
-  <div class="space-y-4">
+  <div>
+    <div class="mb-6 flex items-center space-x-3">
+      <button @click="$router.back()" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </button>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+        {{ isEdit ? 'Редактировать категорию' : 'Создать категорию' }}
+      </h2>
+    </div>
 
-    <!-- Groups -->
-    <div v-for="(group, gIndex) in groups" :key="group.id || group.temp_id" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-
-      <!-- Group Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex items-center space-x-3 flex-1">
-          <input
-              v-if="editingGroupIndex === gIndex"
-              v-model="group.name"
-              @blur="editingGroupIndex = null"
-              @keyup.enter="editingGroupIndex = null"
-              type="text"
-              class="px-2 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white font-semibold text-base"
-              ref="groupNameInput"
-          >
-          <h3 v-else class="text-base font-semibold text-gray-900 dark:text-white">
-            {{ group.name || 'Без названия' }}
-          </h3>
-          <button
-              v-if="editingGroupIndex !== gIndex"
-              @click="startEditGroup(gIndex)"
-              type="button"
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              title="Переименовать группу"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button @click="addProperty(group)" type="button" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
-            + Свойство
-          </button>
-          <button @click="removeGroup(gIndex)" type="button" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium">
-            Удалить группу
-          </button>
-        </div>
-      </div>
-
-      <!-- Properties in group -->
-      <div class="p-4 space-y-3">
-        <div v-if="propertiesInGroup(group).length === 0" class="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-          Нет свойств в этой группе
-        </div>
-        <div
-            v-for="(property, pIndex) in propertiesInGroup(group)"
-            :key="property.id || `new-${pIndex}`"
-            class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+    <!-- Tabs Navigation -->
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+      <nav class="-mb-px flex space-x-8">
+        <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            type="button"
+            :class="[
+            activeTab === tab.id
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
+            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+          ]"
         >
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          {{ tab.label }}
+        </button>
+      </nav>
+    </div>
+
+    <form @submit.prevent="handleSubmit" class="space-y-6">
+      <!-- Main Info Tab -->
+      <div v-show="activeTab === 'main'" class="space-y-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Основная информация</h3>
+          <div class="space-y-4">
             <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Название *</label>
-              <input v-model="property.name" @input="generateCode(property)" type="text" required placeholder="Цвет"
-                     class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Код *</label>
-              <input v-model="property.code" type="text" required placeholder="color"
-                     class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm font-mono">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Тип</label>
-              <select v-model="property.type" class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm">
-                <option value="string">Строка</option>
-                <option value="text">Текст</option>
-                <option value="number">Число</option>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Родительская категория</label>
+              <input
+                  v-model="categorySearch"
+                  @input="filterCategories"
+                  type="text"
+                  placeholder="Поиск категории..."
+                  class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
+              <select
+                  v-model="form.parent_id"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
+                <option :value="null">Корневая категория</option>
+                <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
             </div>
-            <div class="flex items-end">
-              <label class="flex items-center cursor-pointer">
-                <input v-model="property.is_multiple" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded">
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Множественное</span>
-              </label>
-            </div>
+
             <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Порядок</label>
-              <input v-model.number="property.sort_order" type="number"
-                     class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
+              <input
+                  v-model="form.name"
+                  @input="generateSlug"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
             </div>
-            <div class="flex items-end space-x-2">
-              <select v-if="groups.length > 1" @change="moveProperty(property, $event.target.value)"
-                      class="w-full px-2 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs">
-                <option value="">Перенести...</option>
-                <option v-for="g in groups" :key="g.id || g.temp_id" :value="g.id || g.temp_id"
-                        :disabled="String(g.id || g.temp_id) === String(group.id || group.temp_id)">
-                  {{ g.name }}
-                </option>
-              </select>
-              <button @click="removeProperty(property)" type="button"
-                      class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium whitespace-nowrap">
-                Удалить
-              </button>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Slug *</label>
+              <input
+                  v-model="form.slug"
+                  type="text"
+                  required
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
+            </div>
+
+            <div>
+              <ImageUpload v-model="form.image" label="Изображение категории" />
+            </div>
+
+            <div>
+              <ToggleSwitch v-model="form.is_active" label="Активна" />
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Ungrouped properties -->
-    <div v-if="ungroupedProperties.length > 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Без группы</h3>
-      </div>
-      <div class="p-4 space-y-3">
-        <div v-for="(property, pIndex) in ungroupedProperties" :key="property.id || `ungrouped-${pIndex}`"
-             class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <!-- SEO Tab -->
+      <div v-show="activeTab === 'seo'" class="space-y-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">SEO</h3>
+          <div class="space-y-4">
             <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Название *</label>
-              <input v-model="property.name" @input="generateCode(property)" type="text" required placeholder="Цвет"
-                     class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+              <input
+                  v-model="form.title"
+                  type="text"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
             </div>
+
             <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Код *</label>
-              <input v-model="property.code" type="text" required placeholder="color"
-                     class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm font-mono">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+              <textarea
+                  v-model="form.description"
+                  rows="3"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              ></textarea>
             </div>
+
             <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Тип</label>
-              <select v-model="property.type" class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm">
-                <option value="string">Строка</option>
-                <option value="text">Текст</option>
-                <option value="number">Число</option>
-              </select>
-            </div>
-            <div class="flex items-end">
-              <label class="flex items-center cursor-pointer">
-                <input v-model="property.is_multiple" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded">
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Множественное</span>
-              </label>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Порядок</label>
-              <input v-model.number="property.sort_order" type="number"
-                     class="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm">
-            </div>
-            <div class="flex items-end space-x-2">
-              <select v-if="groups.length > 0" @change="moveProperty(property, $event.target.value)"
-                      class="w-full px-2 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs">
-                <option value="">Перенести...</option>
-                <option v-for="g in groups" :key="g.id || g.temp_id" :value="g.id || g.temp_id">{{ g.name }}</option>
-              </select>
-              <button @click="removeProperty(property)" type="button"
-                      class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium whitespace-nowrap">
-                Удалить
-              </button>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Keywords</label>
+              <input
+                  v-model="form.keywords"
+                  type="text"
+                  placeholder="Через запятую"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Bottom actions -->
-    <div class="flex space-x-3">
-      <button @click="addGroup" type="button" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
-        + Добавить группу
-      </button>
-      <button @click="addProperty(null)" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
-        + Добавить свойство
-      </button>
-    </div>
-
-    <!-- Inherited properties -->
-    <div v-if="inheritedProperties.length > 0" class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-      <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-3">Унаследованные свойства (из родительских категорий)</h4>
-      <div class="space-y-2">
-        <div v-for="property in inheritedProperties" :key="property.id"
-             class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 opacity-75">
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
-            <div><span class="text-gray-600 dark:text-gray-400">Код:</span><span class="ml-2 text-gray-900 dark:text-white font-medium">{{ property.code }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400">Название:</span><span class="ml-2 text-gray-900 dark:text-white">{{ property.name }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400">Тип:</span><span class="ml-2 text-gray-900 dark:text-white">{{ getTypeLabel(property.type) }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400">Множ.:</span><span class="ml-2 text-gray-900 dark:text-white">{{ property.is_multiple ? 'Да' : 'Нет' }}</span></div>
-            <div class="text-gray-500 dark:text-gray-400 italic text-xs">(из категории: {{ property.catalog_name }})</div>
-          </div>
+      <!-- Content Tab -->
+      <div v-show="activeTab === 'content'" class="space-y-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <TinyMCEEditor v-model="form.content" label="Описание категории" :height="400" />
         </div>
       </div>
-    </div>
+
+      <!-- Properties Tab -->
+      <div v-show="activeTab === 'properties'" class="space-y-6">
+        <CatalogPropertiesManager
+            :catalog-id="catalogId"
+            :initial-properties="form.properties"
+            :initial-groups="propertyGroups"
+            :inherited-properties="inheritedProperties"
+            @update:properties="form.properties = $event"
+            @update:groups="propertyGroups = $event"
+        />
+      </div>
+
+      <!-- Characteristics Tab -->
+      <div v-show="activeTab === 'characteristics'" class="space-y-6">
+        <ProductCharacteristics v-model="form.addition_info" applies-to="catalog" />
+      </div>
+
+      <!-- Filters Tab (only for edit mode) -->
+      <div v-show="activeTab === 'filters'" class="space-y-6">
+        <CatalogFiltersBlock v-if="isEdit && route.params.id" :catalogId="route.params.id" />
+        <div v-else class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <p class="text-gray-500 dark:text-gray-400">Сохраните категорию, чтобы управлять фильтрами</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-end space-x-3">
+        <button
+            type="button"
+            @click="$router.back()"
+            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition"
+        >
+          Отмена
+        </button>
+        <button
+            type="submit"
+            :disabled="loading"
+            :style="buttonStyle"
+            class="px-6 py-3 text-white rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {{ loading ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Создать') }}
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
-<script>
-let tempIdCounter = 1;
+<script setup>
+import { ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useModal } from '../composables/useModal';
+import { useTheme } from '../composables/useTheme';
+import ImageUpload from './ImageUpload.vue';
+import ToggleSwitch from './ToggleSwitch.vue';
+import TinyMCEEditor from './TinyMCEEditor.vue';
+import CatalogFiltersBlock from './CatalogFiltersBlock.vue';
+import ProductCharacteristics from './ProductCharacteristics.vue';
+import CatalogPropertiesManager from './CatalogPropertiesManager.vue';
 
-export default {
-  name: 'CatalogPropertiesManager',
-  props: {
-    catalogId: { type: Number, default: null },
-    initialProperties: { type: Array, default: () => [] },
-    initialGroups: { type: Array, default: () => [] },
-    inheritedProperties: { type: Array, default: () => [] }
-  },
-  emits: ['update:properties', 'update:groups'],
-  data() {
-    return {
-      properties: [],
-      groups: [],
-      editingGroupIndex: null,
-      initialized: false,
-    }
-  },
-  computed: {
-    ungroupedProperties() {
-      const groupKeys = new Set(this.groups.map(g => String(g.id || g.temp_id)));
-      return this.properties.filter(p => !p.group_id || !groupKeys.has(String(p.group_id)));
-    }
-  },
-  mounted() {
-    this.tryInit();
-  },
-  watch: {
-    initialProperties() { this.tryInit(); },
-    initialGroups() { this.tryInit(); },
-    properties: {
-      deep: true,
-      handler(newVal) {
-        if (this.initialized) this.$emit('update:properties', newVal);
-      }
-    },
-    groups: {
-      deep: true,
-      handler(newVal) {
-        if (this.initialized) this.$emit('update:groups', newVal);
-      }
-    }
-  },
-  methods: {
-    tryInit() {
-      if (this.initialized) return;
+const { success, error } = useModal();
+const { buttonStyle } = useTheme();
+const route = useRoute();
+const router = useRouter();
 
-      const hasGroups = this.initialGroups.length > 0;
-      const hasProperties = this.initialProperties.length > 0;
+const loading = ref(false);
+const isEdit = computed(() => !!route.params.id);
+const catalogId = computed(() => route.params.id ? parseInt(route.params.id) : null);
+const availableCategories = ref([]);
+const categorySearch = ref('');
+const filteredCategories = ref([]);
+const activeTab = ref('main');
 
-      console.log('[tryInit] called', { catalogId: this.catalogId, hasGroups, hasProperties, initialGroups: JSON.parse(JSON.stringify(this.initialGroups)), initialProperties: JSON.parse(JSON.stringify(this.initialProperties)) });
+const tabs = [
+  { id: 'main', label: 'Основное' },
+  { id: 'seo', label: 'SEO' },
+  { id: 'content', label: 'Контент' },
+  { id: 'properties', label: 'Свойства' },
+  { id: 'characteristics', label: 'Характеристики' },
+  { id: 'filters', label: 'Фильтры' }
+];
 
-      if (this.catalogId === null) {
-        this.groups = [{ temp_id: `temp_${tempIdCounter++}`, name: 'Основные', code: 'main', sort_order: 100 }];
-        this.properties = [];
-        this.initialized = true;
-        return;
-      }
+const form = ref({
+  parent_id: null,
+  name: '',
+  slug: '',
+  title: '',
+  description: '',
+  keywords: '',
+  image: '',
+  content: '',
+  is_active: true,
+  addition_info: {},
+  properties: [],
+});
 
-      if (hasGroups && hasProperties) {
-        this.groups = JSON.parse(JSON.stringify(this.initialGroups));
-        this.properties = JSON.parse(JSON.stringify(this.initialProperties));
-        this.initialized = true;
-        return;
-      }
+const inheritedProperties = ref([]);
+const propertyGroups = ref([]);
 
-      if (hasGroups) {
-        this.$nextTick(() => {
-          if (!this.initialized) {
-            this.groups = JSON.parse(JSON.stringify(this.initialGroups));
-            this.properties = JSON.parse(JSON.stringify(this.initialProperties));
-            this.initialized = true;
-          }
-        });
-      }
-    },
+const generateSlug = () => {
+  const translitMap = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+    'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+    'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+    'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+    'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '',
+    'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+  };
 
-    propertiesInGroup(group) {
-      const groupKey = String(group.id || group.temp_id);
-      return this.properties.filter(p => String(p.group_id) === groupKey);
-    },
+  const slug = form.value.name
+      .split('')
+      .map(char => translitMap[char] || char)
+      .join('')
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  form.value.slug = slug;
+};
 
-    addGroup() {
-      this.groups.push({
-        temp_id: `temp_${tempIdCounter++}`,
-        name: 'Новая группа',
-        code: `group_${tempIdCounter}`,
-        sort_order: (this.groups.length + 1) * 100,
-      });
-    },
-
-    startEditGroup(index) {
-      this.editingGroupIndex = index;
-      this.$nextTick(() => {
-        const inputs = this.$refs.groupNameInput;
-        if (inputs) {
-          const input = Array.isArray(inputs) ? inputs[0] : inputs;
-          input?.focus();
-        }
-      });
-    },
-
-    removeGroup(gIndex) {
-      const group = this.groups[gIndex];
-      const groupKey = String(group.id || group.temp_id);
-      if (this.properties.some(p => String(p.group_id) === groupKey)) {
-        alert('Нельзя удалить группу, в которой есть свойства. Сначала удалите или перенесите свойства.');
-        return;
-      }
-      this.groups.splice(gIndex, 1);
-    },
-
-    addProperty(group) {
-      const groupKey = group ? (group.id || group.temp_id) : null;
-      this.properties.push({ code: '', name: '', type: 'string', is_multiple: false, sort_order: 500, group_id: groupKey });
-    },
-
-    removeProperty(property) {
-      if (confirm('Вы уверены, что хотите удалить это свойство?')) {
-        const index = this.properties.indexOf(property);
-        if (index !== -1) this.properties.splice(index, 1);
-      }
-    },
-
-    moveProperty(property, targetGroupKey) {
-      if (!targetGroupKey) return;
-      const asNum = parseInt(targetGroupKey);
-      property.group_id = isNaN(asNum) ? targetGroupKey : asNum;
-    },
-
-    generateCode(property) {
-      if (!property.id || !property.code) {
-        const m = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'};
-        property.code = property.name.split('').map(c => m[c]||c).join('').toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'_').replace(/_+/g,'_').trim();
-      }
-    },
-
-    getTypeLabel(type) {
-      return { string: 'Строка', text: 'Текст', number: 'Число' }[type] || type;
-    }
+const loadCategories = async () => {
+  try {
+    const response = await fetch('/admin/api/catalogs/list');
+    const data = await response.json();
+    availableCategories.value = data;
+    filteredCategories.value = data;
+  } catch (err) {
+    console.error('Error loading categories:', err);
   }
-}
+};
+
+const filterCategories = () => {
+  if (!categorySearch.value) {
+    filteredCategories.value = availableCategories.value;
+  } else {
+    const search = categorySearch.value.toLowerCase();
+    filteredCategories.value = availableCategories.value.filter(cat =>
+        cat.name.toLowerCase().includes(search)
+    );
+  }
+};
+
+const loadCatalog = async () => {
+  try {
+    const response = await fetch(`/admin/api/catalogs/${route.params.id}`);
+    const data = await response.json();
+    console.log('CatalogForm: Loaded catalog data:', data);
+
+    // Parse addition_info if it's a string
+    let additionInfo = {};
+    if (data.catalog.addition_info) {
+      console.log('CatalogForm: Raw addition_info:', data.catalog.addition_info, 'Type:', typeof data.catalog.addition_info);
+      if (typeof data.catalog.addition_info === 'string') {
+        try {
+          const parsed = JSON.parse(data.catalog.addition_info);
+          additionInfo = Array.isArray(parsed) ? {} : parsed;
+          console.log('CatalogForm: Parsed addition_info:', additionInfo);
+        } catch (e) {
+          console.error('Failed to parse addition_info:', e);
+          additionInfo = {};
+        }
+      } else if (typeof data.catalog.addition_info === 'object') {
+        // Could be array (old format) or object (new format)
+        additionInfo = Array.isArray(data.catalog.addition_info) ? {} : data.catalog.addition_info;
+        console.log('CatalogForm: addition_info is object:', additionInfo);
+      }
+    }
+
+    form.value = {
+      parent_id: data.catalog.parent_id,
+      name: data.catalog.name,
+      slug: data.catalog.slug || '',
+      title: data.catalog.title || '',
+      description: data.catalog.description || '',
+      keywords: data.catalog.keywords || '',
+      image: data.catalog.image || '',
+      content: data.catalog.content || '',
+      is_active: data.catalog.is_active !== undefined ? data.catalog.is_active : true,
+      addition_info: additionInfo,
+      properties: data.properties || [],
+    };
+    inheritedProperties.value = data.inherited_properties || [];
+    propertyGroups.value = data.property_groups || [];
+    console.log('CatalogForm: Final form.value.addition_info:', form.value.addition_info);
+  } catch (err) {
+    console.error('Error loading catalog:', err);
+    await error('Ошибка при загрузке категории');
+  }
+};
+
+const handleSubmit = async () => {
+  loading.value = true;
+  try {
+    // Ensure slug is generated if empty
+    if (!form.value.slug || form.value.slug.trim() === '') {
+      const translitMap = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+        'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+        'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+        'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+        'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+        'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '',
+        'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+      };
+
+      form.value.slug = form.value.name
+          .split('')
+          .map(char => translitMap[char] || char)
+          .join('')
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim();
+    }
+
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const url = isEdit.value ? `/admin/api/catalogs/${route.params.id}` : '/admin/api/catalogs';
+    const method = isEdit.value ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': token,
+      },
+      body: JSON.stringify({ ...form.value, property_groups: propertyGroups.value }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to save catalog');
+    }
+
+    await success(isEdit.value ? 'Категория обновлена' : 'Категория создана');
+    router.push('/catalog');
+  } catch (err) {
+    console.error('Error saving catalog:', err);
+    await error(err.message || 'Ошибка при сохранении категории');
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadCategories();
+
+  if (isEdit.value) {
+    loadCatalog();
+  }
+
+  // Set parent_id from query parameter
+  if (route.query.parent_id) {
+    form.value.parent_id = parseInt(route.query.parent_id);
+  }
+});
 </script>
