@@ -12,6 +12,7 @@ class TInfoBlockElement extends Model
         'info_block_id',
         'name',
         'code',
+        'content',
         'is_active',
         'sort',
         'properties',
