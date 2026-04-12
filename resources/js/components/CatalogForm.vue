@@ -311,6 +311,10 @@ const loadCatalog = async () => {
       addition_info: additionInfo,
       properties: data.properties || [],
     };
+    console.log('[loadCatalog] done', {
+      properties: data.properties,
+      property_groups: data.property_groups,
+    });
     inheritedProperties.value = data.inherited_properties || [];
     console.log('CatalogForm: Final form.value.addition_info:', form.value.addition_info);
   } catch (err) {
