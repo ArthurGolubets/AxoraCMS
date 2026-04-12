@@ -42,16 +42,16 @@
             <!-- Select type -->
             <div v-if="filter.type === 'select'" class="space-y-2">
               <label
-                v-for="value in filter.values"
-                :key="value.id"
-                class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-900 rounded cursor-pointer"
+                  v-for="value in filter.values"
+                  :key="value.id"
+                  class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-900 rounded cursor-pointer"
               >
                 <input
-                  type="radio"
-                  :name="`filter_${filter.id}`"
-                  :value="value.id"
-                  v-model="selectedValues[filter.id]"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                    type="radio"
+                    :name="`filter_${filter.id}`"
+                    :value="value.id"
+                    v-model="selectedValues[filter.id]"
+                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
                 />
                 <span class="ml-2 text-sm text-gray-900 dark:text-white">
                   {{ value.value }}
@@ -69,18 +69,28 @@
               />
             </div>
 
+            <!-- String type -->
+            <div v-else-if="filter.type === 'string'">
+              <input
+                  type="text"
+                  v-model="selectedValues[filter.id]"
+                  :placeholder="`Введите значение для ${filter.name}`"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              />
+            </div>
+
             <!-- Checkbox type -->
             <div v-else-if="filter.type === 'checkbox'" class="space-y-2">
               <label
-                v-for="value in filter.values"
-                :key="value.id"
-                class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-900 rounded cursor-pointer"
+                  v-for="value in filter.values"
+                  :key="value.id"
+                  class="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-900 rounded cursor-pointer"
               >
                 <input
-                  type="checkbox"
-                  :value="value.id"
-                  v-model="selectedValues[filter.id]"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    type="checkbox"
+                    :value="value.id"
+                    v-model="selectedValues[filter.id]"
+                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span class="ml-2 text-sm text-gray-900 dark:text-white">
                   {{ value.value }}
@@ -92,11 +102,11 @@
             <!-- Range type -->
             <div v-else-if="filter.type === 'range'">
               <input
-                type="number"
-                step="any"
-                v-model.number="selectedValues[filter.id]"
-                :placeholder="`Введите значение для ${filter.name}`"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  type="number"
+                  step="any"
+                  v-model.number="selectedValues[filter.id]"
+                  :placeholder="`Введите значение для ${filter.name}`"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               />
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Введите числовое значение для фильтра диапазона
@@ -124,16 +134,16 @@
             <!-- Select type -->
             <div v-if="filter.type === 'select'" class="space-y-2">
               <label
-                v-for="value in filter.values"
-                :key="value.id"
-                class="flex items-center p-2 hover:bg-white dark:hover:bg-gray-900 rounded cursor-pointer"
+                  v-for="value in filter.values"
+                  :key="value.id"
+                  class="flex items-center p-2 hover:bg-white dark:hover:bg-gray-900 rounded cursor-pointer"
               >
                 <input
-                  type="radio"
-                  :name="`filter_${filter.id}`"
-                  :value="value.id"
-                  v-model="selectedValues[filter.id]"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                    type="radio"
+                    :name="`filter_${filter.id}`"
+                    :value="value.id"
+                    v-model="selectedValues[filter.id]"
+                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
                 />
                 <span class="ml-2 text-sm text-gray-900 dark:text-white">
                   {{ value.value }}
@@ -145,15 +155,15 @@
             <!-- Checkbox type -->
             <div v-else-if="filter.type === 'checkbox'" class="space-y-2">
               <label
-                v-for="value in filter.values"
-                :key="value.id"
-                class="flex items-center p-2 hover:bg-white dark:hover:bg-gray-900 rounded cursor-pointer"
+                  v-for="value in filter.values"
+                  :key="value.id"
+                  class="flex items-center p-2 hover:bg-white dark:hover:bg-gray-900 rounded cursor-pointer"
               >
                 <input
-                  type="checkbox"
-                  :value="value.id"
-                  v-model="selectedValues[filter.id]"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    type="checkbox"
+                    :value="value.id"
+                    v-model="selectedValues[filter.id]"
+                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span class="ml-2 text-sm text-gray-900 dark:text-white">
                   {{ value.value }}
@@ -165,11 +175,11 @@
             <!-- Range type -->
             <div v-else-if="filter.type === 'range'">
               <input
-                type="number"
-                step="any"
-                v-model.number="selectedValues[filter.id]"
-                :placeholder="`Введите значение для ${filter.name}`"
-                class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-indigo-300 dark:border-indigo-600 rounded-lg text-gray-900 dark:text-white"
+                  type="number"
+                  step="any"
+                  v-model.number="selectedValues[filter.id]"
+                  :placeholder="`Введите значение для ${filter.name}`"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-indigo-300 dark:border-indigo-600 rounded-lg text-gray-900 dark:text-white"
               />
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Введите числовое значение для фильтра диапазона
@@ -182,6 +192,16 @@
                   v-model="selectedValues[filter.id]"
                   :entity-type-fixed="filter.settings?.entity_type"
                   :info-block-id="filter.settings?.entity_id"
+              />
+            </div>
+
+            <!-- String type -->
+            <div v-else-if="filter.type === 'string'">
+              <input
+                  type="text"
+                  v-model="selectedValues[filter.id]"
+                  :placeholder="`Введите значение для ${filter.name}`"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               />
             </div>
           </div>
@@ -305,7 +325,7 @@ const loadFilters = async () => {
     if (response.ok) {
       const data = await response.json();
       // Filter only active filters - range type doesn't need values
-      availableFilters.value = data.filter(f => f.is_active && (f.type === 'range' || f.type === 'entity' || (f.values && f.values.length > 0)));
+      availableFilters.value = data.filter(f => f.is_active && (f.type === 'range' || f.type === 'entity' || f.type === 'string' || (f.values && f.values.length > 0)));
 
       // Set flag to prevent emit during initial load
       isUpdatingFromParent.value = true;
@@ -316,9 +336,11 @@ const loadFilters = async () => {
         if (filter.type === 'select') {
           newSelectedValues[filter.id] = null;
         } else if (filter.type === 'entity') {
-            newSelectedValues[filter.id] = null;
+          newSelectedValues[filter.id] = null;
         } else if (filter.type === 'range') {
           newSelectedValues[filter.id] = null; // Numeric value for range
+        } else if (filter.type === 'string') {
+          newSelectedValues[filter.id] = '';
         } else {
           newSelectedValues[filter.id] = [];
         }
@@ -328,7 +350,7 @@ const loadFilters = async () => {
       if (props.initialValues && props.initialValues.length > 0) {
         props.initialValues.forEach(valueId => {
           const filter = availableFilters.value.find(f =>
-            f.values && f.values.some(v => v.id === valueId)
+              f.values && f.values.some(v => v.id === valueId)
           );
 
           if (filter) {
@@ -432,7 +454,7 @@ watch(() => props.initialValues, (newValues) => {
   if (newValues && newValues.length > 0) {
     newValues.forEach(valueId => {
       const filter = availableFilters.value.find(f =>
-        f.values && f.values.some(v => v.id === valueId)
+          f.values && f.values.some(v => v.id === valueId)
       );
 
       if (filter) {
