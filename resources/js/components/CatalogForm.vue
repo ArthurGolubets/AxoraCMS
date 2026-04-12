@@ -131,14 +131,12 @@
       </div>
 
       <!-- Properties Tab -->
-      <div v-if="activeTab === 'properties'" class="space-y-6">
+      <div v-show="activeTab === 'properties'" class="space-y-6">
         <CatalogPropertiesManager
             :catalog-id="route.params.id ? parseInt(route.params.id) : null"
             :initial-properties="form.properties"
-            :initial-groups="form.property_groups"
             :inherited-properties="inheritedProperties"
             @update:properties="form.properties = $event"
-            @update:groups="form.property_groups = $event"
         />
       </div>
 
@@ -222,7 +220,6 @@ const form = ref({
   is_active: true,
   addition_info: {},
   properties: [],
-  property_groups: [],
 });
 
 const inheritedProperties = ref([]);
@@ -279,18 +276,25 @@ const loadCatalog = async () => {
   try {
     const response = await fetch(`/admin/api/catalogs/${route.params.id}`);
     const data = await response.json();
+    console.log('CatalogForm: Loaded catalog data:', data);
 
+    // Parse addition_info if it's a string
     let additionInfo = {};
     if (data.catalog.addition_info) {
+      console.log('CatalogForm: Raw addition_info:', data.catalog.addition_info, 'Type:', typeof data.catalog.addition_info);
       if (typeof data.catalog.addition_info === 'string') {
         try {
           const parsed = JSON.parse(data.catalog.addition_info);
           additionInfo = Array.isArray(parsed) ? {} : parsed;
+          console.log('CatalogForm: Parsed addition_info:', additionInfo);
         } catch (e) {
+          console.error('Failed to parse addition_info:', e);
           additionInfo = {};
         }
       } else if (typeof data.catalog.addition_info === 'object') {
+        // Could be array (old format) or object (new format)
         additionInfo = Array.isArray(data.catalog.addition_info) ? {} : data.catalog.addition_info;
+        console.log('CatalogForm: addition_info is object:', additionInfo);
       }
     }
 
@@ -306,9 +310,9 @@ const loadCatalog = async () => {
       is_active: data.catalog.is_active !== undefined ? data.catalog.is_active : true,
       addition_info: additionInfo,
       properties: data.properties || [],
-      property_groups: data.property_groups || [],
     };
     inheritedProperties.value = data.inherited_properties || [];
+    console.log('CatalogForm: Final form.value.addition_info:', form.value.addition_info);
   } catch (err) {
     console.error('Error loading catalog:', err);
     await error('Ошибка при загрузке категории');
@@ -318,6 +322,7 @@ const loadCatalog = async () => {
 const handleSubmit = async () => {
   loading.value = true;
   try {
+    // Ensure slug is generated if empty
     if (!form.value.slug || form.value.slug.trim() === '') {
       const translitMap = {
         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
@@ -378,6 +383,7 @@ onMounted(() => {
     loadCatalog();
   }
 
+  // Set parent_id from query parameter
   if (route.query.parent_id) {
     form.value.parent_id = parseInt(route.query.parent_id);
   }
