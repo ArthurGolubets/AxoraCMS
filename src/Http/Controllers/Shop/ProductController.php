@@ -22,8 +22,8 @@ class ProductController extends Controller
         if ($search = $request->get('search')) {
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -121,6 +121,7 @@ class ProductController extends Controller
             'assigned_filters' => $assignedFilters,
             'available_properties' => $availableProperties,
             'property_values' => $propertyValuesFormatted,
+            'string_filter_values' => $product->string_filter_values ?? [],
         ];
 
         \Log::info('Full API response property_values:', $response['property_values']);
@@ -165,6 +166,8 @@ class ProductController extends Controller
             'property_values' => 'nullable|array',
             'entity_filter_values' => 'nullable|array',
             'entity_filter_values.*' => 'nullable|integer',
+            'string_filter_values' => 'nullable|array',
+            'string_filter_values.*' => 'nullable|string',
         ]);
 
         // Generate slug if not provided
@@ -289,6 +292,8 @@ class ProductController extends Controller
             'property_values' => 'nullable|array',
             'entity_filter_values' => 'nullable|array',
             'entity_filter_values.*' => 'nullable|integer',
+            'string_filter_values' => 'nullable|array',
+            'string_filter_values.*' => 'nullable|string',
         ]);
 
         // Handle variants update
@@ -357,9 +362,9 @@ class ProductController extends Controller
         // Log activity
         TAdminAction::log('updated', 'product', $product->id,
             'Обновлен товар "' . $product->name . '" (SKU: ' . $product->sku . ')', [
-            'old' => $oldData,
-            'new' => $product->getAttributes()
-        ]);
+                'old' => $oldData,
+                'new' => $product->getAttributes()
+            ]);
 
         return response()->json($product->load(['variants', 'propertyValues.property']));
     }

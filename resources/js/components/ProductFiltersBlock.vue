@@ -244,10 +244,14 @@ const props = defineProps({
   },
   initialEntityValues: {
     type: Object, default: () => ({})
+  },
+  initialStringValues: {
+    type: Object,
+    default: () => ({})
   }
 });
 
-const emit = defineEmits(['update:filterValues', 'update:rangeFilterValues', 'update:entityFilterValues']);
+const emit = defineEmits(['update:filterValues', 'update:rangeFilterValues', 'update:entityFilterValues', 'update:stringFilterValues']);
 
 const availableFilters = ref([]);
 const selectedValues = ref({});
@@ -268,8 +272,8 @@ const selectedValuesArray = computed(() => {
     const filterValue = selectedValues.value[filterId];
     const filter = availableFilters.value.find(f => f.id == filterId);
 
-    // Skip range filters - they are handled separately
-    if (filter && (filter.type === 'range' || filter.type === 'entity')) {
+    // Skip range, entity, string filters - they are handled separately
+    if (filter && (filter.type === 'range' || filter.type === 'entity' || filter.type === 'string')) {
       return;
     }
 
@@ -297,8 +301,20 @@ const rangeFilterValues = computed(() => {
   return ranges;
 });
 
+const stringFilterValues = computed(() => {
+  const strings = {};
+  Object.keys(selectedValues.value).forEach(filterId => {
+    const filterValue = selectedValues.value[filterId];
+    const filter = availableFilters.value.find(f => f.id == filterId);
+    if (filter && filter.type === 'string' && filterValue !== null && filterValue !== '') {
+      strings[filterId] = filterValue;
+    }
+  });
+  return strings;
+});
+
 const selectedValuesCount = computed(() => {
-  return selectedValuesArray.value.length + Object.keys(rangeFilterValues.value).length  + Object.keys(entityFilterValues.value).length;
+  return selectedValuesArray.value.length + Object.keys(rangeFilterValues.value).length + Object.keys(entityFilterValues.value).length + Object.keys(stringFilterValues.value).length;
 });
 
 const entityFilterValues = computed(() => {
@@ -386,6 +402,15 @@ const loadFilters = async () => {
         });
       }
 
+      if (props.initialStringValues && Object.keys(props.initialStringValues).length > 0) {
+        Object.keys(props.initialStringValues).forEach(filterId => {
+          const filter = availableFilters.value.find(f => f.id == filterId && f.type === 'string');
+          if (filter) {
+            newSelectedValues[filterId] = props.initialStringValues[filterId];
+          }
+        });
+      }
+
       selectedValues.value = newSelectedValues;
 
       // Reset flag after a tick to ensure Vue has finished updating
@@ -411,6 +436,7 @@ watch(selectedValues, () => {
     emit('update:filterValues', selectedValuesArray.value);
     emit('update:rangeFilterValues', rangeFilterValues.value);
     emit('update:entityFilterValues', entityFilterValues.value);
+    emit('update:stringFilterValues', stringFilterValues.value);
   }
 }, { deep: true });
 

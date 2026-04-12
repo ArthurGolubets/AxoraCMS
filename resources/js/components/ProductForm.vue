@@ -11,11 +11,11 @@
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="-mb-px flex space-x-8">
         <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          type="button"
-          :class="[
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            type="button"
+            :class="[
             activeTab === tab.id
               ? 'border-blue-500 text-blue-600 dark:text-blue-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
@@ -36,11 +36,11 @@
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Категория *</label>
               <input
-                v-model="categorySearch"
-                @input="filterCategories"
-                type="text"
-                placeholder="Поиск категории..."
-                class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  v-model="categorySearch"
+                  @input="filterCategories"
+                  type="text"
+                  placeholder="Поиск категории..."
+                  class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
               >
               <select v-model="form.catalog_id" required class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
                 <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -117,9 +117,9 @@
       <!-- Properties and Characteristics Tab -->
       <div v-if="activeTab === 'properties'" class="space-y-6">
         <ProductPropertiesForm
-          :available-properties="availableProperties"
-          :initial-values="form.property_values"
-          @update:values="(newValues) => { console.log('ProductForm received property values:', newValues); form.property_values = newValues; }"
+            :available-properties="availableProperties"
+            :initial-values="form.property_values"
+            @update:values="(newValues) => { console.log('ProductForm received property values:', newValues); form.property_values = newValues; }"
         />
         <ProductCharacteristics v-model="form.addition_info" applies-to="product" />
       </div>
@@ -134,15 +134,17 @@
       <!-- Filters Tab -->
       <div v-show="activeTab === 'filters'" class="space-y-6">
         <ProductFiltersBlock
-          v-if="form.catalog_id"
-          :catalogId="form.catalog_id"
-          :catalogName="selectedCatalogName"
-          :initialValues="form.filter_values || []"
-          :initialRangeValues="form.range_filter_values || {}"
-          @update:filterValues="form.filter_values = $event"
-          @update:rangeFilterValues="form.range_filter_values = $event"
-          :initialEntityValues="form.entity_filter_values || {}"
-          @update:entityFilterValues="form.entity_filter_values = $event"
+            v-if="form.catalog_id"
+            :catalogId="form.catalog_id"
+            :catalogName="selectedCatalogName"
+            :initialValues="form.filter_values || []"
+            :initialRangeValues="form.range_filter_values || {}"
+            @update:filterValues="form.filter_values = $event"
+            @update:rangeFilterValues="form.range_filter_values = $event"
+            :initialEntityValues="form.entity_filter_values || {}"
+            @update:entityFilterValues="form.entity_filter_values = $event"
+            :initialStringValues="form.string_filter_values || {}"
+            @update:stringFilterValues="form.string_filter_values = $event"
         />
         <div v-else class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <p class="text-gray-500 dark:text-gray-400">Выберите категорию, чтобы увидеть доступные фильтры</p>
@@ -215,6 +217,7 @@ const form = ref({
   addition_info: {},
   property_values: {},
   entity_filter_values: {},
+  string_filter_values: {},
 });
 
 const availableProperties = ref([]);
@@ -240,14 +243,14 @@ const generateSlug = () => {
     };
 
     const slug = form.value.name
-      .split('')
-      .map(char => translitMap[char] || char)
-      .join('')
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
+        .split('')
+        .map(char => translitMap[char] || char)
+        .join('')
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
     form.value.slug = slug;
   }
 };
@@ -277,7 +280,7 @@ const filterCategories = () => {
   } else {
     const search = categorySearch.value.toLowerCase();
     filteredCategories.value = categories.value.filter(cat =>
-      cat.name.toLowerCase().includes(search)
+        cat.name.toLowerCase().includes(search)
     );
   }
 };
@@ -326,7 +329,7 @@ const loadProduct = async () => {
 
     // Extract filter_value_ids from filter_values relationship or assigned_filters
     const filterValueIds = product.filter_values?.map(fv => fv.id) ||
-                          data.assigned_filters?.flatMap(f => f.values?.map(v => v.id) || []) || [];
+        data.assigned_filters?.flatMap(f => f.values?.map(v => v.id) || []) || [];
 
     // Extract range filter values
     const rangeFilterValues = product.range_filter_values || {};
@@ -383,6 +386,7 @@ const loadProduct = async () => {
       addition_info: additionInfo,
       property_values: propertyValues,
       entity_filter_values: product.entity_filter_values || {},
+      string_filter_values: product.string_filter_values || {},
     };
   } catch (err) {
     await error('Ошибка при загрузке товара');
