@@ -180,20 +180,17 @@ class FilterService
         if ($query === null) {
             $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
 
-            // Apply catalog filter (including children) only if catalogId is provided
             if ($catalogId !== null) {
                 $catalogIds = $this->getCatalogIdsWithChildren($catalogId);
                 $query->whereIn('catalog_id', $catalogIds);
             }
         }
 
-        // Apply each filter
         foreach ($selectedFilters as $filterId => $valueIds) {
             if (empty($valueIds)) {
                 continue;
             }
 
-            // Handle price filter separately
             if ($filterId === 'price') {
                 if (isset($valueIds['min'])) {
                     $query->where('price', '>=', $valueIds['min']);
@@ -204,17 +201,27 @@ class FilterService
                 continue;
             }
 
-            // Check filter type
             $filter = TFilter::find($filterId);
+
             if ($filter && $filter->type === 'entity') {
                 $entityId = is_array($valueIds) ? $valueIds[0] : $valueIds;
                 $query->whereJsonContains('entity_filter_values->' . $filterId, $entityId);
                 continue;
             }
 
+            if ($filter && $filter->type === 'range') {
+                if (isset($valueIds[0]) && $valueIds[0] !== '') {
+                    $query->whereRaw("CAST(JSON_EXTRACT(range_filter_values, '$.\"$filterId\"') AS DECIMAL) >= ?", [$valueIds[0]]);
+                }
+                if (isset($valueIds[1]) && $valueIds[1] !== '') {
+                    $query->whereRaw("CAST(JSON_EXTRACT(range_filter_values, '$.\"$filterId\"') AS DECIMAL) <= ?", [$valueIds[1]]);
+                }
+                continue;
+            }
+
             $query->whereHas('filterValues', function ($q) use ($filterId, $valueIds) {
                 $q->where('t_product_filter_values.filter_id', $filterId)
-                  ->whereIn('t_filter_values.id', $valueIds);
+                    ->whereIn('t_filter_values.id', $valueIds);
             });
         }
 

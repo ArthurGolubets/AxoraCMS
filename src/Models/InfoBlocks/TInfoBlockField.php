@@ -76,6 +76,9 @@ class TInfoBlockField extends Model
             case 'datetime':
                 return strtotime($value) !== false;
             case 'enum':
+                if ($value === '' || $value === null) {
+                    return true; // пустое значение допустимо если поле не required
+                }
                 $options = $this->settings['options'] ?? [];
                 $codes = array_column($options, 'code');
                 return in_array($value, $codes);
