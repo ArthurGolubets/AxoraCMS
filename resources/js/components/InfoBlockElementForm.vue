@@ -336,7 +336,8 @@ const loadFields = async () => {
 
       fields.value.forEach(field => {
         if (!(field.code in form.value.properties)) {
-          if (field.is_multiple && ['string', 'text', 'number', 'double', 'date', 'datetime'].includes(field.type)) {
+          if (field.is_multiple) {
+            // Для множественных полей всегда используем массив
             form.value.properties[field.code] = [];
           } else if (field.type === 'bool') {
             form.value.properties[field.code] = false;

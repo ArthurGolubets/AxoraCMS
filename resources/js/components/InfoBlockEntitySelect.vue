@@ -32,6 +32,16 @@
       </select>
     </div>
 
+    <!-- Debug Info -->
+    <div v-if="true" class="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded text-xs">
+      <p><strong>Debug Info:</strong></p>
+      <p>isMultiple: {{ isMultiple }}</p>
+      <p>modelValue: {{ JSON.stringify(modelValue) }}</p>
+      <p>selectedEntities.length: {{ selectedEntities.length }}</p>
+      <p>selectedEntities: {{ selectedEntities.map(e => e.name).join(', ') }}</p>
+      <p>selectedEntity: {{ selectedEntity?.name || 'null' }}</p>
+    </div>
+
     <!-- Selected Entities Display (for multiple selection) -->
     <div v-if="isMultiple && selectedEntities.length > 0" class="mb-3 space-y-2">
       <div
@@ -265,16 +275,21 @@ const onEntityTypeChange = () => {
 };
 
 const selectEntity = (entity) => {
+  console.log('selectEntity called', { entity, isMultiple: props.isMultiple });
+
   if (props.isMultiple) {
     // Add to selected entities array
     if (!isEntitySelected(entity.id)) {
       selectedEntities.value.push(entity);
-      emit('update:modelValue', selectedEntities.value.map(e => e.id));
+      const newValue = selectedEntities.value.map(e => e.id);
+      console.log('Emitting multiple values:', newValue);
+      emit('update:modelValue', newValue);
       emit('update:entityType', `${selectedEntityType.value}:${selectedInfoBlock.value || ''}`);
     }
   } else {
     // Single selection
     selectedEntity.value = entity;
+    console.log('Emitting single value:', entity.id);
     emit('update:modelValue', entity.id);
     emit('update:entityType', `${selectedEntityType.value}:${selectedInfoBlock.value || ''}`);
   }
@@ -328,7 +343,9 @@ const loadEntityById = async (id) => {
 
 // Load selected entities if modelValue is set
 watch(() => props.modelValue, async (newVal) => {
-  if (!newVal) {
+  console.log('modelValue changed:', { newVal, isMultiple: props.isMultiple, isArray: Array.isArray(newVal) });
+
+  if (!newVal || (Array.isArray(newVal) && newVal.length === 0)) {
     selectedEntity.value = null;
     selectedEntities.value = [];
     return;
@@ -339,6 +356,7 @@ watch(() => props.modelValue, async (newVal) => {
   try {
     if (props.isMultiple && Array.isArray(newVal)) {
       // Load multiple entities
+      console.log('Loading multiple entities:', newVal);
       const loadedEntities = [];
       for (const id of newVal) {
         const entity = await loadEntityById(id);
@@ -346,12 +364,15 @@ watch(() => props.modelValue, async (newVal) => {
           loadedEntities.push(entity);
         }
       }
+      console.log('Loaded entities:', loadedEntities);
       selectedEntities.value = loadedEntities;
     } else if (!props.isMultiple && newVal) {
       // Load single entity
+      console.log('Loading single entity:', newVal);
       if (!selectedEntity.value || selectedEntity.value.id !== newVal) {
         const entity = await loadEntityById(newVal);
         if (entity) {
+          console.log('Loaded entity:', entity);
           selectedEntity.value = entity;
         }
       }
