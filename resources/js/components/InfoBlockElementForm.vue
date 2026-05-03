@@ -179,6 +179,7 @@
                   :required="field.is_required"
                   :entity-type-fixed="field.settings?.entity_type"
                   :info-block-id="field.settings?.entity_id"
+                  :is-multiple="field.is_multiple"
               />
 
               <InfoBlockUserSelect
