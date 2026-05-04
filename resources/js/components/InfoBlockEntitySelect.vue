@@ -33,13 +33,16 @@
     </div>
 
     <!-- Debug Info -->
-    <div v-if="true" class="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded text-xs">
-      <p><strong>Debug Info:</strong></p>
-      <p>isMultiple: {{ isMultiple }}</p>
-      <p>modelValue: {{ JSON.stringify(modelValue) }}</p>
-      <p>selectedEntities.length: {{ selectedEntities.length }}</p>
-      <p>selectedEntities: {{ selectedEntities.map(e => e.name).join(', ') }}</p>
-      <p>selectedEntity: {{ selectedEntity?.name || 'null' }}</p>
+    <div v-if="true" class="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded text-xs font-mono">
+      <p><strong>🔍 Debug Info:</strong></p>
+      <p>📋 isMultiple: <span class="font-bold">{{ isMultiple }}</span></p>
+      <p>💾 modelValue: <span class="text-blue-600">{{ JSON.stringify(modelValue) }}</span></p>
+      <p>📊 selectedEntities.length: <span class="font-bold">{{ selectedEntities.length }}</span></p>
+      <p>📝 selectedEntities IDs: <span class="text-green-600">[{{ selectedEntities.map(e => e.id).join(', ') }}]</span></p>
+      <p>✏️ selectedEntities Names: <span class="text-purple-600">{{ selectedEntities.map(e => e.name).join(', ') || '(empty)' }}</span></p>
+      <p>🎯 selectedEntity: {{ selectedEntity?.name || 'null' }}</p>
+      <p>🏷️ entityType: {{ selectedEntityType }}</p>
+      <p>📦 infoBlockId: {{ selectedInfoBlock }}</p>
     </div>
 
     <!-- Selected Entities Display (for multiple selection) -->
@@ -281,7 +284,10 @@ const selectEntity = (entity) => {
     // Add to selected entities array
     if (!isEntitySelected(entity.id)) {
       selectedEntities.value.push(entity);
-      const newValue = selectedEntities.value.map(e => e.id);
+      // Filter out null/undefined values
+      const newValue = selectedEntities.value
+        .map(e => e.id)
+        .filter(id => id !== null && id !== undefined);
       console.log('Emitting multiple values:', newValue);
       emit('update:modelValue', newValue);
       emit('update:entityType', `${selectedEntityType.value}:${selectedInfoBlock.value || ''}`);
@@ -297,7 +303,11 @@ const selectEntity = (entity) => {
 
 const removeEntity = (entityId) => {
   selectedEntities.value = selectedEntities.value.filter(e => e.id !== entityId);
-  emit('update:modelValue', selectedEntities.value.map(e => e.id));
+  const newValue = selectedEntities.value
+    .map(e => e.id)
+    .filter(id => id !== null && id !== undefined);
+  console.log('Removing entity, new values:', newValue);
+  emit('update:modelValue', newValue);
 };
 
 const clearSelection = () => {
@@ -317,6 +327,11 @@ const isEntitySelected = (entityId) => {
 
 // Load entity details by ID
 const loadEntityById = async (id) => {
+  if (!id) {
+    console.log('loadEntityById: id is null/undefined');
+    return null;
+  }
+
   try {
     let url = '';
     if (selectedEntityType.value === 'infoblock' && selectedInfoBlock.value) {
@@ -327,12 +342,19 @@ const loadEntityById = async (id) => {
       url = `/admin/api/catalogs/${id}`;
     }
 
+    console.log('loadEntityById:', { id, url, entityType: selectedEntityType.value, infoBlockId: selectedInfoBlock.value });
+
     if (url) {
       const response = await fetch(url, {
         headers: { 'Accept': 'application/json' }
       });
+      console.log('Response status:', response.status);
       if (response.ok) {
-        return await response.json();
+        const data = await response.json();
+        console.log('Loaded entity data:', data);
+        return data;
+      } else {
+        console.error('Response not OK:', response.status, await response.text());
       }
     }
   } catch (error) {
@@ -351,14 +373,26 @@ watch(() => props.modelValue, async (newVal) => {
     return;
   }
 
+  // Don't reload if we already have the entities loaded
+  if (props.isMultiple && Array.isArray(newVal)) {
+    const currentIds = selectedEntities.value.map(e => e.id).sort().join(',');
+    const newIds = newVal.filter(id => id !== null && id !== undefined).sort().join(',');
+    if (currentIds === newIds && selectedEntities.value.length > 0) {
+      console.log('Entities already loaded, skipping');
+      return;
+    }
+  }
+
   loading.value = true;
 
   try {
     if (props.isMultiple && Array.isArray(newVal)) {
-      // Load multiple entities
-      console.log('Loading multiple entities:', newVal);
+      // Filter out null/undefined values
+      const validIds = newVal.filter(id => id !== null && id !== undefined);
+      console.log('Loading multiple entities:', validIds);
+
       const loadedEntities = [];
-      for (const id of newVal) {
+      for (const id of validIds) {
         const entity = await loadEntityById(id);
         if (entity) {
           loadedEntities.push(entity);
