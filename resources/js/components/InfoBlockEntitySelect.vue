@@ -359,26 +359,49 @@ const loadEntityById = async (id) => {
 
     console.log('loadEntityById:', { id, url, entityType: selectedEntityType.value, infoBlockId: selectedInfoBlock.value });
 
-    if (url) {
-      const response = await fetch(url, {
-        headers: { 'Accept': 'application/json' }
+    if (!url) {
+      console.error('URL is empty! Cannot load entity.', {
+        id,
+        entityType: selectedEntityType.value,
+        infoBlockId: selectedInfoBlock.value
       });
-      console.log('Response status:', response.status);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Loaded entity data:', data);
-        console.log('Entity structure:', {
-          hasId: 'id' in data,
-          hasName: 'name' in data,
-          keys: Object.keys(data),
-          id: data.id,
-          name: data.name,
-          fullData: data
-        });
-        return data;
-      } else {
-        console.error('Response not OK:', response.status, await response.text());
+      return null;
+    }
+
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
+    console.log('Response status:', response.status);
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Loaded entity data:', data);
+
+      // Extract entity from wrapper if needed
+      let entity = data;
+
+      // For products/catalogs, API returns { product: {...} } or { catalog: {...} }
+      if (data.product && !data.id) {
+        entity = data.product;
+        console.log('Extracted product from wrapper:', entity);
+      } else if (data.catalog && !data.id) {
+        entity = data.catalog;
+        console.log('Extracted catalog from wrapper:', entity);
       }
+
+      console.log('Entity structure:', {
+        hasId: 'id' in entity,
+        hasName: 'name' in entity,
+        keys: Object.keys(entity),
+        id: entity.id,
+        name: entity.name
+      });
+
+      return entity;
+    } else {
+      const errorText = await response.text();
+      console.error('Response not OK:', response.status, errorText);
+      return null;
     }
   } catch (error) {
     console.error('Failed to load entity:', error);
