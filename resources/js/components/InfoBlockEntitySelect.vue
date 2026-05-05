@@ -158,7 +158,22 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:entityType']);
 
 const selectedEntityType = ref(props.entityTypeFixed || '');
-const selectedInfoBlock = ref(props.infoBlockId || '');
+const selectedInfoBlock = ref(props.infoBlockId || null);
+
+// Watch for changes in props
+watch(() => props.entityTypeFixed, (newVal) => {
+  if (newVal && newVal !== selectedEntityType.value) {
+    console.log('entityTypeFixed changed to:', newVal);
+    selectedEntityType.value = newVal;
+  }
+});
+
+watch(() => props.infoBlockId, (newVal) => {
+  if (newVal && newVal !== selectedInfoBlock.value) {
+    console.log('infoBlockId changed to:', newVal);
+    selectedInfoBlock.value = newVal;
+  }
+});
 const selectedEntity = ref(null);
 const selectedEntities = ref([]);
 const searchQuery = ref('');
@@ -352,6 +367,14 @@ const loadEntityById = async (id) => {
       if (response.ok) {
         const data = await response.json();
         console.log('Loaded entity data:', data);
+        console.log('Entity structure:', {
+          hasId: 'id' in data,
+          hasName: 'name' in data,
+          keys: Object.keys(data),
+          id: data.id,
+          name: data.name,
+          fullData: data
+        });
         return data;
       } else {
         console.error('Response not OK:', response.status, await response.text());
@@ -394,11 +417,14 @@ watch(() => props.modelValue, async (newVal) => {
       const loadedEntities = [];
       for (const id of validIds) {
         const entity = await loadEntityById(id);
-        if (entity) {
+        console.log('Entity loaded for ID', id, ':', entity);
+        if (entity && entity.id && entity.name) {
           loadedEntities.push(entity);
+        } else {
+          console.warn('Entity loaded but missing id or name:', entity);
         }
       }
-      console.log('Loaded entities:', loadedEntities);
+      console.log('All loaded entities:', loadedEntities);
       selectedEntities.value = loadedEntities;
     } else if (!props.isMultiple && newVal) {
       // Load single entity
@@ -419,6 +445,13 @@ watch(() => props.modelValue, async (newVal) => {
 }, { immediate: true });
 
 onMounted(async () => {
+  console.log('InfoBlockEntitySelect mounted', {
+    entityTypeFixed: props.entityTypeFixed,
+    infoBlockId: props.infoBlockId,
+    isMultiple: props.isMultiple,
+    modelValue: props.modelValue
+  });
+
   await checkCatalogModule();
   if (selectedEntityType.value === 'infoblock') {
     await loadInfoBlocks();

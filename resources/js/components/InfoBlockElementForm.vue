@@ -178,7 +178,7 @@
                   v-model="form.properties[field.code]"
                   :required="field.is_required"
                   :entity-type-fixed="field.settings?.entity_type"
-                  :info-block-id="field.settings?.entity_id"
+                  :info-block-id="field.settings?.entity_id ? parseInt(field.settings.entity_id) : null"
                   :is-multiple="field.is_multiple"
               />
 
