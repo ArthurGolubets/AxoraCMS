@@ -32,18 +32,6 @@
       </select>
     </div>
 
-    <!-- Debug Info -->
-    <div v-if="true" class="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded text-xs font-mono">
-      <p><strong>🔍 Debug Info:</strong></p>
-      <p>📋 isMultiple: <span class="font-bold">{{ isMultiple }}</span></p>
-      <p>💾 modelValue: <span class="text-blue-600">{{ JSON.stringify(modelValue) }}</span></p>
-      <p>📊 selectedEntities.length: <span class="font-bold">{{ selectedEntities.length }}</span></p>
-      <p>📝 selectedEntities IDs: <span class="text-green-600">[{{ selectedEntities.map(e => e.id).join(', ') }}]</span></p>
-      <p>✏️ selectedEntities Names: <span class="text-purple-600">{{ selectedEntities.map(e => e.name).join(', ') || '(empty)' }}</span></p>
-      <p>🎯 selectedEntity: {{ selectedEntity?.name || 'null' }}</p>
-      <p>🏷️ entityType: {{ selectedEntityType }}</p>
-      <p>📦 infoBlockId: {{ selectedInfoBlock }}</p>
-    </div>
 
     <!-- Selected Entities Display (for multiple selection) -->
     <div v-if="isMultiple && selectedEntities.length > 0" class="mb-3 space-y-2">
@@ -163,14 +151,12 @@ const selectedInfoBlock = ref(props.infoBlockId || null);
 // Watch for changes in props
 watch(() => props.entityTypeFixed, (newVal) => {
   if (newVal && newVal !== selectedEntityType.value) {
-    console.log('entityTypeFixed changed to:', newVal);
     selectedEntityType.value = newVal;
   }
 });
 
 watch(() => props.infoBlockId, (newVal) => {
   if (newVal && newVal !== selectedInfoBlock.value) {
-    console.log('infoBlockId changed to:', newVal);
     selectedInfoBlock.value = newVal;
   }
 });
@@ -293,8 +279,6 @@ const onEntityTypeChange = () => {
 };
 
 const selectEntity = (entity) => {
-  console.log('selectEntity called', { entity, isMultiple: props.isMultiple });
-
   if (props.isMultiple) {
     // Add to selected entities array
     if (!isEntitySelected(entity.id)) {
@@ -303,14 +287,12 @@ const selectEntity = (entity) => {
       const newValue = selectedEntities.value
         .map(e => e.id)
         .filter(id => id !== null && id !== undefined);
-      console.log('Emitting multiple values:', newValue);
       emit('update:modelValue', newValue);
       emit('update:entityType', `${selectedEntityType.value}:${selectedInfoBlock.value || ''}`);
     }
   } else {
     // Single selection
     selectedEntity.value = entity;
-    console.log('Emitting single value:', entity.id);
     emit('update:modelValue', entity.id);
     emit('update:entityType', `${selectedEntityType.value}:${selectedInfoBlock.value || ''}`);
   }
@@ -321,7 +303,6 @@ const removeEntity = (entityId) => {
   const newValue = selectedEntities.value
     .map(e => e.id)
     .filter(id => id !== null && id !== undefined);
-  console.log('Removing entity, new values:', newValue);
   emit('update:modelValue', newValue);
 };
 
@@ -343,7 +324,6 @@ const isEntitySelected = (entityId) => {
 // Load entity details by ID
 const loadEntityById = async (id) => {
   if (!id) {
-    console.log('loadEntityById: id is null/undefined');
     return null;
   }
 
@@ -357,25 +337,16 @@ const loadEntityById = async (id) => {
       url = `/admin/api/catalogs/${id}`;
     }
 
-    console.log('loadEntityById:', { id, url, entityType: selectedEntityType.value, infoBlockId: selectedInfoBlock.value });
-
     if (!url) {
-      console.error('URL is empty! Cannot load entity.', {
-        id,
-        entityType: selectedEntityType.value,
-        infoBlockId: selectedInfoBlock.value
-      });
       return null;
     }
 
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     });
-    console.log('Response status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Loaded entity data:', data);
 
       // Extract entity from wrapper if needed
       let entity = data;
@@ -383,25 +354,11 @@ const loadEntityById = async (id) => {
       // For products/catalogs, API returns { product: {...} } or { catalog: {...} }
       if (data.product && !data.id) {
         entity = data.product;
-        console.log('Extracted product from wrapper:', entity);
       } else if (data.catalog && !data.id) {
         entity = data.catalog;
-        console.log('Extracted catalog from wrapper:', entity);
       }
 
-      console.log('Entity structure:', {
-        hasId: 'id' in entity,
-        hasName: 'name' in entity,
-        keys: Object.keys(entity),
-        id: entity.id,
-        name: entity.name
-      });
-
       return entity;
-    } else {
-      const errorText = await response.text();
-      console.error('Response not OK:', response.status, errorText);
-      return null;
     }
   } catch (error) {
     console.error('Failed to load entity:', error);
@@ -411,8 +368,6 @@ const loadEntityById = async (id) => {
 
 // Load selected entities if modelValue is set
 watch(() => props.modelValue, async (newVal) => {
-  console.log('modelValue changed:', { newVal, isMultiple: props.isMultiple, isArray: Array.isArray(newVal) });
-
   if (!newVal || (Array.isArray(newVal) && newVal.length === 0)) {
     selectedEntity.value = null;
     selectedEntities.value = [];
@@ -424,7 +379,6 @@ watch(() => props.modelValue, async (newVal) => {
     const currentIds = selectedEntities.value.map(e => e.id).sort().join(',');
     const newIds = newVal.filter(id => id !== null && id !== undefined).sort().join(',');
     if (currentIds === newIds && selectedEntities.value.length > 0) {
-      console.log('Entities already loaded, skipping');
       return;
     }
   }
@@ -435,27 +389,20 @@ watch(() => props.modelValue, async (newVal) => {
     if (props.isMultiple && Array.isArray(newVal)) {
       // Filter out null/undefined values
       const validIds = newVal.filter(id => id !== null && id !== undefined);
-      console.log('Loading multiple entities:', validIds);
 
       const loadedEntities = [];
       for (const id of validIds) {
         const entity = await loadEntityById(id);
-        console.log('Entity loaded for ID', id, ':', entity);
         if (entity && entity.id && entity.name) {
           loadedEntities.push(entity);
-        } else {
-          console.warn('Entity loaded but missing id or name:', entity);
         }
       }
-      console.log('All loaded entities:', loadedEntities);
       selectedEntities.value = loadedEntities;
     } else if (!props.isMultiple && newVal) {
       // Load single entity
-      console.log('Loading single entity:', newVal);
       if (!selectedEntity.value || selectedEntity.value.id !== newVal) {
         const entity = await loadEntityById(newVal);
         if (entity) {
-          console.log('Loaded entity:', entity);
           selectedEntity.value = entity;
         }
       }
@@ -468,13 +415,6 @@ watch(() => props.modelValue, async (newVal) => {
 }, { immediate: true });
 
 onMounted(async () => {
-  console.log('InfoBlockEntitySelect mounted', {
-    entityTypeFixed: props.entityTypeFixed,
-    infoBlockId: props.infoBlockId,
-    isMultiple: props.isMultiple,
-    modelValue: props.modelValue
-  });
-
   await checkCatalogModule();
   if (selectedEntityType.value === 'infoblock') {
     await loadInfoBlocks();
