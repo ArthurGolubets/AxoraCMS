@@ -231,7 +231,7 @@
         </div>
 
         <!-- Integrations Group (only if integrations are installed) -->
-        <div v-if="telegramIntegrationInstalled || yookassaIntegrationInstalled" class="mb-1">
+        <div v-if="telegramIntegrationInstalled || yookassaIntegrationInstalled || commerceMLIntegrationInstalled" class="mb-1">
           <button @click="toggleMenuGroup('integrations')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Интеграции' : ''">
             <div class="flex items-center">
               <svg class="w-5 h-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
@@ -250,6 +250,12 @@
               <a @click="$router.push('/integrations/yookassa'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                 ЮКassa
+              </a>
+            </router-link>
+            <router-link v-if="commerceMLIntegrationInstalled" to="/integrations/commerceml" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/integrations/commerceml'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                CommerceML
               </a>
             </router-link>
           </div>
@@ -480,6 +486,7 @@ const pageBuilderModuleInstalled = ref(false);
 const showModules = ref(true);
 const telegramIntegrationInstalled = ref(false);
 const yookassaIntegrationInstalled = ref(false);
+const commerceMLIntegrationInstalled = ref(false);
 const favoriteInfoBlocks = ref([]);
 
 const roleLabel = computed(() => {
@@ -637,6 +644,9 @@ const loadModulesStatus = async () => {
 
       const yookassaIntegration = data.modules?.find(m => m.id === 'yookassa');
       yookassaIntegrationInstalled.value = yookassaIntegration?.installed || false;
+
+      const commerceMLIntegration = data.modules?.find(m => m.id === 'commerceml');
+      commerceMLIntegrationInstalled.value = commerceMLIntegration?.installed || false;
 
       // Load favorite infoblocks if module is installed
       if (infoblocksModuleInstalled.value) {

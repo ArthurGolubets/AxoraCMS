@@ -52,6 +52,8 @@
               <span v-if="def.type === 'string'" class="inline-flex items-center gap-1">📝 Строка</span>
               <span v-else-if="def.type === 'number'" class="inline-flex items-center gap-1">🔢 Число</span>
               <span v-else-if="def.type === 'boolean'" class="inline-flex items-center gap-1">✓ Да/Нет</span>
+              <span v-else-if="def.type === 'color'" class="inline-flex items-center gap-1">🎨 Цвет</span>
+              <span v-else-if="def.type === 'image'" class="inline-flex items-center gap-1">🖼️ Изображение</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
               <span v-if="def.applies_to === 'catalog'" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">📁 Каталог</span>
@@ -117,6 +119,8 @@
                 <option value="string">📝 Строка</option>
                 <option value="number">🔢 Число</option>
                 <option value="boolean">✓ Да/Нет</option>
+                <option value="color">🎨 Цвет</option>
+                <option value="image">🖼️ Изображение</option>
               </select>
             </div>
 

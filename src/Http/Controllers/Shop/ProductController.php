@@ -61,7 +61,7 @@ class ProductController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $product = TProduct::with(['catalog', 'variants', 'propertyValues.property'])->findOrFail($id);
+        $product = TProduct::with(['catalog', 'variants.propertyValues.property', 'propertyValues.property'])->findOrFail($id);
 
         // Get available filters for this product's catalog
         $availableFilters = [];
@@ -158,6 +158,10 @@ class ProductController extends Controller
             'variants.*.price' => 'required|numeric|min:0',
             'variants.*.old_price' => 'nullable|numeric|min:0',
             'variants.*.attributes' => 'nullable|array',
+            'variants.*.image' => 'nullable|string',
+            'variants.*.description' => 'nullable|string',
+            'variants.*.addition_info' => 'nullable|array',
+            'variants.*.property_values' => 'nullable|array',
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
             'range_filter_values' => 'nullable|array',
@@ -195,7 +199,41 @@ class ProductController extends Controller
 
         // Create variants if provided
         foreach ($variants as $variantData) {
-            $product->variants()->create($variantData);
+            // Extract property values for variant
+            $variantPropertyValues = $variantData['property_values'] ?? [];
+            unset($variantData['property_values']);
+
+            // Create variant
+            $variant = $product->variants()->create($variantData);
+
+            // Save variant property values if provided
+            if (!empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
+                foreach ($variantPropertyValues as $propertyId => $value) {
+                    // Skip null, empty string, or empty arrays
+                    if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                        continue;
+                    }
+
+                    // For arrays, filter out empty values and encode
+                    if (is_array($value)) {
+                        $value = array_values(array_filter($value, function($v) {
+                            return $v !== null && $v !== '';
+                        }));
+
+                        // Skip if array is empty after filtering
+                        if (empty($value)) {
+                            continue;
+                        }
+
+                        $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+                    }
+
+                    $variant->propertyValues()->create([
+                        'property_id' => $propertyId,
+                        'value' => $value,
+                    ]);
+                }
+            }
         }
 
         // Sync filter values if provided
@@ -284,6 +322,15 @@ class ProductController extends Controller
             'content' => 'nullable|string',
             'gallery' => 'nullable|array',
             'variants' => 'nullable|array',
+            'variants.*.name' => 'required|string',
+            'variants.*.sku' => 'required|string',
+            'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.old_price' => 'nullable|numeric|min:0',
+            'variants.*.attributes' => 'nullable|array',
+            'variants.*.image' => 'nullable|string',
+            'variants.*.description' => 'nullable|string',
+            'variants.*.addition_info' => 'nullable|array',
+            'variants.*.property_values' => 'nullable|array',
             'filter_values' => 'nullable|array',
             'filter_values.*' => 'exists:t_filter_values,id',
             'range_filter_values' => 'nullable|array',
@@ -301,12 +348,51 @@ class ProductController extends Controller
             $variants = $validated['variants'];
             unset($validated['variants']);
 
-            // Delete old variants
+            // Delete old variants (cascade will delete property values)
             $product->variants()->delete();
 
             // Create new variants
             foreach ($variants as $variantData) {
-                $product->variants()->create($variantData);
+                // Extract property values for variant
+                $variantPropertyValues = $variantData['property_values'] ?? [];
+                unset($variantData['property_values']);
+
+                // Create variant
+                $variant = $product->variants()->create($variantData);
+
+                // Save variant property values if provided
+                if (!empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
+                    \Log::info('Saving variant property values', [
+                        'variant_id' => $variant->id,
+                        'property_values' => $variantPropertyValues
+                    ]);
+
+                    foreach ($variantPropertyValues as $propertyId => $value) {
+                        // Skip null, empty string, or empty arrays
+                        if ($value === null || $value === '' || (is_array($value) && empty($value))) {
+                            continue;
+                        }
+
+                        // For arrays, filter out empty values and encode
+                        if (is_array($value)) {
+                            $value = array_values(array_filter($value, function($v) {
+                                return $v !== null && $v !== '';
+                            }));
+
+                            // Skip if array is empty after filtering
+                            if (empty($value)) {
+                                continue;
+                            }
+
+                            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+                        }
+
+                        $variant->propertyValues()->create([
+                            'property_id' => $propertyId,
+                            'value' => $value,
+                        ]);
+                    }
+                }
             }
         }
 

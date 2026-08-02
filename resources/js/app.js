@@ -42,6 +42,7 @@ import PagesSettings from './components/Pages/PagesSettings.vue';
 import ContentSettings from './views/ContentSettings.vue';
 import TelegramSettings from './components/Integrations/TelegramSettings.vue';
 import YookassaSettings from './components/Integrations/YookassaSettings.vue';
+import CommerceMLSettings from './components/Integrations/CommerceMLSettings.vue';
 import Error403 from './components/Error403.vue';
 import Error404 from './components/Error404.vue';
 import './style.css';
@@ -284,6 +285,11 @@ const router = createRouter({
             path: '/integrations/yookassa',
             name: 'yookassa-settings',
             component: YookassaSettings
+        },
+        {
+            path: '/integrations/commerceml',
+            name: 'commerceml-settings',
+            component: CommerceMLSettings
         },
         {
             path: '/403',

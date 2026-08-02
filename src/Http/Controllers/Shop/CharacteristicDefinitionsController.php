@@ -45,7 +45,7 @@ class CharacteristicDefinitionsController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255|unique:t_characteristic_definitions,code',
-            'type' => 'required|in:string,number,boolean',
+            'type' => 'required|in:string,number,boolean,color,image',
             'multiple' => 'boolean',
             'applies_to' => 'required|in:catalog,product,both',
             'sort_order' => 'integer',
@@ -82,7 +82,7 @@ class CharacteristicDefinitionsController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'code' => 'sometimes|required|string|max:255|unique:t_characteristic_definitions,code,' . $id,
-            'type' => 'sometimes|required|in:string,number,boolean',
+            'type' => 'sometimes|required|in:string,number,boolean,color,image',
             'multiple' => 'boolean',
             'applies_to' => 'sometimes|required|in:catalog,product,both',
             'sort_order' => 'integer',

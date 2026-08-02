@@ -139,6 +139,77 @@
           </div>
         </div>
 
+        <!-- Color type -->
+        <div v-else-if="property.type === 'color'">
+          <input
+            v-if="!property.is_multiple"
+            v-model="propertyValues[property.id]"
+            type="color"
+            class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg cursor-pointer"
+          >
+          <div v-else class="space-y-2">
+            <div
+              v-for="(value, idx) in (ensureArrayExists(property.id), propertyValues[property.id])"
+              :key="idx"
+              class="flex gap-2 items-center"
+            >
+              <input
+                v-model="propertyValues[property.id][idx]"
+                type="color"
+                class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg cursor-pointer"
+              >
+              <span class="text-sm text-gray-600 dark:text-gray-300 font-mono">{{ propertyValues[property.id][idx] }}</span>
+              <button
+                @click="removeMultipleValue(property.id, idx)"
+                type="button"
+                class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg ml-auto"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              @click="addMultipleValue(property.id, '#000000')"
+              type="button"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            >
+              + Добавить цвет
+            </button>
+          </div>
+        </div>
+
+        <!-- Image type -->
+        <div v-else-if="property.type === 'image'">
+          <div v-if="!property.is_multiple">
+            <ImageUpload v-model="propertyValues[property.id]" />
+          </div>
+          <div v-else class="space-y-3">
+            <div
+              v-for="(value, idx) in (ensureArrayExists(property.id), propertyValues[property.id])"
+              :key="idx"
+              class="p-3 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg"
+            >
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Изображение {{ idx + 1 }}</span>
+                <button
+                  @click="removeMultipleValue(property.id, idx)"
+                  type="button"
+                  class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+              <ImageUpload v-model="propertyValues[property.id][idx]" />
+            </div>
+            <button
+              @click="addMultipleValue(property.id, '')"
+              type="button"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            >
+              + Добавить изображение
+            </button>
+          </div>
+        </div>
+
         <p v-if="property.is_inherited" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
           Свойство унаследовано из родительской категории
         </p>
@@ -148,8 +219,13 @@
 </template>
 
 <script>
+import ImageUpload from './ImageUpload.vue';
+
 export default {
   name: 'ProductPropertiesForm',
+  components: {
+    ImageUpload
+  },
   props: {
     availableProperties: {
       type: Array,
@@ -241,9 +317,9 @@ export default {
         this.propertyValues[propertyId] = [this.propertyValues[propertyId]]
       }
     },
-    addMultipleValue(propertyId) {
+    addMultipleValue(propertyId, defaultValue = '') {
       this.ensureArrayExists(propertyId)
-      this.propertyValues[propertyId].push('')
+      this.propertyValues[propertyId].push(defaultValue)
     },
     removeMultipleValue(propertyId, index) {
       this.ensureArrayExists(propertyId)

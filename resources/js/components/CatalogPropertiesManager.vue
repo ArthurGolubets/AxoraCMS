@@ -68,6 +68,8 @@
                 <option value="string">Строка</option>
                 <option value="text">Текст</option>
                 <option value="number">Число</option>
+                <option value="color">Цвет</option>
+                <option value="image">Изображение</option>
               </select>
             </div>
             <div class="flex items-end">
@@ -125,6 +127,8 @@
                 <option value="string">Строка</option>
                 <option value="text">Текст</option>
                 <option value="number">Число</option>
+                <option value="color">Цвет</option>
+                <option value="image">Изображение</option>
               </select>
             </div>
             <div class="flex items-end">

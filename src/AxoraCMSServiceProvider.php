@@ -85,6 +85,8 @@ class AxoraCMSServiceProvider extends ServiceProvider
             \HolartWeb\AxoraCMS\Console\SeoUninstallCommand::class,
             \HolartWeb\AxoraCMS\Console\PageBuilderInstallCommand::class,
             \HolartWeb\AxoraCMS\Console\PageBuilderUninstallCommand::class,
+            \HolartWeb\AxoraCMS\Console\CommerceMLInstallCommand::class,
+            \HolartWeb\AxoraCMS\Console\CommerceMLUninstallCommand::class,
             \HolartWeb\AxoraCMS\Console\ScanRoutesCommand::class,
             \HolartWeb\AxoraCMS\Console\CleanOldPageVisitsCommand::class,
             \HolartWeb\AxoraCMS\Console\TelegramInstallCommand::class,
@@ -128,6 +130,9 @@ class AxoraCMSServiceProvider extends ServiceProvider
 
             // Register admin routes with prefix
             $this->registerAdminRoutes();
+
+            // Register API routes (for 1C integration, etc.)
+            $this->registerApiRoutes();
         } catch (\Exception $e) {
             // Suppress errors during package discovery when DB is not configured
             // This allows composer require to work without database connection
@@ -145,6 +150,20 @@ class AxoraCMSServiceProvider extends ServiceProvider
             'namespace' => 'HolartWeb\AxoraCMS\Http\Controllers',
         ], function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/admin.php');
+        });
+    }
+
+    /**
+     * Register API routes (public).
+     */
+    protected function registerApiRoutes(): void
+    {
+        Route::group([
+            'prefix' => 'api',
+            'middleware' => ['web'],
+            'namespace' => 'HolartWeb\AxoraCMS\Http\Controllers',
+        ], function () {
+            $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
         });
     }
 }

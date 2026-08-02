@@ -75,6 +75,11 @@ class ShopUninstallCommand extends Command
                 Schema::disableForeignKeyConstraints();
 
                 // Drop property-related tables first (they have foreign keys)
+                if (Schema::hasTable('t_product_variant_property_values')) {
+                    Schema::dropIfExists('t_product_variant_property_values');
+                    $this->info('✓ Dropped t_product_variant_property_values table');
+                }
+
                 if (Schema::hasTable('t_product_property_values')) {
                     Schema::dropIfExists('t_product_property_values');
                     $this->info('✓ Dropped t_product_property_values table');
@@ -83,6 +88,11 @@ class ShopUninstallCommand extends Command
                 if (Schema::hasTable('t_catalog_properties')) {
                     Schema::dropIfExists('t_catalog_properties');
                     $this->info('✓ Dropped t_catalog_properties table');
+                }
+
+                if (Schema::hasTable('t_catalog_property_groups')) {
+                    Schema::dropIfExists('t_catalog_property_groups');
+                    $this->info('✓ Dropped t_catalog_property_groups table');
                 }
 
                 if (Schema::hasTable('t_characteristic_definitions')) {
@@ -140,8 +150,17 @@ class ShopUninstallCommand extends Command
                 '2026_03_03_000071_create_t_filter_values_table.php',
                 '2026_03_03_000072_create_t_product_filter_values_table.php',
                 '2026_03_09_000080_create_t_characteristic_definitions_table.php',
+                '2026_03_09_000081_add_applies_to_to_characteristic_definitions.php',
                 '2026_03_29_000090_create_t_catalog_properties_table.php',
                 '2026_03_29_000091_create_t_product_property_values_table.php',
+                '2026_04_09_181628_add_entity_filter_values_column_in_t_products_table.php',
+                '2026_04_12_110348_create_t_catalog_property_groups_table.php',
+                '2026_04_12_111030_add_group_id_column_in_t_catalog_properties_table.php',
+                '2026_04_12_130517_add_string_filter_values_column_in_t_products_table.php',
+                '2026_08_02_135840_add_image_description_to_product_variants_table.php',
+                '2026_08_02_135901_create_t_product_variant_property_values_table.php',
+                '2026_08_02_140148_add_color_and_image_types_to_catalog_properties.php',
+                '2026_08_02_165559_add_color_and_image_types_to_characteristic_definitions.php',
             ];
 
             try {

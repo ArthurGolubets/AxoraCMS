@@ -22,6 +22,7 @@ class ModulesController extends Controller
         'pagebuilder' => '1.0.0',
         'telegram' => '1.0.0',
         'yookassa' => '1.0.0',
+        'commerceml' => '1.0.0',
     ];
 
     /**
@@ -91,6 +92,15 @@ class ModulesController extends Controller
                 'type' => 'integration',
                 'dependencies' => ['commerce'],
                 'can_install' => $this->isCommerceModuleInstalled(),
+            ],
+            [
+                'id' => 'commerceml',
+                'name' => 'CommerceML',
+                'description' => 'Интеграция с 1С через протокол CommerceML для автоматической синхронизации товаров и категорий. Требует установленный модуль "Каталог и товары"',
+                'installed' => $this->isCommerceMLIntegrationInstalled(),
+                'type' => 'integration',
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
             ]
         ];
 
@@ -190,6 +200,17 @@ class ModulesController extends Controller
                 'type' => 'integration',
                 'dependencies' => ['commerce'],
                 'can_install' => $this->isCommerceModuleInstalled(),
+            ],
+            [
+                'id' => 'commerceml',
+                'name' => 'CommerceML',
+                'description' => 'Интеграция с 1С через протокол CommerceML для автоматической синхронизации товаров и категорий. Требует установленный модуль "Каталог и товары"',
+                'installed' => $this->isCommerceMLIntegrationInstalled(),
+                'install_command' => 'axoracms:commerceml-install',
+                'uninstall_command' => 'axoracms:commerceml-uninstall',
+                'type' => 'integration',
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
             ]
         ];
 
@@ -276,6 +297,9 @@ class ModulesController extends Controller
                 case 'yookassa':
                     $exitCode = Artisan::call('axoracms:yookassa-install');
                     break;
+                case 'commerceml':
+                    $exitCode = Artisan::call('axoracms:commerceml-install');
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -352,6 +376,9 @@ class ModulesController extends Controller
                     break;
                 case 'yookassa':
                     $exitCode = Artisan::call('axoracms:yookassa-install');
+                    break;
+                case 'commerceml':
+                    $exitCode = Artisan::call('axoracms:commerceml-install');
                     break;
                 default:
                     return response()->json([
@@ -459,6 +486,11 @@ class ModulesController extends Controller
                         '--preserve-db' => $preserveDatabase
                     ]);
                     break;
+                case 'commerceml':
+                    Artisan::call('axoracms:commerceml-uninstall', [
+                        '--preserve-db' => $preserveDatabase
+                    ]);
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -556,6 +588,14 @@ class ModulesController extends Controller
     private function isYookassaIntegrationInstalled()
     {
         return TModule::isInstalled('yookassa');
+    }
+
+    /**
+     * Check if CommerceML integration is installed
+     */
+    private function isCommerceMLIntegrationInstalled()
+    {
+        return TModule::isInstalled('commerceml');
     }
 
     /**

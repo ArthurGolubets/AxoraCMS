@@ -332,6 +332,15 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::get('integrations/yookassa', [$yookassaController, 'index']);
             Route::post('integrations/yookassa', [$yookassaController, 'update']);
         }
+
+        // CommerceML integration routes
+        if (Schema::hasTable('t_commerceml_settings')) {
+            $commerceMLController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integration\\CommerceMLController';
+
+            Route::get('integrations/commerceml', [$commerceMLController, 'getSettings']);
+            Route::post('integrations/commerceml', [$commerceMLController, 'updateSettings']);
+            Route::post('integrations/commerceml/test', [$commerceMLController, 'testConnection']);
+        }
     });
 
     // SPA route - catch all for Vue Router

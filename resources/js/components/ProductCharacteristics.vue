@@ -66,6 +66,8 @@
             <span v-if="definition.type === 'string'">📝 Строка</span>
             <span v-else-if="definition.type === 'number'">🔢 Число</span>
             <span v-else-if="definition.type === 'boolean'">✓ Да/Нет</span>
+            <span v-else-if="definition.type === 'color'">🎨 Цвет</span>
+            <span v-else-if="definition.type === 'image'">🖼️ Изображение</span>
             <span v-if="definition.multiple" class="text-blue-600 dark:text-blue-400">• Множественное</span>
           </div>
         </div>
@@ -78,8 +80,23 @@
           />
         </div>
 
-        <!-- Single value -->
-        <div v-else-if="!definition.multiple">
+        <!-- Color type - single -->
+        <div v-else-if="definition.type === 'color' && !definition.multiple" class="flex items-center gap-3">
+          <input
+            v-model="values[definition.code]"
+            type="color"
+            class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+          />
+          <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{ values[definition.code] || '#000000' }}</span>
+        </div>
+
+        <!-- Image type - single -->
+        <div v-else-if="definition.type === 'image' && !definition.multiple">
+          <ImageUpload v-model="values[definition.code]" />
+        </div>
+
+        <!-- String/Number - single value -->
+        <div v-else-if="!definition.multiple && (definition.type === 'string' || definition.type === 'number')">
           <input
             v-model="values[definition.code]"
             :type="definition.type === 'number' ? 'number' : 'text'"
@@ -90,7 +107,7 @@
         </div>
 
         <!-- Multiple values -->
-        <div v-else class="space-y-2">
+        <div v-else-if="definition.multiple" class="space-y-2">
           <div v-if="!values[definition.code] || values[definition.code].length === 0" class="text-center py-4 text-sm text-gray-400 dark:text-gray-500">
             Нет значений
           </div>
@@ -99,7 +116,22 @@
               <div class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-400">
                 {{ valIndex + 1 }}
               </div>
+              <!-- Color input for multiple colors -->
+              <div v-if="definition.type === 'color'" class="flex-1 flex items-center gap-3">
+                <input
+                  v-model="values[definition.code][valIndex]"
+                  type="color"
+                  class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                />
+                <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{ values[definition.code][valIndex] || '#000000' }}</span>
+              </div>
+              <!-- Image upload for multiple images -->
+              <div v-else-if="definition.type === 'image'" class="flex-1">
+                <ImageUpload v-model="values[definition.code][valIndex]" />
+              </div>
+              <!-- Text/Number input for string/number -->
               <input
+                v-else
                 v-model="values[definition.code][valIndex]"
                 :type="definition.type === 'number' ? 'number' : 'text'"
                 :step="definition.type === 'number' ? '0.01' : undefined"
@@ -135,6 +167,7 @@
 import { ref, watch, onMounted } from 'vue';
 import axios from 'axios';
 import ToggleSwitch from './ToggleSwitch.vue';
+import ImageUpload from './ImageUpload.vue';
 
 const props = defineProps({
   modelValue: {
@@ -258,7 +291,18 @@ function addValueToMultiple(code, type) {
   if (!Array.isArray(values.value[code])) {
     values.value[code] = [];
   }
-  values.value[code].push(type === 'number' ? 0 : '');
+
+  // Default values based on type
+  let defaultValue = '';
+  if (type === 'number') {
+    defaultValue = 0;
+  } else if (type === 'color') {
+    defaultValue = '#000000';
+  } else if (type === 'image') {
+    defaultValue = '';
+  }
+
+  values.value[code].push(defaultValue);
 }
 
 // Remove value from multiple characteristic

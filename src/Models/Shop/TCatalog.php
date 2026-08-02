@@ -14,6 +14,7 @@ class TCatalog extends Model
         'parent_id',
         'name',
         'slug',
+        '1c_id',
         'title',
         'description',
         'keywords',

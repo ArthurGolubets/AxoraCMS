@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Models\Shop;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TProductVariant extends Model
 {
@@ -16,6 +17,9 @@ class TProductVariant extends Model
         'price',
         'old_price',
         'attributes',
+        'image',
+        'description',
+        'addition_info',
     ];
 
     protected $casts = [
@@ -23,6 +27,7 @@ class TProductVariant extends Model
         'price' => 'decimal:2',
         'old_price' => 'decimal:2',
         'attributes' => 'array',
+        'addition_info' => 'array',
     ];
 
     /**
@@ -31,6 +36,14 @@ class TProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(TProduct::class, 'product_id');
+    }
+
+    /**
+     * Get property values for this variant
+     */
+    public function propertyValues(): HasMany
+    {
+        return $this->hasMany(TProductVariantPropertyValue::class, 'variant_id');
     }
 
     /**

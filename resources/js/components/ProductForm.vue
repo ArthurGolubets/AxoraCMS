@@ -98,16 +98,46 @@
       <div v-show="activeTab === 'variants'" class="space-y-6">
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Варианты товара</h3>
-          <div v-for="(variant, index) in form.variants" :key="index" class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div class="flex justify-between items-center mb-2">
-              <span class="font-medium text-gray-900 dark:text-white">Вариант {{ index + 1 }}</span>
+          <div v-for="(variant, index) in form.variants" :key="index" class="mb-6 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+            <div class="flex justify-between items-center mb-4">
+              <span class="font-medium text-gray-900 dark:text-white text-lg">Вариант {{ index + 1 }}</span>
               <button type="button" @click="removeVariant(index)" class="text-red-600 hover:text-red-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-              <input v-model="variant.name" placeholder="Название" required class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-              <input v-model="variant.sku" placeholder="SKU" required class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-              <input v-model.number="variant.price" placeholder="Цена" type="number" step="0.01" required class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-              <input v-model.number="variant.old_price" placeholder="Старая цена" type="number" step="0.01" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+
+            <!-- Основные поля -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label><input v-model="variant.name" required class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
+              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SKU *</label><input v-model="variant.sku" required class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
+              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Цена *</label><input v-model.number="variant.price" type="number" step="0.01" required class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
+              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Старая цена</label><input v-model.number="variant.old_price" type="number" step="0.01" class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
+            </div>
+
+            <!-- Изображение -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Изображение варианта</label>
+              <ImageUpload v-model="variant.image" />
+            </div>
+
+            <!-- Описание -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Описание</label>
+              <textarea v-model="variant.description" rows="3" class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></textarea>
+            </div>
+
+            <!-- Свойства варианта -->
+            <div class="mb-4">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Свойства варианта</h4>
+              <ProductPropertiesForm
+                  :available-properties="availableProperties"
+                  :initial-values="variant.property_values || {}"
+                  @update:values="(newValues) => { variant.property_values = newValues; }"
+              />
+            </div>
+
+            <!-- Характеристики варианта -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Характеристики варианта</h4>
+              <ProductCharacteristics v-model="variant.addition_info" applies-to="variant" />
             </div>
           </div>
           <button type="button" @click="addVariant" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить вариант</button>
@@ -256,7 +286,17 @@ const generateSlug = () => {
 };
 
 const addVariant = () => {
-  form.value.variants.push({ name: '', sku: '', price: 0, old_price: null, attributes: {} });
+  form.value.variants.push({
+    name: '',
+    sku: '',
+    price: 0,
+    old_price: null,
+    attributes: {},
+    image: '',
+    description: '',
+    addition_info: {},
+    property_values: {}
+  });
 };
 
 const removeVariant = (index) => {
@@ -362,6 +402,49 @@ const loadProduct = async () => {
     // Set available properties
     availableProperties.value = data.available_properties || [];
 
+    // Process variants to extract property values
+    const processedVariants = (product.variants || []).map(variant => {
+      // Convert variant property_values from array format to object format
+      const variantPropertyValues = {};
+      if (variant.property_values && Array.isArray(variant.property_values)) {
+        variant.property_values.forEach(pv => {
+          if (pv.property_id && pv.value !== undefined) {
+            // Try to parse JSON values (for multiple values)
+            try {
+              variantPropertyValues[pv.property_id] = JSON.parse(pv.value);
+            } catch (e) {
+              variantPropertyValues[pv.property_id] = pv.value;
+            }
+          }
+        });
+      }
+
+      // Parse addition_info if needed
+      let variantAdditionInfo = {};
+      if (variant.addition_info) {
+        if (typeof variant.addition_info === 'string') {
+          try {
+            const parsed = JSON.parse(variant.addition_info);
+            variantAdditionInfo = Array.isArray(parsed) ? {} : parsed;
+          } catch (e) {
+            variantAdditionInfo = {};
+          }
+        } else if (typeof variant.addition_info === 'object') {
+          variantAdditionInfo = Array.isArray(variant.addition_info) ? {} : variant.addition_info;
+        }
+      }
+
+      return {
+        ...variant,
+        property_values: variantPropertyValues,
+        addition_info: variantAdditionInfo,
+        image: variant.image || '',
+        description: variant.description || ''
+      };
+    });
+
+    console.log('Processed variants:', processedVariants);
+
     form.value = {
       catalog_id: product.catalog_id,
       name: product.name || '',
@@ -380,7 +463,7 @@ const loadProduct = async () => {
       is_active: product.is_active !== undefined ? product.is_active : true,
       content: product.content || '',
       gallery: product.gallery || [],
-      variants: product.variants || [],
+      variants: processedVariants,
       filter_values: filterValueIds,
       range_filter_values: rangeFilterValues,
       addition_info: additionInfo,
