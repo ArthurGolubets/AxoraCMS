@@ -130,6 +130,8 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('products/import', [ProductImportExportController::class, 'import']);
             Route::get('products/import-progress/{importId}', [ProductImportExportController::class, 'checkProgress']);
             Route::post('products/bulk-delete', [$productController, 'bulkDestroy']);
+            Route::get('products/search', [$productController, 'search']);
+            Route::post('products/{id}/deactivate', [$productController, 'deactivate']);
 
             // Catalog generic routes
             Route::get('catalogs', [$catalogController, 'index']);

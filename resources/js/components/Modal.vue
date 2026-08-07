@@ -65,6 +65,7 @@
                     type="button"
                     class="flex-1 px-4 py-2 text-white rounded-lg transition"
                     :class="confirmButtonClass"
+                    :style="confirmButtonStyle"
                   >
                     {{ confirmText }}
                   </button>
@@ -130,7 +131,7 @@ const sizeClass = computed(() => {
 });
 
 import { useTheme } from '../composables/useTheme';
-const { bgClass } = useTheme();
+const { themeColor } = useTheme();
 
 const iconBgClass = computed(() => {
   const classes = {
@@ -159,10 +160,19 @@ const confirmButtonClass = computed(() => {
     success: 'bg-green-600 hover:bg-green-700',
     error: 'bg-red-600 hover:bg-red-700',
     warning: 'bg-yellow-600 hover:bg-yellow-700',
-    info: `${bgClass} hover:opacity-90`,
-    confirm: `${bgClass} hover:opacity-90`
+    info: 'hover:opacity-90',
+    confirm: 'hover:opacity-90'
   };
   return classes[props.type] || classes.info;
+});
+
+const confirmButtonStyle = computed(() => {
+  if (props.type === 'info' || props.type === 'confirm') {
+    return {
+      backgroundColor: themeColor.value,
+    };
+  }
+  return {};
 });
 
 const close = () => {

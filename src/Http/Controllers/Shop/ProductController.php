@@ -492,4 +492,56 @@ class ProductController extends Controller
 
         return response()->json(['message' => 'Товары удалены']);
     }
+
+    /**
+     * Search products for variant creation
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $query = $request->get('q', '');
+
+        if (strlen($query) < 2) {
+            return response()->json(['products' => []]);
+        }
+
+        $products = TProduct::where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('sku', 'like', "%{$query}%");
+            })
+            ->where('is_active', true)
+            ->with(['catalog'])
+            ->limit(20)
+            ->get()
+            ->map(function($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price' => $product->price,
+                    'old_price' => $product->old_price,
+                    'main_image' => $product->main_image,
+                    'description' => $product->description,
+                    'addition_info' => $product->addition_info,
+                    'property_values' => $product->propertyValues->pluck('value', 'property_id')->toArray(),
+                    'catalog_name' => $product->catalog->name ?? null,
+                ];
+            });
+
+        return response()->json(['products' => $products]);
+    }
+
+    /**
+     * Deactivate product
+     */
+    public function deactivate($id): JsonResponse
+    {
+        $product = TProduct::findOrFail($id);
+        $product->update(['is_active' => false]);
+
+        // Log activity
+        TAdminAction::log('updated', 'product', $product->id,
+            'Деактивирован товар "' . $product->name . '" (SKU: ' . $product->sku . ')');
+
+        return response()->json(['message' => 'Товар деактивирован']);
+    }
 }

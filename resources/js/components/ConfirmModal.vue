@@ -22,11 +22,23 @@
               {{ currentCancelText }}
             </button>
             <button
+              v-if="currentDangerMode"
               @click="confirm"
-              class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
-              :class="currentDangerMode ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
             >
               {{ currentConfirmText }}
+            </button>
+            <button
+              v-else
+              @click="confirm"
+              class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-all hover:opacity-90"
+              :style="{
+                backgroundColor: themeColor || '#3b82f6',
+                color: '#ffffff',
+                border: 'none'
+              }"
+            >
+              {{ currentConfirmText }} 1
             </button>
           </div>
         </div>
@@ -37,6 +49,9 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useTheme } from '../composables/useTheme';
+
+const { themeColor } = useTheme();
 
 const props = defineProps({
   title: {
@@ -75,6 +90,11 @@ function open(options = {}) {
   currentConfirmText.value = options.confirmText || props.confirmText;
   currentCancelText.value = options.cancelText || props.cancelText;
   currentDangerMode.value = options.dangerMode !== undefined ? options.dangerMode : props.dangerMode;
+
+  console.log('ConfirmModal opened with:', {
+    dangerMode: currentDangerMode.value,
+    themeColor: themeColor.value || themeColor,
+  });
 
   show.value = true;
   return new Promise((resolve) => {

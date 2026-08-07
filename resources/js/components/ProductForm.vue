@@ -140,7 +140,10 @@
               <ProductCharacteristics v-model="variant.addition_info" applies-to="variant" />
             </div>
           </div>
-          <button type="button" @click="addVariant" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить вариант</button>
+          <div class="flex gap-3">
+            <button type="button" @click="addVariant" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить вариант</button>
+            <button type="button" @click="showProductSelectModal = true" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm">Создать вариант на основании товара</button>
+          </div>
         </div>
       </div>
 
@@ -186,6 +189,73 @@
         <button type="submit" :disabled="loading" :style="buttonStyle" class="px-6 py-3 text-white rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50">{{ loading ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Создать') }}</button>
       </div>
     </form>
+
+    <!-- Product Select Modal -->
+    <teleport to="body">
+      <transition name="modal">
+        <div v-if="showProductSelectModal" class="fixed inset-0 z-50 overflow-y-auto">
+          <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div @click="showProductSelectModal = false" class="fixed inset-0 transition-opacity bg-black bg-opacity-50"></div>
+            <div class="relative z-10 w-full max-w-2xl p-6 mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Выбрать товар для создания варианта</h3>
+
+              <!-- Search -->
+              <div class="mb-4">
+                <input
+                  v-model="productSearchQuery"
+                  @input="searchProducts"
+                  type="text"
+                  placeholder="Начните вводить название товара..."
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <!-- Products List -->
+              <div v-if="searchedProducts.length > 0" class="max-h-96 overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div
+                  v-for="product in searchedProducts"
+                  :key="product.id"
+                  @click="selectedProduct = product"
+                  class="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
+                  :class="{'bg-blue-50 dark:bg-blue-900/20': selectedProduct?.id === product.id}"
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <img v-if="product.image" :src="product.image" class="w-12 h-12 object-cover rounded" />
+                      <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center" v-else>
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                      </div>
+                      <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">{{ product.name }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">SKU: {{ product.sku }}</div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="font-semibold text-gray-900 dark:text-white">{{ product.price }} ₽</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else-if="productSearchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                Товары не найдены
+              </div>
+
+              <!-- Deactivate toggle -->
+              <div v-if="selectedProduct" class="mb-4 flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Деактивировать товар после создания варианта</span>
+                <ToggleSwitch v-model="deactivateSourceProduct" />
+              </div>
+
+              <!-- Actions -->
+              <div class="flex space-x-3">
+                <button @click="showProductSelectModal = false" type="button" class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition">Отмена</button>
+                <button @click="createVariantFromProduct" :disabled="!selectedProduct" type="button" :style="buttonStyle" class="flex-1 px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 disabled:opacity-50">Создать вариант</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
@@ -213,6 +283,14 @@ const categories = ref([]);
 const categorySearch = ref('');
 const filteredCategories = ref([]);
 const activeTab = ref('main');
+
+// Product search modal state
+const showProductSelectModal = ref(false);
+const productSearchQuery = ref('');
+const searchedProducts = ref([]);
+const selectedProduct = ref(null);
+const deactivateSourceProduct = ref(true);
+const searchTimeout = ref(null);
 
 const tabs = [
   { id: 'main', label: 'Основное' },
@@ -301,6 +379,83 @@ const addVariant = () => {
 
 const removeVariant = (index) => {
   form.value.variants.splice(index, 1);
+};
+
+const searchProducts = () => {
+  // Clear previous timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+
+  // Debounce search
+  searchTimeout.value = setTimeout(async () => {
+    if (!productSearchQuery.value || productSearchQuery.value.length < 2) {
+      searchedProducts.value = [];
+      return;
+    }
+
+    try {
+      const response = await fetch(`/admin/api/products/search?q=${encodeURIComponent(productSearchQuery.value)}`);
+      if (!response.ok) throw new Error('Search failed');
+      const data = await response.json();
+      searchedProducts.value = data.products || [];
+    } catch (err) {
+      console.error('Error searching products:', err);
+      error('Ошибка поиска товаров');
+    }
+  }, 300);
+};
+
+const createVariantFromProduct = async () => {
+  if (!selectedProduct.value) return;
+
+  try {
+    // Create variant from selected product
+    const newVariant = {
+      name: selectedProduct.value.name,
+      sku: selectedProduct.value.sku + '-variant',
+      price: selectedProduct.value.price,
+      old_price: selectedProduct.value.old_price,
+      attributes: {},
+      image: selectedProduct.value.main_image || '',
+      description: selectedProduct.value.description || '',
+      addition_info: selectedProduct.value.addition_info || {},
+      property_values: selectedProduct.value.property_values || {}
+    };
+
+    form.value.variants.push(newVariant);
+
+    // Deactivate source product if toggle is on
+    if (deactivateSourceProduct.value) {
+      try {
+        const deactivateResponse = await fetch(`/admin/api/products/${selectedProduct.value.id}/deactivate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+          }
+        });
+
+        if (!deactivateResponse.ok) {
+          console.warn('Failed to deactivate product');
+        }
+      } catch (deactivateErr) {
+        console.error('Error deactivating product:', deactivateErr);
+      }
+    }
+
+    success('Вариант успешно создан');
+
+    // Reset modal state
+    showProductSelectModal.value = false;
+    productSearchQuery.value = '';
+    searchedProducts.value = [];
+    selectedProduct.value = null;
+    deactivateSourceProduct.value = true;
+  } catch (err) {
+    console.error('Error creating variant:', err);
+    error('Ошибка создания варианта');
+  }
 };
 
 const loadCategories = async () => {
