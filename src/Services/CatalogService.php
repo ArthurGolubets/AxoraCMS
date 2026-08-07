@@ -296,7 +296,9 @@ class CatalogService
             return [];
         }
 
-        return $product->variants ?? [];
+        $variants = $product->variants ?? collect([]);
+
+        return $variants instanceof Collection ? $variants->toArray() : $variants;
     }
 
     /**
