@@ -120,4 +120,51 @@ class TCatalog extends Model
 
         return $breadcrumbs;
     }
+
+    public function getDescendantIds(): array
+    {
+        $ids = [$this->id];
+
+        $children = $this->children()->pluck('id');
+
+        foreach ($children as $childId) {
+            $child = self::find($childId);
+            $ids = array_merge($ids, $child->getDescendantIds());
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Подсчитать количество товаров в категории и всех дочерних категориях
+     * (простой вариант, подходит для небольших/средних деревьев)
+     */
+    public function getProductsCountWithChildren(): int
+    {
+        $catalogIds = $this->getDescendantIds();
+
+        return TProduct::whereIn('catalog_id', $catalogIds)->count();
+    }
+
+    /**
+     * Подсчитать количество товаров в категории и всех дочерних категориях
+     * (оптимизированный вариант — один SQL-запрос через recursive CTE, MySQL 8+/PostgreSQL)
+     */
+    public function getProductsCountWithChildrenOptimized(): int
+    {
+        $result = \DB::selectOne("
+        WITH RECURSIVE catalog_tree AS (
+            SELECT id FROM t_catalogs WHERE id = ?
+            UNION ALL
+            SELECT tc.id
+            FROM t_catalogs tc
+            INNER JOIN catalog_tree ct ON tc.parent_id = ct.id
+        )
+        SELECT COUNT(*) as products_count
+        FROM t_products
+        WHERE catalog_id IN (SELECT id FROM catalog_tree)
+    ", [$this->id]);
+
+        return (int) $result->products_count;
+    }
 }
