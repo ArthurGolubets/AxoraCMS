@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
+use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockSection;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class InfoBlockElementsController extends Controller
@@ -30,6 +31,15 @@ class InfoBlockElementsController extends Controller
         // Filter by active
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        // Filter by section (for catalog type)
+        if ($request->has('section_id')) {
+            if ($request->get('section_id') === 'null' || $request->get('section_id') === '') {
+                $query->whereNull('section_id');
+            } else {
+                $query->where('section_id', $request->get('section_id'));
+            }
         }
 
         $elements = $query->orderBy('sort')->orderBy('id', 'desc')->paginate(20);
@@ -57,6 +67,7 @@ class InfoBlockElementsController extends Controller
         $infoBlock = TInfoBlock::with('fields')->findOrFail($infoBlockId);
 
         $validated = $request->validate([
+            'section_id' => 'nullable|exists:t_info_block_sections,id',
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|regex:/^[a-z0-9_]+$/',
             'content' => 'nullable|string',
@@ -64,6 +75,14 @@ class InfoBlockElementsController extends Controller
             'sort' => 'nullable|integer',
             'properties' => 'nullable|array',
         ]);
+
+        // Validate section belongs to same info block (if provided)
+        if (!empty($validated['section_id'])) {
+            $section = TInfoBlockSection::find($validated['section_id']);
+            if ($section->info_block_id !== (int) $infoBlockId) {
+                return response()->json(['message' => 'Раздел принадлежит другому инфоблоку'], 422);
+            }
+        }
 
         // Validate properties against fields
         $properties = $validated['properties'] ?? [];
@@ -103,6 +122,7 @@ class InfoBlockElementsController extends Controller
         $element = TInfoBlockElement::where('info_block_id', $infoBlockId)->findOrFail($id);
 
         $validated = $request->validate([
+            'section_id' => 'nullable|exists:t_info_block_sections,id',
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|regex:/^[a-z0-9_]+$/',
             'content' => 'nullable|string',
@@ -110,6 +130,14 @@ class InfoBlockElementsController extends Controller
             'sort' => 'nullable|integer',
             'properties' => 'nullable|array',
         ]);
+
+        // Validate section belongs to same info block (if provided)
+        if (!empty($validated['section_id'])) {
+            $section = TInfoBlockSection::find($validated['section_id']);
+            if ($section->info_block_id !== (int) $infoBlockId) {
+                return response()->json(['message' => 'Раздел принадлежит другому инфоблоку'], 422);
+            }
+        }
 
         // Validate properties against fields
         $properties = $validated['properties'] ?? [];

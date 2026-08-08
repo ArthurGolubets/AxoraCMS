@@ -11,6 +11,7 @@ class TInfoBlock extends Model
 
     protected $fillable = [
         'code',
+        'type',
         'name',
         'description',
         'table_name',
@@ -39,6 +40,50 @@ class TInfoBlock extends Model
     public function elements()
     {
         return $this->hasMany(TInfoBlockElement::class, 'info_block_id');
+    }
+
+    /**
+     * Get the sections for this info block
+     */
+    public function sections()
+    {
+        return $this->hasMany(TInfoBlockSection::class, 'info_block_id');
+    }
+
+    /**
+     * Check if this is a catalog type
+     */
+    public function isCatalog(): bool
+    {
+        return $this->type === 'catalog';
+    }
+
+    /**
+     * Check if this is a list type
+     */
+    public function isList(): bool
+    {
+        return $this->type === 'list';
+    }
+
+    /**
+     * Get root sections (sections without parent)
+     */
+    public function getRootSections()
+    {
+        return $this->sections()->whereNull('parent_id')->orderBy('sort');
+    }
+
+    /**
+     * Get sections tree
+     */
+    public function getSectionsTree(): array
+    {
+        $rootSections = $this->getRootSections()->get();
+
+        return $rootSections->map(function ($section) {
+            return $section->getTree();
+        })->toArray();
     }
 
     /**

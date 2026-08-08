@@ -42,7 +42,7 @@ class InfoBlocksUninstallCommand extends Command
         // Step 1: Remove Models
         $this->info('Step 1: Removing infoblocks models...');
         $appModelsPath = app_path('Models');
-        $models = ['TInfoBlock.php', 'TInfoBlockField.php', 'TInfoBlockElement.php'];
+        $models = ['TInfoBlock.php', 'TInfoBlockField.php', 'TInfoBlockElement.php', 'TInfoBlockSection.php'];
 
         foreach ($models as $model) {
             $path = $appModelsPath . '/' . $model;
@@ -68,7 +68,8 @@ class InfoBlocksUninstallCommand extends Command
         $controllers = [
             'InfoBlocksController.php',
             'InfoBlockFieldsController.php',
-            'InfoBlockElementsController.php'
+            'InfoBlockElementsController.php',
+            'InfoBlockSectionsController.php'
         ];
 
         foreach ($controllers as $controller) {
@@ -90,6 +91,11 @@ class InfoBlocksUninstallCommand extends Command
                 if (Schema::hasTable('t_info_block_elements')) {
                     Schema::dropIfExists('t_info_block_elements');
                     $this->info('✓ Dropped t_info_block_elements table');
+                }
+
+                if (Schema::hasTable('t_info_block_sections')) {
+                    Schema::dropIfExists('t_info_block_sections');
+                    $this->info('✓ Dropped t_info_block_sections table');
                 }
 
                 if (Schema::hasTable('t_info_block_fields')) {
@@ -114,6 +120,11 @@ class InfoBlocksUninstallCommand extends Command
                 '2024_01_01_000040_create_t_info_blocks_table',
                 '2024_01_01_000041_create_t_info_block_fields_table',
                 '2024_01_01_000042_create_t_info_block_elements_table',
+                '2026_04_08_151443_change_type_column_in_t_info_block_fields_table',
+                '2026_04_12_102436_add_content_column_in_t_info_block_elements_table',
+                '2026_08_08_000001_add_type_to_t_info_blocks_table',
+                '2026_08_08_000002_create_t_info_block_sections_table',
+                '2026_08_08_000003_add_section_id_to_t_info_block_elements_table',
             ];
 
             try {

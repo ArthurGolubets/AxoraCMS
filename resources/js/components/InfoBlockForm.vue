@@ -30,6 +30,21 @@
           </div>
 
           <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тип инфоблока *</label>
+            <select
+              v-model="form.type"
+              required
+              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+            >
+              <option value="list">Список</option>
+              <option value="catalog">Каталог</option>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Список - простой список элементов, Каталог - древовидная структура с разделами
+            </p>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Символьный код *</label>
             <input
               v-model="form.code"
@@ -95,6 +110,7 @@ const saving = ref(false);
 
 const form = ref({
   name: '',
+  type: 'list',
   code: '',
   description: '',
   is_active: true
@@ -130,6 +146,7 @@ const loadInfoBlock = async () => {
       const data = await response.json();
       form.value = {
         name: data.name || '',
+        type: data.type || 'list',
         code: data.code || '',
         description: data.description || '',
         is_active: data.is_active || false

@@ -12,6 +12,8 @@ class TOrderItems extends Model
     protected $fillable = [
         'order_id',
         'product_id',
+        'variant_id',
+        'variant_data',
         'product_name',
         'amount',
         'total_price'
@@ -20,6 +22,8 @@ class TOrderItems extends Model
     protected $casts = [
         'order_id' => 'integer',
         'product_id' => 'integer',
+        'variant_id' => 'integer',
+        'variant_data' => 'array',
         'amount' => 'integer',
         'total_price' => 'decimal:2',
     ];

@@ -26,6 +26,7 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-12"></th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Название</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Код</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Тип</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Полей</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Элементов</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Статус</th>
@@ -46,6 +47,10 @@
               <div v-if="block.description" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ block.description }}</div>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 font-mono">{{ block.code }}</td>
+            <td class="px-6 py-4 text-sm">
+              <span v-if="block.type === 'catalog'" class="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded">Каталог</span>
+              <span v-else class="px-2 py-1 text-xs bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 rounded">Список</span>
+            </td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ block.fields_count || 0 }}</td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ block.elements_count || 0 }}</td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
@@ -58,7 +63,12 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
                 </svg>
               </button>
-              <button @click="viewElements(block)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Элементы">
+              <button v-if="block.type === 'catalog'" @click="viewSections(block)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Разделы">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+              </button>
+              <button v-else @click="viewElements(block)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" title="Элементы">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>
@@ -169,6 +179,10 @@ const changePage = (page) => {
 
 const viewFields = (block) => {
   window.location.href = `/admin/infoblocks/${block.id}/fields`;
+};
+
+const viewSections = (block) => {
+  window.location.href = `/admin/infoblocks/${block.id}/sections`;
 };
 
 const viewElements = (block) => {

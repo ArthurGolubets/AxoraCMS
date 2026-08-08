@@ -84,6 +84,7 @@ class CommerceUninstallCommand extends Command
                 '2024_01_01_000032_create_t_promocodes_table.php',
                 '2024_01_01_000033_create_t_payment_transactions_table.php',
                 '2024_01_01_000034_create_t_orders_data_table.php',
+                '2026_08_08_000001_add_variant_id_to_t_order_items_table.php',
             ];
 
             try {

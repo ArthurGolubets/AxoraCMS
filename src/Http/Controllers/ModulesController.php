@@ -69,14 +69,14 @@ class ModulesController extends Controller
                 'description' => 'Модуль для создания статических страниц и управления SEO-оптимизацией: мета-теги, sitemap, ЧПУ.',
                 'installed' => $this->isSeoModuleInstalled(),
             ],
-            [
+            /*[
                 'id' => 'pagebuilder',
                 'name' => 'Конструктор страниц',
                 'description' => 'Модуль для создания и редактирования страниц с помощью визуального конструктора блоков. Требует установленный модуль "Страницы и SEO"',
                 'installed' => $this->isPageBuilderModuleInstalled(),
                 'dependencies' => ['seo'],
                 'can_install' => $this->isSeoModuleInstalled(),
-            ],
+            ],*/
             [
                 'id' => 'telegram',
                 'name' => 'Telegram',
@@ -171,7 +171,7 @@ class ModulesController extends Controller
                 'install_command' => 'axoracms:seo-install',
                 'uninstall_command' => 'axoracms:seo-uninstall',
             ],
-            [
+            /*[
                 'id' => 'pagebuilder',
                 'name' => 'Конструктор страниц',
                 'description' => 'Модуль для создания и редактирования страниц с помощью визуального конструктора блоков. Требует установленный модуль "Страницы и SEO"',
@@ -180,7 +180,7 @@ class ModulesController extends Controller
                 'uninstall_command' => 'axoracms:pagebuilder-uninstall',
                 'dependencies' => ['seo'],
                 'can_install' => $this->isSeoModuleInstalled(),
-            ],
+            ],*/
             [
                 'id' => 'telegram',
                 'name' => 'Telegram',
@@ -319,7 +319,9 @@ class ModulesController extends Controller
             }
 
             // Log activity
-            $moduleNames = ['shop' => 'Каталог и товары', 'callback' => 'Обратная связь', 'commerce' => 'Коммерция', 'logging' => 'Журнал активности', 'infoblocks' => 'Информационные блоки', 'seo' => 'Страницы и SEO', 'pagebuilder' => 'Конструктор страниц'];
+            $moduleNames = ['shop' => 'Каталог и товары', 'callback' => 'Обратная связь', 'commerce' => 'Коммерция', 'logging' => 'Журнал активности', 'infoblocks' => 'Информационные блоки', 'seo' => 'Страницы и SEO',
+                'pagebuilder' => 'Конструктор страниц'
+            ];
             $moduleName = $moduleNames[$moduleId] ?? $moduleId;
             TAdminAction::log('installed', 'module', null, 'Установлен модуль: ' . $moduleName);
 
@@ -596,6 +598,267 @@ class ModulesController extends Controller
     private function isCommerceMLIntegrationInstalled()
     {
         return TModule::isInstalled('commerceml');
+    }
+
+    /**
+     * Check database migrations for all installed modules
+     */
+    public function checkDatabase()
+    {
+        try {
+            $results = [];
+            $hasIssues = false;
+
+            // Define migrations for each module
+            $moduleMigrations = [
+                'shop' => [
+                    '2024_01_01_000010_create_t_catalogs_table',
+                    '2024_01_01_000011_create_t_products_table',
+                    '2024_01_01_000012_create_t_catalog_properties_table',
+                    '2024_01_01_000013_create_t_product_property_values_table',
+                    '2024_01_01_000014_create_t_product_variants_table',
+                    '2024_01_01_000015_create_t_product_variant_property_values_table',
+                ],
+                'callback' => [
+                    '2024_01_01_000020_create_t_user_emails_table',
+                    '2024_01_01_000021_create_t_user_comments_table',
+                    '2024_01_01_000022_create_t_callback_requests_table',
+                ],
+                'commerce' => [
+                    '2024_01_01_000030_create_t_orders_table',
+                    '2024_01_01_000031_create_t_order_items_table',
+                    '2024_01_01_000032_create_t_promocodes_table',
+                    '2024_01_01_000033_create_t_payment_transactions_table',
+                    '2024_01_01_000034_create_t_orders_data_table',
+                    '2026_08_08_000001_add_variant_id_to_t_order_items_table',
+                ],
+                'logging' => [
+                    '2024_01_01_000040_create_t_admin_actions_table',
+                ],
+                'infoblocks' => [
+                    '2024_01_01_000050_create_t_info_block_definitions_table',
+                    '2024_01_01_000051_create_t_info_block_field_definitions_table',
+                    '2024_01_01_000052_create_t_info_block_items_table',
+                ],
+                'seo' => [
+                    '2024_01_01_000060_create_t_pages_table',
+                ],
+                'pagebuilder' => [
+                    '2024_01_01_000070_create_t_page_blocks_table',
+                ],
+                'telegram' => [
+                    '2024_01_01_000080_create_t_telegram_settings_table',
+                ],
+                'yookassa' => [
+                    '2024_01_01_000090_create_t_yookassa_settings_table',
+                ],
+                'commerceml' => [
+                    '2024_01_01_000100_create_t_commerceml_settings_table',
+                ],
+            ];
+
+            // Get all installed modules
+            $installedModules = TModule::all();
+
+            foreach ($installedModules as $module) {
+                $moduleId = $module->module_name;
+
+                if (!isset($moduleMigrations[$moduleId])) {
+                    continue;
+                }
+
+                $migrations = $moduleMigrations[$moduleId];
+                $missing = [];
+                $installed = [];
+
+                foreach ($migrations as $migration) {
+                    $exists = \DB::table('migrations')
+                        ->where('migration', $migration)
+                        ->exists();
+
+                    if ($exists) {
+                        $installed[] = $migration;
+                    } else {
+                        $missing[] = $migration;
+                        $hasIssues = true;
+                    }
+                }
+
+                $results[] = [
+                    'module' => $moduleId,
+                    'total' => count($migrations),
+                    'installed' => count($installed),
+                    'missing' => $missing,
+                    'status' => empty($missing) ? 'ok' : 'error'
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'has_issues' => $hasIssues,
+                'results' => $results,
+                'message' => $hasIssues
+                    ? 'Обнаружены проблемы с базой данных'
+                    : 'Все миграции установлены корректно'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при проверке базы данных: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Install missing migrations for modules
+     */
+    public function installMissingMigrations()
+    {
+        try {
+            $output = [];
+
+            // Define migrations for each module
+            $moduleMigrations = [
+                'shop' => [
+                    '2024_01_01_000010_create_t_catalogs_table',
+                    '2024_01_01_000011_create_t_products_table',
+                    '2024_01_01_000012_create_t_catalog_properties_table',
+                    '2024_01_01_000013_create_t_product_property_values_table',
+                    '2024_01_01_000014_create_t_product_variants_table',
+                    '2024_01_01_000015_create_t_product_variant_property_values_table',
+                ],
+                'callback' => [
+                    '2024_01_01_000020_create_t_user_emails_table',
+                    '2024_01_01_000021_create_t_user_comments_table',
+                    '2024_01_01_000022_create_t_callback_requests_table',
+                ],
+                'commerce' => [
+                    '2024_01_01_000030_create_t_orders_table',
+                    '2024_01_01_000031_create_t_order_items_table',
+                    '2024_01_01_000032_create_t_promocodes_table',
+                    '2024_01_01_000033_create_t_payment_transactions_table',
+                    '2024_01_01_000034_create_t_orders_data_table',
+                    '2026_08_08_000001_add_variant_id_to_t_order_items_table',
+                ],
+                'logging' => [
+                    '2024_01_01_000040_create_t_admin_actions_table',
+                ],
+                'infoblocks' => [
+                    '2024_01_01_000050_create_t_info_block_definitions_table',
+                    '2024_01_01_000051_create_t_info_block_field_definitions_table',
+                    '2024_01_01_000052_create_t_info_block_items_table',
+                ],
+                'seo' => [
+                    '2024_01_01_000060_create_t_pages_table',
+                ],
+                'pagebuilder' => [
+                    '2024_01_01_000070_create_t_page_blocks_table',
+                ],
+                'telegram' => [
+                    '2024_01_01_000080_create_t_telegram_settings_table',
+                ],
+                'yookassa' => [
+                    '2024_01_01_000090_create_t_yookassa_settings_table',
+                ],
+                'commerceml' => [
+                    '2024_01_01_000100_create_t_commerceml_settings_table',
+                ],
+            ];
+
+            // Map module IDs to their migration directories
+            $modulePaths = [
+                'shop' => 'shop',
+                'callback' => 'callback',
+                'commerce' => 'commerce',
+                'logging' => 'logging',
+                'infoblocks' => 'infoblocks',
+                'seo' => 'seo',
+                'pagebuilder' => 'pagebuilder',
+                'telegram' => 'telegram',
+                'yookassa' => 'yookassa',
+                'commerceml' => 'commerceml',
+            ];
+
+            // Determine package path (check vendor first, then packages, then plugins for development)
+            $packagePath = base_path('vendor/holartweb/axora-cms');
+            if (!file_exists($packagePath)) {
+                $packagePath = base_path('packages/holartweb/axora-cms');
+                if (!file_exists($packagePath)) {
+                    $packagePath = base_path('plugins/axora');
+                }
+            }
+
+            // Get all installed modules
+            $installedModules = TModule::all();
+            $installedCount = 0;
+
+            foreach ($installedModules as $module) {
+                $moduleId = $module->module_name;
+
+                if (!isset($moduleMigrations[$moduleId]) || !isset($modulePaths[$moduleId])) {
+                    continue;
+                }
+
+                $migrations = $moduleMigrations[$moduleId];
+                $modulePath = $modulePaths[$moduleId];
+
+                foreach ($migrations as $migration) {
+                    // Check if migration already exists
+                    $exists = \DB::table('migrations')
+                        ->where('migration', $migration)
+                        ->exists();
+
+                    if (!$exists) {
+                        // Copy migration file to database/migrations
+                        $sourceFile = $migration . '.php';
+                        $source = $packagePath . '/database/migrations/' . $modulePath . '/' . $sourceFile;
+                        $destination = database_path('migrations/' . $sourceFile);
+
+                        if (file_exists($source)) {
+                            // Remove old file if exists
+                            if (file_exists($destination)) {
+                                unlink($destination);
+                            }
+
+                            copy($source, $destination);
+                            $output[] = "Скопирован файл миграции: {$sourceFile}";
+
+                            // Run the migration
+                            try {
+                                Artisan::call('migrate', [
+                                    '--path' => 'database/migrations/' . $sourceFile,
+                                    '--force' => true
+                                ]);
+
+                                $output[] = "✓ Установлена миграция: {$migration}";
+                                $installedCount++;
+                            } catch (\Exception $e) {
+                                $output[] = "✗ Ошибка при установке {$migration}: " . $e->getMessage();
+                            }
+                        } else {
+                            $output[] = "⚠ Файл миграции не найден: {$source}";
+                        }
+                    }
+                }
+            }
+
+            // Log activity
+            TAdminAction::log('installed', 'migrations', null, "Установлено пропущенных миграций: {$installedCount}");
+
+            return response()->json([
+                'success' => true,
+                'installed_count' => $installedCount,
+                'output' => implode("\n", $output),
+                'message' => $installedCount > 0
+                    ? "Установлено миграций: {$installedCount}"
+                    : 'Все миграции уже установлены'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при установке миграций: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

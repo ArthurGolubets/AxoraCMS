@@ -10,6 +10,7 @@ class TInfoBlockElement extends Model
 
     protected $fillable = [
         'info_block_id',
+        'section_id',
         'name',
         'code',
         'content',
@@ -29,6 +30,14 @@ class TInfoBlockElement extends Model
     public function infoBlock()
     {
         return $this->belongsTo(TInfoBlock::class, 'info_block_id');
+    }
+
+    /**
+     * Get the section that owns this element
+     */
+    public function section()
+    {
+        return $this->belongsTo(TInfoBlockSection::class, 'section_id');
     }
 
     /**

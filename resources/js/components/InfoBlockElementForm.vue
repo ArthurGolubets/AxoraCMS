@@ -48,6 +48,19 @@
               >
             </div>
 
+            <div v-if="infoBlock.type === 'catalog'">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Раздел</label>
+              <select
+                  v-model="form.section_id"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
+                <option :value="null">Без раздела</option>
+                <option v-for="section in sections" :key="section.id" :value="section.id">
+                  {{ section.name }}
+                </option>
+              </select>
+            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Символьный код</label>
               <input
@@ -267,6 +280,7 @@ const isEdit = computed(() => !!elementId.value);
 
 const infoBlock = ref(null);
 const fields = ref([]);
+const sections = ref([]);
 const saving = ref(false);
 const codeManuallyEdited = ref(false);
 const activeTab = ref('main');
@@ -280,6 +294,7 @@ const tabs = [
 const form = ref({
   name: '',
   code: '',
+  section_id: null,
   sort: 500,
   is_active: true,
   content: '',
@@ -352,6 +367,19 @@ const loadFields = async () => {
   }
 };
 
+const loadSections = async () => {
+  try {
+    const response = await fetch(`/admin/api/infoblocks/${infoBlockId.value}/sections/list`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (response.ok) {
+      sections.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to load sections:', error);
+  }
+};
+
 const loadElement = async () => {
   if (!isEdit.value) return;
 
@@ -364,6 +392,7 @@ const loadElement = async () => {
       form.value = {
         name: element.name,
         code: element.code || '',
+        section_id: element.section_id || null,
         sort: element.sort,
         is_active: element.is_active,
         content: element.content || '',
@@ -395,7 +424,12 @@ const handleSubmit = async () => {
     });
 
     if (response.ok) {
-      router.push(`/infoblocks/${infoBlockId.value}/elements`);
+      // Redirect based on info block type
+      if (infoBlock.value?.type === 'catalog') {
+        router.push(`/infoblocks/${infoBlockId.value}/sections`);
+      } else {
+        router.push(`/infoblocks/${infoBlockId.value}/elements`);
+      }
     } else {
       const error = await response.json();
       alert(error.message || 'Ошибка при сохранении');
@@ -410,6 +444,16 @@ const handleSubmit = async () => {
 
 onMounted(async () => {
   await loadInfoBlock();
+  if (infoBlock.value?.type === 'catalog') {
+    await loadSections();
+
+    // Set section_id from URL query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const sectionIdFromUrl = urlParams.get('section_id');
+    if (sectionIdFromUrl && !isEdit.value) {
+      form.value.section_id = parseInt(sectionIdFromUrl);
+    }
+  }
   await loadFields();
   if (isEdit.value) {
     await loadElement();

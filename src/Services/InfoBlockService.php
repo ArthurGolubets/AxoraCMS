@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Services;
 
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
+use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockSection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -411,49 +412,6 @@ class InfoBlockService
     }
 
     /**
-     * Apply filters to query
-     *
-     * @param $query
-     * @param array $filter
-     * @return void
-     */
-    protected function applyFilters($query, array $filter): void
-    {
-        foreach ($filter as $key => $value) {
-            if (in_array($key, ['id', 'code', 'name', 'is_active', 'info_block_id'])) {
-                // Direct column filter
-                if ($key === 'name' && is_string($value)) {
-                    $query->where('name', 'like', "%{$value}%");
-                } else {
-                    $query->where($key, $value);
-                }
-            } else {
-                // Property filter
-                if (is_array($value)) {
-                    // Array filter (IN) - for filtering like ['red', 'blue', 'green']
-                    $query->where(function($q) use ($key, $value) {
-                        foreach ($value as $v) {
-                            $q->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) = ?", [$v]);
-                        }
-                    });
-                } else {
-                    // Simple filter - JSON_UNQUOTE removes quotes from JSON strings
-                    if (is_numeric($value)) {
-                        // For numeric values, cast JSON value to number
-                        $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) AS DECIMAL) = ?", [$value]);
-                    } elseif (is_bool($value)) {
-                        // For boolean values
-                        $query->whereRaw("JSON_EXTRACT(properties, '$.{$key}') = ?", [$value ? 'true' : 'false']);
-                    } else {
-                        // For string values like 'red', 'blue', etc.
-                        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) = ?", [$value]);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Apply ordering to query
      *
      * @param $query
@@ -556,6 +514,383 @@ class InfoBlockService
         }
 
         return $enums;
+    }
+
+    /**
+     * Get sections list (flat) for catalog type info block
+     *
+     * @param string $code Info block code
+     * @param bool $activeOnly Get only active sections
+     * @return Collection
+     * @throws \Exception
+     */
+    public function getSections(string $code, bool $activeOnly = true): Collection
+    {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$code}' is not a catalog type");
+        }
+
+        $query = $infoBlock->sections()->orderBy('sort');
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get sections tree with children for catalog type info block
+     *
+     * @param string $code Info block code
+     * @param bool $activeOnly Get only active sections
+     * @return array
+     * @throws \Exception
+     */
+    public function getSectionsTree(string $code, bool $activeOnly = true): array
+    {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$code}' is not a catalog type");
+        }
+
+        $query = $infoBlock->sections()->whereNull('parent_id')->orderBy('sort');
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        $rootSections = $query->get();
+
+        return $rootSections->map(function ($section) use ($activeOnly) {
+            return $this->buildSectionTree($section, $activeOnly);
+        })->toArray();
+    }
+
+    /**
+     * Build section tree recursively
+     *
+     * @param TInfoBlockSection $section
+     * @param bool $activeOnly
+     * @return array
+     */
+    protected function buildSectionTree(TInfoBlockSection $section, bool $activeOnly = true): array
+    {
+        $childrenQuery = $section->children()->orderBy('sort');
+
+        if ($activeOnly) {
+            $childrenQuery->where('is_active', true);
+        }
+
+        $children = $childrenQuery->get();
+
+        return [
+            'id' => $section->id,
+            'name' => $section->name,
+            'code' => $section->code,
+            'image' => $section->image,
+            'description' => $section->description,
+            'is_active' => $section->is_active,
+            'children' => $children->map(function ($child) use ($activeOnly) {
+                return $this->buildSectionTree($child, $activeOnly);
+            })->toArray(),
+        ];
+    }
+
+    /**
+     * Get elements of specific section
+     *
+     * @param string $code Info block code
+     * @param int $sectionId Section ID
+     * @param array $filter Additional filters
+     * @param array $order Ordering
+     * @param int|null $perPage Items per page
+     * @param int $page Current page
+     * @param bool $activeOnly Get only active elements
+     * @return Collection|LengthAwarePaginator
+     * @throws \Exception
+     */
+    public function getElementsBySection(
+        string $code,
+        int $sectionId,
+        array $filter = [],
+        array $order = ['sort' => 'asc'],
+        ?int $perPage = null,
+        int $page = 1,
+        bool $activeOnly = true
+    ) {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$code}' is not a catalog type");
+        }
+
+        $filter['section_id'] = $sectionId;
+
+        if ($activeOnly) {
+            $filter['is_active'] = true;
+        }
+
+        return $this->getElements($code, $filter, $order, $perPage, $page);
+    }
+
+    /**
+     * Get elements of section and all its subsections recursively
+     *
+     * @param string $code Info block code
+     * @param int $sectionId Section ID
+     * @param array $filter Additional filters
+     * @param array $order Ordering
+     * @param int|null $perPage Items per page
+     * @param int $page Current page
+     * @param bool $activeOnly Get only active elements
+     * @return Collection|LengthAwarePaginator
+     * @throws \Exception
+     */
+    public function getElementsBySectionRecursive(
+        string $code,
+        int $sectionId,
+        array $filter = [],
+        array $order = ['sort' => 'asc'],
+        ?int $perPage = null,
+        int $page = 1,
+        bool $activeOnly = true
+    ) {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$code}' is not a catalog type");
+        }
+
+        $section = TInfoBlockSection::find($sectionId);
+
+        if (!$section || $section->info_block_id !== $infoBlock->id) {
+            throw new \Exception("Section with ID '{$sectionId}' not found in this info block");
+        }
+
+        // Get all descendant section IDs
+        $sectionIds = $this->getDescendantSectionIds($section);
+        $sectionIds[] = $sectionId; // Include current section
+
+        $query = $infoBlock->elements()->whereIn('section_id', $sectionIds);
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        // Apply additional filters
+        $this->applyFilters($query, $filter);
+
+        // Apply ordering
+        $this->applyOrdering($query, $order);
+
+        // Return paginated or all results
+        if ($perPage !== null) {
+            $result = $query->paginate($perPage, ['*'], 'page', $page);
+            $result->getCollection()->transform(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+            return $result;
+        }
+
+        $elements = $query->get();
+        return $elements->map(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+    }
+
+    /**
+     * Get all descendant section IDs recursively
+     *
+     * @param TInfoBlockSection $section
+     * @return array
+     */
+    protected function getDescendantSectionIds(TInfoBlockSection $section): array
+    {
+        $ids = [];
+
+        $children = $section->children;
+
+        foreach ($children as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $this->getDescendantSectionIds($child));
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Get all elements from catalog type info block (from all sections)
+     *
+     * @param string $code Info block code
+     * @param array $filter Additional filters
+     * @param array $order Ordering
+     * @param int|null $perPage Items per page
+     * @param int $page Current page
+     * @param bool $activeOnly Get only active elements
+     * @return Collection|LengthAwarePaginator
+     * @throws \Exception
+     */
+    public function getAllCatalogElements(
+        string $code,
+        array $filter = [],
+        array $order = ['sort' => 'asc'],
+        ?int $perPage = null,
+        int $page = 1,
+        bool $activeOnly = true
+    ) {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$code}' is not a catalog type");
+        }
+
+        if ($activeOnly) {
+            $filter['is_active'] = true;
+        }
+
+        return $this->getElements($code, $filter, $order, $perPage, $page);
+    }
+
+    /**
+     * Get section by ID
+     *
+     * @param string $code Info block code
+     * @param int $sectionId Section ID
+     * @return TInfoBlockSection|null
+     * @throws \Exception
+     */
+    public function getSectionById(string $code, int $sectionId): ?TInfoBlockSection
+    {
+        $infoBlock = $this->getInfoBlockByCode($code);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$code}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$code}' is not a catalog type");
+        }
+
+        return $infoBlock->sections()->where('id', $sectionId)->first();
+    }
+
+    /**
+     * Get section by code
+     *
+     * @param string $infoBlockCode Info block code
+     * @param string $sectionCode Section code
+     * @return TInfoBlockSection|null
+     * @throws \Exception
+     */
+    public function getSectionByCode(string $infoBlockCode, string $sectionCode): ?TInfoBlockSection
+    {
+        $infoBlock = $this->getInfoBlockByCode($infoBlockCode);
+
+        if (!$infoBlock) {
+            throw new \Exception("Info block with code '{$infoBlockCode}' not found");
+        }
+
+        if (!$infoBlock->isCatalog()) {
+            throw new \Exception("Info block '{$infoBlockCode}' is not a catalog type");
+        }
+
+        return $infoBlock->sections()
+            ->where('code', $sectionCode)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Apply filters to query with advanced operators
+     *
+     * Supported filter formats:
+     * - Simple: ['field' => 'value'] - exact match
+     * - Array: ['field' => ['value1', 'value2']] - IN clause
+     * - Operators: ['field' => ['>', 100]] - comparison
+     * - Like: ['field' => ['LIKE', '%text%']] - pattern matching
+     *
+     * @param $query
+     * @param array $filter
+     * @return void
+     */
+    protected function applyFilters($query, array $filter): void
+    {
+        foreach ($filter as $key => $value) {
+            // Direct column filter
+            if (in_array($key, ['id', 'code', 'name', 'is_active', 'info_block_id', 'section_id'])) {
+                if (is_array($value)) {
+                    // Check if it's an operator format: ['>', 100] or ['LIKE', '%text%']
+                    if (count($value) === 2 && is_string($value[0]) && in_array(strtoupper($value[0]), ['>', '<', '>=', '<=', '=', '!=', 'LIKE', 'NOT LIKE'])) {
+                        $operator = strtoupper($value[0]);
+                        $operand = $value[1];
+                        $query->where($key, $operator, $operand);
+                    } else {
+                        // Array filter (IN)
+                        $query->whereIn($key, $value);
+                    }
+                } elseif ($key === 'name' && is_string($value)) {
+                    $query->where('name', 'like', "%{$value}%");
+                } else {
+                    $query->where($key, $value);
+                }
+            } else {
+                // Property filter (JSON)
+                if (is_array($value)) {
+                    // Check if it's an operator format
+                    if (count($value) === 2 && is_string($value[0]) && in_array(strtoupper($value[0]), ['>', '<', '>=', '<=', '=', '!=', 'LIKE', 'NOT LIKE'])) {
+                        $operator = strtoupper($value[0]);
+                        $operand = $value[1];
+
+                        if ($operator === 'LIKE' || $operator === 'NOT LIKE') {
+                            // String pattern matching
+                            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) {$operator} ?", [$operand]);
+                        } else {
+                            // Numeric comparison
+                            $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) AS DECIMAL) {$operator} ?", [$operand]);
+                        }
+                    } else {
+                        // Array filter (IN) for properties
+                        $query->where(function($q) use ($key, $value) {
+                            foreach ($value as $v) {
+                                $q->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) = ?", [$v]);
+                            }
+                        });
+                    }
+                } else {
+                    // Simple filter
+                    if (is_numeric($value)) {
+                        // For numeric values, cast JSON value to number
+                        $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) AS DECIMAL) = ?", [$value]);
+                    } elseif (is_bool($value)) {
+                        // For boolean values
+                        $query->whereRaw("JSON_EXTRACT(properties, '$.{$key}') = ?", [$value ? 'true' : 'false']);
+                    } else {
+                        // For string values
+                        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) = ?", [$value]);
+                    }
+                }
+            }
+        }
     }
 
     protected function enrichEnumProperties($element, $fields): mixed

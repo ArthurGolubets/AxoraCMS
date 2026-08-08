@@ -7,6 +7,7 @@ import Settings from './components/Settings.vue';
 import EnvironmentSettings from './components/EnvironmentSettings.vue';
 import ActivityLogs from './components/ActivityLogs.vue';
 import Modules from './components/Modules.vue';
+import CheckSystem from './components/CheckSystem.vue';
 import CatalogTree from './components/CatalogTree.vue';
 import CatalogView from './components/CatalogView.vue';
 import CatalogForm from './components/CatalogForm.vue';
@@ -31,6 +32,7 @@ import InfoBlockForm from './components/InfoBlockForm.vue';
 import InfoBlockFields from './components/InfoBlockFields.vue';
 import InfoBlockElements from './components/InfoBlockElements.vue';
 import InfoBlockElementForm from './components/InfoBlockElementForm.vue';
+import InfoBlockSections from './components/InfoBlockSections.vue';
 import MenuList from './components/Menus/MenuList.vue';
 import MenuItems from './components/Menus/MenuItems.vue';
 import FiltersList from './components/FiltersList.vue';
@@ -80,6 +82,11 @@ const router = createRouter({
             path: '/modules',
             name: 'modules',
             component: Modules
+        },
+        {
+            path: '/modules/check-system',
+            name: 'check-system',
+            component: CheckSystem
         },
         {
             path: '/catalog',
@@ -210,6 +217,11 @@ const router = createRouter({
             path: '/infoblocks/:id/elements',
             name: 'infoblock-elements',
             component: InfoBlockElements
+        },
+        {
+            path: '/infoblocks/:id/sections',
+            name: 'infoblock-sections',
+            component: InfoBlockSections
         },
         {
             path: '/infoblocks/:infoBlockId/elements/create',
@@ -413,7 +425,7 @@ router.beforeEach(async (to, from, next) => {
         }
 
         // Check if accessing infoblocks module routes
-        const infoblocksRoutes = ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-element-create', 'infoblock-element-edit'];
+        const infoblocksRoutes = ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'];
         if (infoblocksRoutes.includes(to.name)) {
             // Check if infoblocks module is installed
             const modulesResponse = await fetch('/admin/api/modules/status', {

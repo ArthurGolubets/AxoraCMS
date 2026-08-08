@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 
 class InfoBlocksInstallCommand extends Command
 {
-    const VERSION = '1.0.0';
+    const VERSION = '1.1.0';
     const MODULE_NAME = 'infoblocks';
 
     protected $signature = 'axoracms:infoblocks-install';

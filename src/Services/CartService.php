@@ -11,11 +11,11 @@ class CartService
     /**
      * Добавить товар в корзину
      */
-    public function addToCart(int $productId, string $productName, float $price, int $quantity = 1, array $additionalData = []): array
+    public function addToCart(int $productId, string $productName, float $price, int $quantity = 1, ?int $variantId = null, ?array $variantData = null, array $additionalData = []): array
     {
         $cart = $this->getCart();
 
-        $itemKey = $this->generateItemKey($productId, $additionalData);
+        $itemKey = $this->generateItemKey($productId, $variantId, $additionalData);
 
         if (isset($cart[$itemKey])) {
             $cart[$itemKey]['quantity'] += $quantity;
@@ -25,6 +25,8 @@ class CartService
                 'product_name' => $productName,
                 'price' => $price,
                 'quantity' => $quantity,
+                'variant_id' => $variantId,
+                'variant_data' => $variantData,
                 'additional_data' => $additionalData,
             ];
         }
@@ -145,12 +147,18 @@ class CartService
     /**
      * Сгенерировать уникальный ключ для товара
      */
-    private function generateItemKey(int $productId, array $additionalData = []): string
+    private function generateItemKey(int $productId, ?int $variantId = null, array $additionalData = []): string
     {
-        if (empty($additionalData)) {
-            return (string) $productId;
+        $keyParts = [(string) $productId];
+
+        if ($variantId !== null) {
+            $keyParts[] = 'v' . $variantId;
         }
 
-        return $productId . '_' . md5(json_encode($additionalData));
+        if (!empty($additionalData)) {
+            $keyParts[] = md5(json_encode($additionalData));
+        }
+
+        return implode('_', $keyParts);
     }
 }

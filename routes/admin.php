@@ -95,6 +95,8 @@ Route::middleware(['admin.auth'])->group(function () {
         Route::get('modules/status', [ModulesController::class, 'status']);
         Route::get('modules', [ModulesController::class, 'index']);
         Route::post('modules/update', [ModulesController::class, 'update']);
+        Route::post('modules/check-database', [ModulesController::class, 'checkDatabase']);
+        Route::post('modules/install-missing-migrations', [ModulesController::class, 'installMissingMigrations']);
         Route::post('modules/{moduleId}/install', [ModulesController::class, 'install']);
         Route::post('modules/{moduleId}/update', [ModulesController::class, 'updateModule']);
         Route::post('modules/{moduleId}/uninstall', [ModulesController::class, 'uninstall']);
@@ -224,6 +226,7 @@ Route::middleware(['admin.auth'])->group(function () {
             $infoBlocksController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlocksController';
             $infoBlockFieldsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockFieldsController';
             $infoBlockElementsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockElementsController';
+            $infoBlockSectionsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockSectionsController';
 
             // InfoBlocks routes
             Route::get('infoblocks/favorites', [$infoBlocksController, 'favorites']);
@@ -233,6 +236,15 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::put('infoblocks/{id}', [$infoBlocksController, 'update']);
             Route::delete('infoblocks/{id}', [$infoBlocksController, 'destroy']);
             Route::post('infoblocks/{id}/favorite', [$infoBlocksController, 'toggleFavorite']);
+
+            // InfoBlock Sections routes (for catalog type)
+            Route::get('infoblocks/{infoBlockId}/sections/list', [$infoBlockSectionsController, 'list']);
+            Route::get('infoblocks/{infoBlockId}/sections/{id}/breadcrumbs', [$infoBlockSectionsController, 'breadcrumbs']);
+            Route::get('infoblocks/{infoBlockId}/sections', [$infoBlockSectionsController, 'index']);
+            Route::get('infoblocks/{infoBlockId}/sections/{id}', [$infoBlockSectionsController, 'show']);
+            Route::post('infoblocks/{infoBlockId}/sections', [$infoBlockSectionsController, 'store']);
+            Route::put('infoblocks/{infoBlockId}/sections/{id}', [$infoBlockSectionsController, 'update']);
+            Route::delete('infoblocks/{infoBlockId}/sections/{id}', [$infoBlockSectionsController, 'destroy']);
 
             // InfoBlock Fields routes
             Route::get('infoblocks/{infoBlockId}/fields', [$infoBlockFieldsController, 'index']);

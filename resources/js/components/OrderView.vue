@@ -59,7 +59,15 @@
             <div v-for="item in order.items" :key="item.id" class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
               <div class="flex-1">
                 <h4 class="font-medium text-gray-900 dark:text-white">{{ item.product_name }}</h4>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Количество: {{ item.amount }}</p>
+                <div v-if="item.variant_data" class="mt-1">
+                  <p class="text-sm text-blue-600 dark:text-blue-400">Вариация: {{ item.variant_data.name }}</p>
+                  <div v-if="item.variant_data.characteristics && Object.keys(item.variant_data.characteristics).length > 0" class="mt-1">
+                    <span v-for="(value, key) in item.variant_data.characteristics" :key="key" class="inline-block mr-2 text-xs text-gray-600 dark:text-gray-400">
+                      {{ key }}: {{ value }}
+                    </span>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Количество: {{ item.amount }}</p>
               </div>
               <div class="text-right">
                 <p class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(item.total_price / item.amount) }} ₽</p>

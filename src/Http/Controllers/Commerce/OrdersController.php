@@ -61,6 +61,7 @@ class OrdersController extends Controller
             'payment_type' => 'required|in:online,cash',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer',
+            'items.*.variant_id' => 'nullable|integer',
             'items.*.product_name' => 'required|string',
             'items.*.amount' => 'required|integer|min:1',
             'items.*.total_price' => 'required|numeric|min:0',
@@ -90,13 +91,33 @@ class OrdersController extends Controller
 
         // Create order items
         foreach ($request->items as $item) {
-            TOrderItems::create([
+            $itemData = [
                 'order_id' => $order->id,
                 'product_id' => $item['product_id'],
                 'product_name' => $item['product_name'],
                 'amount' => $item['amount'],
                 'total_price' => $item['total_price'],
-            ]);
+            ];
+
+            // Add variant data if present
+            if (!empty($item['variant_id'])) {
+                $itemData['variant_id'] = $item['variant_id'];
+
+                // Get variant data from product
+                $product = \HolartWeb\AxoraCMS\Models\Shop\TProduct::with('variants')->find($item['product_id']);
+                if ($product) {
+                    $variant = $product->variants->firstWhere('id', $item['variant_id']);
+                    if ($variant) {
+                        $itemData['variant_data'] = [
+                            'name' => $variant->name,
+                            'price' => $variant->price,
+                            'characteristics' => $variant->characteristics ?? []
+                        ];
+                    }
+                }
+            }
+
+            TOrderItems::create($itemData);
         }
 
         return response()->json([
@@ -118,6 +139,12 @@ class OrdersController extends Controller
             'delivery_status' => 'nullable|in:pending,processing,shipped,delivered,cancelled',
             'delivery_type' => 'nullable|in:pickup,courier,post',
             'payment_type' => 'nullable|in:online,cash,card',
+            'items' => 'nullable|array',
+            'items.*.product_id' => 'required|integer',
+            'items.*.variant_id' => 'nullable|integer',
+            'items.*.product_name' => 'required|string',
+            'items.*.amount' => 'required|integer|min:1',
+            'items.*.total_price' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -127,12 +154,61 @@ class OrdersController extends Controller
             ], 422);
         }
 
-        $order->update($request->all());
+        // Update order data
+        $orderData = $request->except('items');
+
+        // Recalculate prices if items are provided
+        if ($request->has('items')) {
+            $goodsPrice = collect($request->items)->sum('total_price');
+            $deliveryPrice = $request->get('delivery_price', $order->delivery_price);
+            $promocodeDiscount = $request->get('promocode_discount', $order->promocode_discount);
+            $totalPrice = $goodsPrice + $deliveryPrice - $promocodeDiscount;
+
+            $orderData['goods_price'] = $goodsPrice;
+            $orderData['delivery_price'] = $deliveryPrice;
+            $orderData['promocode_discount'] = $promocodeDiscount;
+            $orderData['total_price'] = $totalPrice;
+
+            // Delete existing items and create new ones
+            $order->items()->delete();
+
+            foreach ($request->items as $item) {
+                $itemData = [
+                    'order_id' => $order->id,
+                    'product_id' => $item['product_id'],
+                    'product_name' => $item['product_name'],
+                    'amount' => $item['amount'],
+                    'total_price' => $item['total_price'],
+                ];
+
+                // Add variant data if present
+                if (!empty($item['variant_id'])) {
+                    $itemData['variant_id'] = $item['variant_id'];
+
+                    // Get variant data from product
+                    $product = \HolartWeb\AxoraCMS\Models\Shop\TProduct::with('variants')->find($item['product_id']);
+                    if ($product) {
+                        $variant = $product->variants->firstWhere('id', $item['variant_id']);
+                        if ($variant) {
+                            $itemData['variant_data'] = [
+                                'name' => $variant->name,
+                                'price' => $variant->price,
+                                'characteristics' => $variant->characteristics ?? []
+                            ];
+                        }
+                    }
+                }
+
+                TOrderItems::create($itemData);
+            }
+        }
+
+        $order->update($orderData);
 
         return response()->json([
             'success' => true,
             'message' => 'Заказ обновлен успешно',
-            'data' => $order->fresh()
+            'data' => $order->fresh()->load('items')
         ]);
     }
 

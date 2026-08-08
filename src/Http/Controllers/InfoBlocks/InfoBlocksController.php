@@ -40,6 +40,7 @@ class InfoBlocksController extends Controller
         $infoBlocks->getCollection()->transform(function($infoBlock) {
             $infoBlock->elements_count = $infoBlock->elements()->count();
             $infoBlock->fields_count = $infoBlock->fields()->count();
+            $infoBlock->sections_count = $infoBlock->sections()->count();
             return $infoBlock;
         });
 
@@ -57,6 +58,7 @@ class InfoBlocksController extends Controller
 
         $infoBlock->elements_count = $infoBlock->elements()->count();
         $infoBlock->fields_count = $infoBlock->fields()->count();
+        $infoBlock->sections_count = $infoBlock->sections()->count();
 
         return response()->json($infoBlock);
     }
@@ -68,6 +70,7 @@ class InfoBlocksController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'required|string|in:list,catalog',
             'code' => 'nullable|string|unique:t_info_blocks,code|regex:/^[a-z0-9_]+$/',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -99,6 +102,7 @@ class InfoBlocksController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'required|string|in:list,catalog',
             'code' => 'nullable|string|unique:t_info_blocks,code,' . $id . '|regex:/^[a-z0-9_]+$/',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -125,8 +129,9 @@ class InfoBlocksController extends Controller
         $infoBlock = TInfoBlock::findOrFail($id);
         $infoBlockName = $infoBlock->name;
 
-        // Delete all fields and elements
+        // Delete all fields, sections and elements
         $infoBlock->fields()->delete();
+        $infoBlock->sections()->delete();
         $infoBlock->elements()->delete();
         $infoBlock->delete();
 

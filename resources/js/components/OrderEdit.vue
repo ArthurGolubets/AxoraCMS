@@ -471,10 +471,16 @@ const onVariantSelect = (index) => {
   const item = form.value.items[index];
   const product = products.value.find(p => p.id === item.product_id);
 
-  if (product && item.variant_id) {
-    const variant = product.variants.find(v => v.id === item.variant_id);
-    if (variant) {
-      item.price = parseFloat(variant.price);
+  if (product) {
+    if (item.variant_id) {
+      // If variant selected, use variant price
+      const variant = product.variants.find(v => v.id === item.variant_id);
+      if (variant) {
+        item.price = parseFloat(variant.price);
+      }
+    } else {
+      // If no variant selected, use product price
+      item.price = parseFloat(product.price);
     }
   }
 };
@@ -500,11 +506,6 @@ const selectProduct = (index, product) => {
   item.showDropdown = false;
   item.price = parseFloat(product.price);
   item.variant_id = '';
-
-  if (product.variants && product.variants.length === 1) {
-    item.variant_id = product.variants[0].id;
-    onVariantSelect(index);
-  }
 };
 
 const addItem = () => {

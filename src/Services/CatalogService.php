@@ -302,21 +302,25 @@ class CatalogService
     }
 
     /**
-     * Get catalogs with filters
+     * Get catalogs with advanced filters
      *
-     * @param array $filters ['is_active' => true, 'parent_id' => null, etc.]
+     * Supported filter formats:
+     * - Simple: ['field' => 'value'] - exact match
+     * - Array: ['field' => ['value1', 'value2']] - IN clause
+     * - Operators: ['field' => ['>', 100]] - comparison
+     * - Like: ['field' => ['LIKE', '%text%']] - pattern matching
+     *
+     * @param array $filters Advanced filters
      * @param int|null $limit
      * @param int $page
-     * @param string $orderBy
-     * @param string $orderDirection
+     * @param array $order Ordering ['field' => 'asc|desc']
      * @return LengthAwarePaginator|Collection
      */
     public function getCatalogsWithFilters(
         array $filters = [],
         ?int $limit = null,
         int $page = 1,
-        string $orderBy = 'name',
-        string $orderDirection = 'asc'
+        array $order = ['name' => 'asc']
     ) {
         $catalogModel = $this->getCatalogModel();
         if (!$catalogModel) {
@@ -325,15 +329,8 @@ class CatalogService
 
         $query = $catalogModel::query();
 
-        foreach ($filters as $field => $value) {
-            if ($value === null) {
-                $query->whereNull($field);
-            } else {
-                $query->where($field, $value);
-            }
-        }
-
-        $query->orderBy($orderBy, $orderDirection);
+        $this->applyCatalogFilters($query, $filters);
+        $this->applyOrdering($query, $order);
 
         if ($limit !== null) {
             return $query->paginate($limit, ['*'], 'page', $page);
@@ -343,14 +340,19 @@ class CatalogService
     }
 
     /**
-     * Get products with filters
+     * Get products with advanced filters
      *
-     * @param array $filters ['is_hot' => true, 'is_new' => true, etc.]
+     * Supported filter formats:
+     * - Simple: ['field' => 'value'] - exact match
+     * - Array: ['field' => ['value1', 'value2']] - IN clause
+     * - Operators: ['price' => ['>', 1000]] - comparison
+     * - Like: ['name' => ['LIKE', '%text%']] - pattern matching
+     *
+     * @param array $filters Advanced filters
      * @param int|null $catalogId Optional catalog filter
      * @param int|null $limit
      * @param int $page
-     * @param string $orderBy
-     * @param string $orderDirection
+     * @param array $order Ordering ['field' => 'asc|desc']
      * @return LengthAwarePaginator|Collection
      */
     public function getProductsWithFilters(
@@ -358,8 +360,7 @@ class CatalogService
         ?int $catalogId = null,
         ?int $limit = null,
         int $page = 1,
-        string $orderBy = 'name',
-        string $orderDirection = 'asc'
+        array $order = ['name' => 'asc']
     ) {
         $productModel = $this->getProductModel();
         if (!$productModel) {
@@ -372,15 +373,8 @@ class CatalogService
             $query->where('catalog_id', $catalogId);
         }
 
-        foreach ($filters as $field => $value) {
-            if ($value === null) {
-                $query->whereNull($field);
-            } else {
-                $query->where($field, $value);
-            }
-        }
-
-        $query->orderBy($orderBy, $orderDirection);
+        $this->applyProductFilters($query, $filters);
+        $this->applyOrdering($query, $order);
 
         if ($limit !== null) {
             return $query->paginate($limit, ['*'], 'page', $page);
@@ -680,7 +674,8 @@ class CatalogService
             [$fieldMap[$type] => true, 'is_active' => $activeOnly],
             $catalogId,
             $limit,
-            $page
+            $page,
+            ['name' => 'asc']
         );
     }
 
@@ -882,5 +877,313 @@ class CatalogService
         }
 
         return $catalog->getAllProperties()->toArray();
+    }
+
+    /**
+     * Get products of catalog and all its subcatalogs recursively
+     *
+     * @param int $catalogId
+     * @param array $filters Additional filters
+     * @param array $order Ordering
+     * @param int|null $limit
+     * @param int $page
+     * @param bool $activeOnly
+     * @return LengthAwarePaginator|Collection
+     */
+    public function getProductsByCatalogRecursive(
+        int $catalogId,
+        array $filters = [],
+        array $order = ['name' => 'asc'],
+        ?int $limit = null,
+        int $page = 1,
+        bool $activeOnly = true
+    ) {
+        $productModel = $this->getProductModel();
+        if (!$productModel) {
+            return collect([]);
+        }
+
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return collect([]);
+        }
+
+        $catalog = $catalogModel::find($catalogId);
+        if (!$catalog) {
+            return collect([]);
+        }
+
+        // Get all descendant catalog IDs
+        $catalogIds = $this->getDescendantCatalogIds($catalog);
+        $catalogIds[] = $catalogId; // Include current catalog
+
+        $query = $productModel::query()->whereIn('catalog_id', $catalogIds);
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        $this->applyProductFilters($query, $filters);
+        $this->applyOrdering($query, $order);
+
+        if ($limit !== null) {
+            return $query->paginate($limit, ['*'], 'page', $page);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get all descendant catalog IDs recursively
+     *
+     * @param $catalog
+     * @return array
+     */
+    protected function getDescendantCatalogIds($catalog): array
+    {
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return [];
+        }
+
+        $ids = [];
+        $children = $catalogModel::where('parent_id', $catalog->id)->get();
+
+        foreach ($children as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $this->getDescendantCatalogIds($child));
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Apply advanced filters to catalog query
+     *
+     * @param $query
+     * @param array $filters
+     * @return void
+     */
+    protected function applyCatalogFilters($query, array $filters): void
+    {
+        foreach ($filters as $key => $value) {
+            // Direct column filter
+            if (in_array($key, ['id', 'name', 'slug', 'is_active', 'parent_id', 'description'])) {
+                if (is_array($value)) {
+                    // Check if it's an operator format
+                    if (count($value) === 2 && is_string($value[0]) && in_array(strtoupper($value[0]), ['>', '<', '>=', '<=', '=', '!=', 'LIKE', 'NOT LIKE'])) {
+                        $operator = strtoupper($value[0]);
+                        $operand = $value[1];
+                        $query->where($key, $operator, $operand);
+                    } else {
+                        // Array filter (IN)
+                        $query->whereIn($key, $value);
+                    }
+                } elseif ($value === null) {
+                    $query->whereNull($key);
+                } elseif (in_array($key, ['name', 'description']) && is_string($value)) {
+                    $query->where($key, 'like', "%{$value}%");
+                } else {
+                    $query->where($key, $value);
+                }
+            } else {
+                // JSON addition_info filter
+                $this->applyJsonFilter($query, 'addition_info', $key, $value);
+            }
+        }
+    }
+
+    /**
+     * Apply advanced filters to product query
+     *
+     * @param $query
+     * @param array $filters
+     * @return void
+     */
+    protected function applyProductFilters($query, array $filters): void
+    {
+        foreach ($filters as $key => $value) {
+            // Direct column filter
+            if (in_array($key, ['id', 'name', 'sku', 'slug', 'price', 'old_price', 'quantity', 'is_active', 'is_hot', 'is_new', 'is_recommended', 'catalog_id', 'description'])) {
+                if (is_array($value)) {
+                    // Check if it's an operator format
+                    if (count($value) === 2 && is_string($value[0]) && in_array(strtoupper($value[0]), ['>', '<', '>=', '<=', '=', '!=', 'LIKE', 'NOT LIKE'])) {
+                        $operator = strtoupper($value[0]);
+                        $operand = $value[1];
+                        $query->where($key, $operator, $operand);
+                    } else {
+                        // Array filter (IN)
+                        $query->whereIn($key, $value);
+                    }
+                } elseif ($value === null) {
+                    $query->whereNull($key);
+                } elseif (in_array($key, ['name', 'description', 'sku']) && is_string($value)) {
+                    $query->where($key, 'like', "%{$value}%");
+                } else {
+                    $query->where($key, $value);
+                }
+            } else {
+                // JSON addition_info filter
+                $this->applyJsonFilter($query, 'addition_info', $key, $value);
+            }
+        }
+    }
+
+    /**
+     * Apply JSON field filter
+     *
+     * @param $query
+     * @param string $jsonField
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
+    protected function applyJsonFilter($query, string $jsonField, string $key, $value): void
+    {
+        if (is_array($value)) {
+            // Check if it's an operator format
+            if (count($value) === 2 && is_string($value[0]) && in_array(strtoupper($value[0]), ['>', '<', '>=', '<=', '=', '!=', 'LIKE', 'NOT LIKE'])) {
+                $operator = strtoupper($value[0]);
+                $operand = $value[1];
+
+                if ($operator === 'LIKE' || $operator === 'NOT LIKE') {
+                    // String pattern matching
+                    $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT({$jsonField}, '$.{$key}')) {$operator} ?", [$operand]);
+                } else {
+                    // Numeric comparison
+                    $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT({$jsonField}, '$.{$key}')) AS DECIMAL) {$operator} ?", [$operand]);
+                }
+            } else {
+                // Array filter (IN)
+                $query->where(function($q) use ($jsonField, $key, $value) {
+                    foreach ($value as $v) {
+                        $q->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT({$jsonField}, '$.{$key}')) = ?", [$v]);
+                    }
+                });
+            }
+        } else {
+            // Simple filter
+            if (is_numeric($value)) {
+                $query->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT({$jsonField}, '$.{$key}')) AS DECIMAL) = ?", [$value]);
+            } elseif (is_bool($value)) {
+                $query->whereRaw("JSON_EXTRACT({$jsonField}, '$.{$key}') = ?", [$value ? 'true' : 'false']);
+            } else {
+                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT({$jsonField}, '$.{$key}')) = ?", [$value]);
+            }
+        }
+    }
+
+    /**
+     * Apply ordering to query
+     *
+     * @param $query
+     * @param array $order
+     * @return void
+     */
+    protected function applyOrdering($query, array $order): void
+    {
+        foreach ($order as $field => $direction) {
+            $direction = strtolower($direction);
+
+            if (!in_array($direction, ['asc', 'desc'])) {
+                $direction = 'asc';
+            }
+
+            // Check if it's a direct column or JSON field
+            $query->orderBy($field, $direction);
+        }
+    }
+
+    /**
+     * Get catalog by code
+     *
+     * @param string $code
+     * @return array|null
+     */
+    public function getCatalogByCode(string $code): ?array
+    {
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return null;
+        }
+
+        $catalog = $catalogModel::where('code', $code)->first();
+
+        return $catalog ? $catalog->toArray() : null;
+    }
+
+    /**
+     * Get all catalogs (flat list)
+     *
+     * @param array $filters
+     * @param array $order
+     * @param bool $activeOnly
+     * @return Collection
+     */
+    public function getAllCatalogs(
+        array $filters = [],
+        array $order = ['name' => 'asc'],
+        bool $activeOnly = true
+    ): Collection {
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return collect([]);
+        }
+
+        $query = $catalogModel::query();
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        $this->applyCatalogFilters($query, $filters);
+        $this->applyOrdering($query, $order);
+
+        return $query->get();
+    }
+
+    /**
+     * Get root catalogs (catalogs without parent)
+     *
+     * @param bool $activeOnly
+     * @return Collection
+     */
+    public function getRootCatalogs(bool $activeOnly = true): Collection
+    {
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return collect([]);
+        }
+
+        $query = $catalogModel::whereNull('parent_id')->orderBy('name');
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get child catalogs
+     *
+     * @param int $parentId
+     * @param bool $activeOnly
+     * @return Collection
+     */
+    public function getChildCatalogs(int $parentId, bool $activeOnly = true): Collection
+    {
+        $catalogModel = $this->getCatalogModel();
+        if (!$catalogModel) {
+            return collect([]);
+        }
+
+        $query = $catalogModel::where('parent_id', $parentId)->orderBy('name');
+
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        return $query->get();
     }
 }

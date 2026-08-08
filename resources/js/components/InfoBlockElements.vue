@@ -12,12 +12,36 @@
           <p class="text-gray-600 dark:text-gray-400 mt-1">Управление элементами</p>
         </div>
       </div>
-      <ThemeButton variant="primary" @click="$router.push(`/infoblocks/${route.params.id}/elements/create`)">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Добавить элемент
-      </ThemeButton>
+      <div class="flex items-center space-x-3">
+        <ThemeButton v-if="infoBlock.type === 'catalog'" variant="secondary" @click="$router.push(`/infoblocks/${route.params.id}/sections`)">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          Разделы
+        </ThemeButton>
+        <ThemeButton variant="primary" @click="$router.push(`/infoblocks/${route.params.id}/elements/create`)">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Добавить элемент
+        </ThemeButton>
+      </div>
+    </div>
+
+    <!-- Section Filter for Catalog -->
+    <div v-if="infoBlock.type === 'catalog'" class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Фильтр по разделу</label>
+      <select
+        v-model="selectedSectionId"
+        @change="loadElements"
+        class="w-full max-w-md px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+      >
+        <option :value="null">Все элементы</option>
+        <option :value="''">Без раздела</option>
+        <option v-for="section in sections" :key="section.id" :value="section.id">
+          {{ section.name }}
+        </option>
+      </select>
     </div>
 
     <!-- Elements List -->
@@ -77,6 +101,8 @@ const { confirm } = useModal();
 
 const infoBlock = ref(null);
 const elements = ref([]);
+const sections = ref([]);
+const selectedSectionId = ref(null);
 const loading = ref(false);
 
 const loadInfoBlock = async () => {
@@ -92,10 +118,30 @@ const loadInfoBlock = async () => {
   }
 };
 
+const loadSections = async () => {
+  try {
+    const response = await fetch(`/admin/api/infoblocks/${route.params.id}/sections/list`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (response.ok) {
+      sections.value = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to load sections:', error);
+  }
+};
+
 const loadElements = async () => {
   loading.value = true;
   try {
-    const response = await fetch(`/admin/api/infoblocks/${route.params.id}/elements`, {
+    let url = `/admin/api/infoblocks/${route.params.id}/elements`;
+
+    // Add section filter if catalog type
+    if (infoBlock.value?.type === 'catalog' && selectedSectionId.value !== null) {
+      url += `?section_id=${selectedSectionId.value}`;
+    }
+
+    const response = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     });
     if (response.ok) {
@@ -143,8 +189,11 @@ const deleteElement = async (element) => {
   }
 };
 
-onMounted(() => {
-  loadInfoBlock();
+onMounted(async () => {
+  await loadInfoBlock();
+  if (infoBlock.value?.type === 'catalog') {
+    await loadSections();
+  }
   loadElements();
 });
 </script>
