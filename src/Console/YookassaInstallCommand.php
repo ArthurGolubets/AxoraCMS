@@ -113,18 +113,29 @@ class YookassaInstallCommand extends Command
         // Step 2: Run Migrations
         $this->info('Step 2: Running database migrations...');
 
+        // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
+        if (!file_exists($packagePath)) {
+            $packagePath = base_path('plugins/axora');
+        }
         if (!file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
         try {
             $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/integrations';
-            Artisan::call('migrate', [
-                '--path' => $migrationsPath,
-                '--force' => true
-            ]);
-            $this->info('✓ Migrations completed successfully');
+
+            // Check if migration path exists
+            if (!file_exists(base_path($migrationsPath))) {
+                $this->warn('⚠ Migration path does not exist: ' . base_path($migrationsPath));
+                $this->warn('⚠ Skipping migrations for Yookassa');
+            } else {
+                Artisan::call('migrate', [
+                    '--path' => $migrationsPath,
+                    '--force' => true
+                ]);
+                $this->info('✓ Migrations completed successfully');
+            }
         } catch (\Exception $e) {
             $this->error('❌ Migration failed: ' . $e->getMessage());
             return self::FAILURE;

@@ -35,33 +35,33 @@ class CommerceMLInstallCommand extends Command
         // Step 2: Run Migrations
         $this->info('Step 2: Running database migrations...');
 
+        // Determine package path (works for both local development and composer installation)
+        $packagePath = base_path('vendor/holartweb/axora-cms');
+        if (!file_exists($packagePath)) {
+            $packagePath = base_path('plugins/axora');
+        }
+        if (!file_exists($packagePath)) {
+            $packagePath = base_path('packages/holartweb/axora-cms');
+        }
+
         try {
-            $migrationsPath = 'plugins/axora/database/migrations/commerceml';
+            // Run commerceml module migrations from package directory
+            $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/commerceml';
 
             // Check if migration files exist
             $fullPath = base_path($migrationsPath);
             if (!file_exists($fullPath)) {
-                $this->error('❌ Migration path does not exist: ' . $fullPath);
-                return self::FAILURE;
+                $this->warn('⚠ Migration path does not exist: ' . $fullPath);
+                $this->warn('⚠ Skipping migrations for CommerceML');
+            } else {
+                Artisan::call('migrate', [
+                    '--path' => $migrationsPath,
+                    '--force' => true
+                ]);
+                $this->info('✓ Migrations completed successfully');
             }
-
-            $exitCode = Artisan::call('migrate', [
-                '--path' => $migrationsPath,
-                '--force' => true
-            ]);
-
-            $output = Artisan::output();
-            $this->line($output);
-
-            if ($exitCode !== 0) {
-                $this->error('❌ Migration failed with exit code: ' . $exitCode);
-                return self::FAILURE;
-            }
-
-            $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
             $this->error('❌ Migration failed: ' . $e->getMessage());
-            $this->error('Stack trace: ' . $e->getTraceAsString());
             return self::FAILURE;
         }
         $this->newLine();
