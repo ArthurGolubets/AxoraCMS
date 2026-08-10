@@ -614,15 +614,15 @@ class ModulesController extends Controller
                 'shop' => [
                     '2024_01_01_000010_create_t_catalogs_table',
                     '2024_01_01_000011_create_t_products_table',
-                    '2024_01_01_000012_create_t_catalog_properties_table',
-                    '2024_01_01_000013_create_t_product_property_values_table',
-                    '2024_01_01_000014_create_t_product_variants_table',
-                    '2024_01_01_000015_create_t_product_variant_property_values_table',
+                    '2024_01_01_000012_create_t_product_variants_table',
+                    '2026_03_29_000090_create_t_catalog_properties_table',
+                    '2026_03_29_000091_create_t_product_property_values_table',
+                    '2026_08_02_135901_create_t_product_variant_property_values_table',
                 ],
                 'callback' => [
-                    '2024_01_01_000020_create_t_user_emails_table',
-                    '2024_01_01_000021_create_t_user_comments_table',
-                    '2024_01_01_000022_create_t_callback_requests_table',
+                    '2024_01_01_000020_create_t_users_emails_table',
+                    '2024_01_01_000021_create_t_comments_table',
+                    '2024_01_01_000022_create_t_user_requests_table',
                 ],
                 'commerce' => [
                     '2024_01_01_000030_create_t_orders_table',
@@ -633,15 +633,15 @@ class ModulesController extends Controller
                     '2026_08_08_000001_add_variant_id_to_t_order_items_table',
                 ],
                 'logging' => [
-                    '2024_01_01_000040_create_t_admin_actions_table',
+                    '2026_02_27_125658_create_t_admin_actions_table',
                 ],
                 'infoblocks' => [
-                    '2024_01_01_000050_create_t_info_block_definitions_table',
-                    '2024_01_01_000051_create_t_info_block_field_definitions_table',
-                    '2024_01_01_000052_create_t_info_block_items_table',
+                    '2024_01_01_000040_create_t_info_blocks_table',
+                    '2024_01_01_000041_create_t_info_block_fields_table',
+                    '2024_01_01_000042_create_t_info_block_elements_table',
                 ],
                 'seo' => [
-                    '2024_01_01_000060_create_t_pages_table',
+                    '2024_03_09_000001_create_t_pages_table',
                 ],
                 'pagebuilder' => [
                     '2024_01_01_000070_create_t_page_blocks_table',
@@ -722,15 +722,15 @@ class ModulesController extends Controller
                 'shop' => [
                     '2024_01_01_000010_create_t_catalogs_table',
                     '2024_01_01_000011_create_t_products_table',
-                    '2024_01_01_000012_create_t_catalog_properties_table',
-                    '2024_01_01_000013_create_t_product_property_values_table',
-                    '2024_01_01_000014_create_t_product_variants_table',
-                    '2024_01_01_000015_create_t_product_variant_property_values_table',
+                    '2024_01_01_000012_create_t_product_variants_table',
+                    '2026_03_29_000090_create_t_catalog_properties_table',
+                    '2026_03_29_000091_create_t_product_property_values_table',
+                    '2026_08_02_135901_create_t_product_variant_property_values_table',
                 ],
                 'callback' => [
-                    '2024_01_01_000020_create_t_user_emails_table',
-                    '2024_01_01_000021_create_t_user_comments_table',
-                    '2024_01_01_000022_create_t_callback_requests_table',
+                    '2024_01_01_000020_create_t_users_emails_table',
+                    '2024_01_01_000021_create_t_comments_table',
+                    '2024_01_01_000022_create_t_user_requests_table',
                 ],
                 'commerce' => [
                     '2024_01_01_000030_create_t_orders_table',
@@ -741,15 +741,15 @@ class ModulesController extends Controller
                     '2026_08_08_000001_add_variant_id_to_t_order_items_table',
                 ],
                 'logging' => [
-                    '2024_01_01_000040_create_t_admin_actions_table',
+                    '2026_02_27_125658_create_t_admin_actions_table',
                 ],
                 'infoblocks' => [
-                    '2024_01_01_000050_create_t_info_block_definitions_table',
-                    '2024_01_01_000051_create_t_info_block_field_definitions_table',
-                    '2024_01_01_000052_create_t_info_block_items_table',
+                    '2024_01_01_000040_create_t_info_blocks_table',
+                    '2024_01_01_000041_create_t_info_block_fields_table',
+                    '2024_01_01_000042_create_t_info_block_elements_table',
                 ],
                 'seo' => [
-                    '2024_01_01_000060_create_t_pages_table',
+                    '2024_03_09_000001_create_t_pages_table',
                 ],
                 'pagebuilder' => [
                     '2024_01_01_000070_create_t_page_blocks_table',

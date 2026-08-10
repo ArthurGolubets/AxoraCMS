@@ -31,44 +31,82 @@ class YookassaInstallCommand extends Command
         $this->info('✓ Commerce module is installed');
         $this->newLine();
 
-        // Step 1: Install Yookassa SDK via Composer
-        $this->info('Step 1: Installing Yookassa SDK...');
-        $this->info('Running: composer require yoomoney/yookassa-sdk-php');
+        // Step 1: Check/Install Yookassa SDK
+        $this->info('Step 1: Checking Yookassa SDK...');
 
-        try {
-            $process = proc_open(
-                'composer require yoomoney/yookassa-sdk-php --no-interaction',
-                [
-                    0 => ['pipe', 'r'],
-                    1 => ['pipe', 'w'],
-                    2 => ['pipe', 'w']
-                ],
-                $pipes,
-                base_path()
-            );
+        // Check if Yookassa SDK is already installed
+        if (class_exists('\YooKassa\Client')) {
+            $this->info('✓ Yookassa SDK is already installed');
+        } else {
+            $this->info('Installing Yookassa SDK via Composer...');
+            $this->info('Running: composer require yoomoney/yookassa-sdk-php');
 
-            if (is_resource($process)) {
-                fclose($pipes[0]);
-                $output = stream_get_contents($pipes[1]);
-                $errors = stream_get_contents($pipes[2]);
-                fclose($pipes[1]);
-                fclose($pipes[2]);
-                $returnCode = proc_close($process);
+            // Try to find composer executable
+            $composerPaths = [
+                base_path('composer.phar'),
+                '/usr/local/bin/composer',
+                '/usr/bin/composer',
+            ];
 
-                if ($returnCode !== 0) {
-                    $this->error('❌ Failed to install Yookassa SDK');
-                    $this->error($errors ?: $output);
-                    return self::FAILURE;
+            $composerCmd = null;
+            foreach ($composerPaths as $path) {
+                if (file_exists($path)) {
+                    $composerCmd = PHP_BINARY . ' ' . $path;
+                    break;
                 }
-
-                $this->info('✓ Yookassa SDK installed successfully');
-            } else {
-                $this->error('❌ Failed to run composer');
-                return self::FAILURE;
             }
-        } catch (\Exception $e) {
-            $this->error('❌ Error installing Yookassa SDK: ' . $e->getMessage());
-            return self::FAILURE;
+
+            // If composer not found in common paths, try 'composer' command
+            if (!$composerCmd) {
+                exec('which composer 2>/dev/null', $output, $returnVar);
+                if ($returnVar === 0 && !empty($output[0])) {
+                    $composerCmd = 'composer';
+                }
+            }
+
+            if (!$composerCmd) {
+                $this->warn('⚠ Composer not found. Please install Yookassa SDK manually:');
+                $this->warn('  composer require yoomoney/yookassa-sdk-php');
+                $this->newLine();
+            } else {
+                try {
+                    $process = proc_open(
+                        $composerCmd . ' require yoomoney/yookassa-sdk-php --no-interaction',
+                        [
+                            0 => ['pipe', 'r'],
+                            1 => ['pipe', 'w'],
+                            2 => ['pipe', 'w']
+                        ],
+                        $pipes,
+                        base_path()
+                    );
+
+                    if (is_resource($process)) {
+                        fclose($pipes[0]);
+                        $output = stream_get_contents($pipes[1]);
+                        $errors = stream_get_contents($pipes[2]);
+                        fclose($pipes[1]);
+                        fclose($pipes[2]);
+                        $returnCode = proc_close($process);
+
+                        if ($returnCode !== 0) {
+                            $this->warn('⚠ Failed to install Yookassa SDK automatically');
+                            $this->warn('Please install it manually: composer require yoomoney/yookassa-sdk-php');
+                            $this->newLine();
+                        } else {
+                            $this->info('✓ Yookassa SDK installed successfully');
+                        }
+                    } else {
+                        $this->warn('⚠ Failed to run composer');
+                        $this->warn('Please install Yookassa SDK manually: composer require yoomoney/yookassa-sdk-php');
+                        $this->newLine();
+                    }
+                } catch (\Exception $e) {
+                    $this->warn('⚠ Error installing Yookassa SDK: ' . $e->getMessage());
+                    $this->warn('Please install it manually: composer require yoomoney/yookassa-sdk-php');
+                    $this->newLine();
+                }
+            }
         }
         $this->newLine();
 
