@@ -141,18 +141,19 @@ class CommerceInstallCommand extends Command
 
             if ($returnVar !== 0) {
                 $this->warn('⚠ npm install encountered issues');
+                $this->warn('⚠ Skipping asset build due to npm install issues');
             } else {
                 $this->info('✓ npm dependencies installed');
-            }
 
-            $this->info('Building assets...');
-            exec("cd {$packagePath} && npm run build 2>&1", $output, $returnVar);
+                $this->info('Building assets...');
+                exec("cd {$packagePath} && npm run build 2>&1", $output, $returnVar);
 
-            if ($returnVar !== 0) {
-                $this->error('❌ Asset build failed');
-                return self::FAILURE;
+                if ($returnVar !== 0) {
+                    $this->warn('⚠ Asset build failed - you may need to build assets manually');
+                } else {
+                    $this->info('✓ Assets built successfully');
+                }
             }
-            $this->info('✓ Assets built successfully');
         } else {
             $this->warn('⚠ package.json not found, skipping asset build');
         }
