@@ -1,21 +1,23 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
-use HolartWeb\AxoraCMS\Http\Controllers\Auth\LoginController;
-use HolartWeb\AxoraCMS\Http\Controllers\Auth\ForgotPasswordController;
-use HolartWeb\AxoraCMS\Http\Controllers\DashboardController;
 use HolartWeb\AxoraCMS\Http\Controllers\AdministratorController;
-use HolartWeb\AxoraCMS\Http\Controllers\SettingsController;
-use HolartWeb\AxoraCMS\Http\Controllers\SearchController;
+use HolartWeb\AxoraCMS\Http\Controllers\Auth\ForgotPasswordController;
+use HolartWeb\AxoraCMS\Http\Controllers\Auth\LoginController;
 use HolartWeb\AxoraCMS\Http\Controllers\CatalogImportExportController;
-use HolartWeb\AxoraCMS\Http\Controllers\ProductImportExportController;
-use HolartWeb\AxoraCMS\Http\Controllers\LogsController;
-use HolartWeb\AxoraCMS\Http\Controllers\ModulesController;
-use HolartWeb\AxoraCMS\Http\Controllers\EnvironmentController;
-use HolartWeb\AxoraCMS\Http\Controllers\ImageUploadController;
+use HolartWeb\AxoraCMS\Http\Controllers\DashboardController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardMetricsController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardWidgetsController;
+use HolartWeb\AxoraCMS\Http\Controllers\EnvironmentController;
+use HolartWeb\AxoraCMS\Http\Controllers\ImageUploadController;
+use HolartWeb\AxoraCMS\Http\Controllers\LogsController;
+use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController;
+use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController;
+use HolartWeb\AxoraCMS\Http\Controllers\ModulesController;
+use HolartWeb\AxoraCMS\Http\Controllers\ProductImportExportController;
+use HolartWeb\AxoraCMS\Http\Controllers\SearchController;
+use HolartWeb\AxoraCMS\Http\Controllers\SettingsController;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,7 +42,6 @@ Route::middleware('guest:admin')->group(function () {
 Route::middleware(['admin.auth'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('axora-cms.dashboard');
     Route::post('logout', [LoginController::class, 'logout'])->name('axora-cms.logout');
-
 
     // API Routes
     Route::prefix('api')->group(function () {
@@ -133,6 +134,7 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::get('products/import-progress/{importId}', [ProductImportExportController::class, 'checkProgress']);
             Route::post('products/bulk-delete', [$productController, 'bulkDestroy']);
             Route::get('products/search', [$productController, 'search']);
+            Route::get('products/stock-meta', [$productController, 'stockMeta']);
             Route::post('products/{id}/deactivate', [$productController, 'deactivate']);
             Route::post('products/{id}/variants/from-product', [$productController, 'createVariantFromProduct']);
 
@@ -263,10 +265,9 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::delete('infoblocks/{infoBlockId}/elements/{id}', [$infoBlockElementsController, 'destroy']);
         }
 
-
         if (class_exists('\HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController') && class_exists('\HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController')) {
-            $menusController = \HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController::class;
-            $menuItemsController = \HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController::class;
+            $menusController = MenusController::class;
+            $menuItemsController = MenuItemsController::class;
 
             // Menus routes
             Route::get('menus', [$menusController, 'index']);
@@ -287,8 +288,6 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('menu-items/reorder', [$menuItemsController, 'reorder']);
             Route::post('menu-items/{id}/toggle-active', [$menuItemsController, 'toggleActive']);
         }
-
-
 
         // Filter routes (only if shop module is installed)
         if (class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TFilter')) {

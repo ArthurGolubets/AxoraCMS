@@ -164,6 +164,7 @@
         :key="'cat-' + child.id"
         :catalog="child"
         :level="level + 1"
+        :commerceml-installed="commercemlInstalled"
         @create-subcategory="$emit('create-subcategory', $event)"
         @create-product="$emit('create-product', $event)"
         @edit="$emit('edit', $event)"
@@ -228,6 +229,14 @@
           <div class="flex items-center gap-3 mt-1 text-xs">
             <span class="font-mono text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ product.sku }}</span>
             <span class="font-bold text-green-700 dark:text-green-400">{{ product.price }} ₽</span>
+            <span
+              v-if="commercemlInstalled"
+              class="inline-flex items-center px-2 py-0.5 rounded-full font-semibold"
+              :class="stockBadgeClass(product.quantity)"
+              title="Остаток"
+            >
+              Остаток: {{ product.quantity ?? 0 }}
+            </span>
           </div>
         </div>
 
@@ -286,8 +295,19 @@ const props = defineProps({
   level: {
     type: Number,
     default: 0
+  },
+  commercemlInstalled: {
+    type: Boolean,
+    default: false
   }
 });
+
+const stockBadgeClass = (quantity) => {
+  const q = Number(quantity) || 0;
+  if (q <= 0) return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+  if (q <= 5) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+  return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+};
 
 defineEmits([
   'create-subcategory',

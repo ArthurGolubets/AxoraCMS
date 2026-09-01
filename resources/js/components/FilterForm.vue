@@ -261,7 +261,7 @@ const form = ref({
 
 const loadCatalogs = async () => {
   try {
-    const response = await fetch('/admin/api/catalog/list', {
+    const response = await fetch('/admin/api/catalogs/list', {
       headers: { 'Accept': 'application/json' },
     });
 

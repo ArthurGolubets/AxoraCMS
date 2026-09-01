@@ -46,6 +46,7 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Категория</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Цена</th>
+            <th v-if="stockMeta.commerceml_installed" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Остаток</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Статус</th>
             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Действия</th>
           </tr>
@@ -78,6 +79,11 @@
             <td class="px-6 py-4">
               <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ product.price }} ₽</div>
               <div v-if="product.old_price" class="text-xs text-gray-500 line-through">{{ product.old_price }} ₽</div>
+            </td>
+            <td v-if="stockMeta.commerceml_installed" class="px-6 py-4">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold" :class="stockBadgeClass(product.quantity)">
+                {{ product.quantity ?? 0 }}
+              </span>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
               <button
@@ -139,6 +145,25 @@ const { themeColor } = useTheme();
 const loading = ref(false);
 const products = ref({ data: [] });
 const categories = ref([]);
+const stockMeta = ref({ commerceml_installed: false, can_edit_stock: false });
+
+const loadStockMeta = async () => {
+  try {
+    const response = await fetch('/admin/api/products/stock-meta');
+    if (response.ok) {
+      stockMeta.value = await response.json();
+    }
+  } catch (err) {
+    stockMeta.value = { commerceml_installed: false, can_edit_stock: false };
+  }
+};
+
+const stockBadgeClass = (quantity) => {
+  const q = Number(quantity) || 0;
+  if (q <= 0) return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+  if (q <= 5) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+  return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+};
 const filters = ref({
   search: '',
   catalog_id: null,
@@ -297,5 +322,6 @@ const closeImportModal = () => {
 onMounted(() => {
   loadProducts();
   loadCategories();
+  loadStockMeta();
 });
 </script>

@@ -51,6 +51,18 @@ class ProductController extends Controller
     }
 
     /**
+     * Lightweight flags for the stock/CommerceML integration, used to decide
+     * whether to show the "Остаток" column / badge in product lists and the tree.
+     */
+    public function stockMeta(): JsonResponse
+    {
+        return response()->json([
+            'commerceml_installed' => $this->hasStockIntegration(),
+            'can_edit_stock' => $this->stockEditingEnabled(),
+        ]);
+    }
+
+    /**
      * Get all products with filters
      */
     public function index(Request $request): JsonResponse

@@ -64,6 +64,7 @@
           :key="catalog.id"
           :catalog="catalog"
           :level="0"
+          :commerceml-installed="stockMeta.commerceml_installed"
           @create-subcategory="handleCreateSubcategory"
           @create-product="handleCreateProduct"
           @view="handleViewCatalog"
@@ -130,6 +131,18 @@ const catalogs = ref([]);
 const loading = ref(false);
 const search = ref('');
 const viewMode = ref('tree');
+const stockMeta = ref({ commerceml_installed: false, can_edit_stock: false });
+
+const loadStockMeta = async () => {
+  try {
+    const response = await fetch('/admin/api/products/stock-meta');
+    if (response.ok) {
+      stockMeta.value = await response.json();
+    }
+  } catch (err) {
+    stockMeta.value = { commerceml_installed: false, can_edit_stock: false };
+  }
+};
 
 watch(viewMode, () => {
   loadTree();
@@ -387,5 +400,6 @@ const handleDeleteProduct = async (product) => {
 
 onMounted(() => {
   loadTree();
+  loadStockMeta();
 });
 </script>
