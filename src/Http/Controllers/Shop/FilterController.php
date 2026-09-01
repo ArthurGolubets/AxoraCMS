@@ -5,8 +5,8 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 use HolartWeb\AxoraCMS\Models\Shop\TFilter;
 use HolartWeb\AxoraCMS\Models\Shop\TFilterValue;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class FilterController extends Controller
@@ -29,9 +29,9 @@ class FilterController extends Controller
 
         // Search
         if ($search = $request->get('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -55,9 +55,9 @@ class FilterController extends Controller
      */
     public function forCatalog($catalogId): JsonResponse
     {
-        $filters = TFilter::with(['values' => function($query) {
-                $query->where('is_active', true)->orderBy('sort');
-            }])
+        $filters = TFilter::with(['values' => function ($query) {
+            $query->where('is_active', true)->orderBy('sort');
+        }])
             ->forCatalog($catalogId)
             ->active()
             ->orderBy('sort')
@@ -95,7 +95,7 @@ class FilterController extends Controller
             'values.*.code' => 'nullable|string',
             'values.*.sort' => 'nullable|integer',
             'values.*.is_active' => 'boolean',
-            'settings' => 'nullable|array'
+            'settings' => 'nullable|array',
         ]);
 
         // Generate code if not provided
@@ -119,7 +119,7 @@ class FilterController extends Controller
         // Log activity
         $filterType = $filter->catalog_id ? 'категорийный' : 'глобальный';
         TAdminAction::log('created', 'filter', $filter->id,
-            'Создан ' . $filterType . ' фильтр "' . $filter->name . '"');
+            'Создан '.$filterType.' фильтр "'.$filter->name.'"');
 
         return response()->json($filter->load('values'), 201);
     }
@@ -133,27 +133,61 @@ class FilterController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:t_filters,code,' . $id,
+            'code' => 'nullable|string|unique:t_filters,code,'.$id,
             'type' => 'required|in:select,checkbox,range,entity,string',
             'catalog_id' => 'nullable|exists:t_catalogs,id',
             'sort' => 'nullable|integer',
             'is_active' => 'boolean',
             'description' => 'nullable|string',
             'values' => 'nullable|array',
-            'settings' => 'nullable|array'
+            'values.*.id' => 'nullable|integer',
+            'values.*.value' => 'required_unless:type,range,entity,string|string',
+            'values.*.code' => 'nullable|string',
+            'values.*.sort' => 'nullable|integer',
+            'values.*.is_active' => 'boolean',
+            'settings' => 'nullable|array',
         ]);
 
-        // Handle values update if provided
-        if (isset($validated['values'])) {
-            $values = $validated['values'];
+        // Handle values update if provided.
+        //
+        // We must NOT wipe and recreate every value: product ↔ value assignments
+        // in t_product_filter_values reference t_filter_values.id, so recreating
+        // values with fresh IDs would drop the filter from every product that used
+        // it. Instead we update existing values in place (keeping their IDs),
+        // create only the new ones, and delete only the values that were actually
+        // removed. The FK cascade then clears assignments for removed values only.
+        if (array_key_exists('values', $validated)) {
+            $values = $validated['values'] ?? [];
             unset($validated['values']);
 
-            // Sync values (delete old, create new) - skip for range type
-            $filter->values()->delete();
-            if ($filter->type !== 'range' && $filter->type !== 'entity' && $filter->type !== 'string') {
+            $valuelessType = in_array($filter->type, ['range', 'entity', 'string'], true);
+
+            if ($valuelessType) {
+                $filter->values()->delete();
+            } else {
+                $keepIds = [];
+
                 foreach ($values as $valueData) {
-                    $filter->values()->create($valueData);
+                    $payload = [
+                        'value' => $valueData['value'] ?? '',
+                        'code' => $valueData['code'] ?? null,
+                        'sort' => $valueData['sort'] ?? 0,
+                        'is_active' => $valueData['is_active'] ?? true,
+                    ];
+
+                    $existing = ! empty($valueData['id'])
+                        ? $filter->values()->whereKey($valueData['id'])->first()
+                        : null;
+
+                    if ($existing) {
+                        $existing->update($payload);
+                        $keepIds[] = $existing->id;
+                    } else {
+                        $keepIds[] = $filter->values()->create($payload)->id;
+                    }
                 }
+
+                $filter->values()->whereNotIn('id', $keepIds)->delete();
             }
         }
 
@@ -163,10 +197,10 @@ class FilterController extends Controller
         // Log activity
         $filterType = $filter->catalog_id ? 'категорийный' : 'глобальный';
         TAdminAction::log('updated', 'filter', $filter->id,
-            'Обновлен ' . $filterType . ' фильтр "' . $filter->name . '"', [
-            'old' => $oldData,
-            'new' => $filter->getAttributes()
-        ]);
+            'Обновлен '.$filterType.' фильтр "'.$filter->name.'"', [
+                'old' => $oldData,
+                'new' => $filter->getAttributes(),
+            ]);
 
         return response()->json($filter->load('values'));
     }
@@ -184,7 +218,7 @@ class FilterController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'filter', $id,
-            'Удален ' . $filterType . ' фильтр "' . $filterName . '"');
+            'Удален '.$filterType.' фильтр "'.$filterName.'"');
 
         return response()->json(['message' => 'Фильтр удален']);
     }
@@ -207,7 +241,7 @@ class FilterController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'filter_value', $filterValue->id,
-            'Добавлено значение "' . $filterValue->value . '" в фильтр "' . $filter->name . '"');
+            'Добавлено значение "'.$filterValue->value.'" в фильтр "'.$filter->name.'"');
 
         return response()->json($filterValue, 201);
     }
@@ -234,10 +268,10 @@ class FilterController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'filter_value', $filterValue->id,
-            'Обновлено значение фильтра "' . $filter->name . '"', [
-            'old' => $oldData,
-            'new' => $filterValue->getAttributes()
-        ]);
+            'Обновлено значение фильтра "'.$filter->name.'"', [
+                'old' => $oldData,
+                'new' => $filterValue->getAttributes(),
+            ]);
 
         return response()->json($filterValue);
     }
@@ -257,7 +291,7 @@ class FilterController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'filter_value', $valueId,
-            'Удалено значение "' . $valueName . '" из фильтра "' . $filter->name . '"');
+            'Удалено значение "'.$valueName.'" из фильтра "'.$filter->name.'"');
 
         return response()->json(['message' => 'Значение удалено']);
     }
@@ -269,7 +303,7 @@ class FilterController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
-            'exclude_id' => 'nullable|integer'
+            'exclude_id' => 'nullable|integer',
         ]);
 
         $code = TFilter::generateCode(

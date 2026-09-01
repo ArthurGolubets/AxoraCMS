@@ -2,14 +2,34 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\InfoBlocks;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockField;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 
 class InfoBlockFieldsController extends Controller
 {
+    /**
+     * Validation rules shared by store() and update().
+     *
+     * The list of allowed field types is derived from the model so new types
+     * (e.g. button, table) only have to be registered in one place.
+     */
+    protected function fieldRules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|regex:/^[a-z0-9_]+$/',
+            'type' => ['required', Rule::in(array_keys(TInfoBlockField::getAvailableTypes()))],
+            'sort' => 'nullable|integer',
+            'is_required' => 'boolean',
+            'is_multiple' => 'boolean',
+            'settings' => 'nullable|array',
+        ];
+    }
+
     /**
      * Get all fields for info block
      */
@@ -39,20 +59,12 @@ class InfoBlockFieldsController extends Controller
     {
         $infoBlock = TInfoBlock::findOrFail($infoBlockId);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|regex:/^[a-z0-9_]+$/',
-            'type' => 'required|in:string,text,number,double,bool,date,datetime,image,file,entity,user,enum',
-            'sort' => 'nullable|integer',
-            'is_required' => 'boolean',
-            'is_multiple' => 'boolean',
-            'settings' => 'nullable|array',
-        ]);
+        $validated = $request->validate($this->fieldRules());
 
         // Check if code already exists for this info block
         if (TInfoBlockField::where('info_block_id', $infoBlockId)->where('code', $validated['code'])->exists()) {
             return response()->json([
-                'message' => 'Поле с таким кодом уже существует'
+                'message' => 'Поле с таким кодом уже существует',
             ], 422);
         }
 
@@ -60,7 +72,7 @@ class InfoBlockFieldsController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'info_block_field', $field->id,
-            'Создано поле "' . $field->name . '" для инфоблока: ' . $infoBlock->name);
+            'Создано поле "'.$field->name.'" для инфоблока: '.$infoBlock->name);
 
         return response()->json($field, 201);
     }
@@ -73,15 +85,7 @@ class InfoBlockFieldsController extends Controller
         $infoBlock = TInfoBlock::findOrFail($infoBlockId);
         $field = TInfoBlockField::where('info_block_id', $infoBlockId)->findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|regex:/^[a-z0-9_]+$/',
-            'type' => 'required|in:string,text,number,double,bool,date,datetime,image,file,entity,user,enum',
-            'sort' => 'nullable|integer',
-            'is_required' => 'boolean',
-            'is_multiple' => 'boolean',
-            'settings' => 'nullable|array',
-        ]);
+        $validated = $request->validate($this->fieldRules());
 
         // Check if code already exists for this info block (exclude current field)
         if (TInfoBlockField::where('info_block_id', $infoBlockId)
@@ -89,7 +93,7 @@ class InfoBlockFieldsController extends Controller
             ->where('id', '!=', $id)
             ->exists()) {
             return response()->json([
-                'message' => 'Поле с таким кодом уже существует'
+                'message' => 'Поле с таким кодом уже существует',
             ], 422);
         }
 
@@ -98,10 +102,10 @@ class InfoBlockFieldsController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'info_block_field', $field->id,
-            'Обновлено поле "' . $field->name . '" для инфоблока: ' . $infoBlock->name, [
-            'old' => $oldData,
-            'new' => $field->getAttributes()
-        ]);
+            'Обновлено поле "'.$field->name.'" для инфоблока: '.$infoBlock->name, [
+                'old' => $oldData,
+                'new' => $field->getAttributes(),
+            ]);
 
         return response()->json($field);
     }
@@ -119,7 +123,7 @@ class InfoBlockFieldsController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'info_block_field', $id,
-            'Удалено поле "' . $fieldName . '" из инфоблока: ' . $infoBlock->name);
+            'Удалено поле "'.$fieldName.'" из инфоблока: '.$infoBlock->name);
 
         return response()->json(['message' => 'Поле удалено']);
     }

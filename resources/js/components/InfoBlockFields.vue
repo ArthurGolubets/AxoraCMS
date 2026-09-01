@@ -149,6 +149,26 @@
               </select>
             </div>
           </div>
+          <div v-if="fieldForm.type === 'table'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Размер таблицы
+            </label>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Строк</label>
+                <input v-model.number="fieldForm.settings.rows" type="number" min="1" max="20" placeholder="3"
+                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Колонок</label>
+                <input v-model.number="fieldForm.settings.cols" type="number" min="1" max="20" placeholder="3"
+                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              По умолчанию: 3x3 (если не указано)
+            </p>
+          </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сортировка</label>
             <input v-model.number="fieldForm.sort" type="number" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
@@ -216,7 +236,9 @@ const fieldTypes = [
   { value: 'file', label: 'Файл' },
   { value: 'entity', label: 'Привязка к сущности' },
   { value: 'user', label: 'Пользователь' },
-  { value: 'enum', label: 'Список' }
+  { value: 'enum', label: 'Список' },
+  { value: 'button', label: 'Кнопка' },
+  { value: 'table', label: 'Таблица' }
 ];
 
 const getFieldTypeLabel = (type) => {

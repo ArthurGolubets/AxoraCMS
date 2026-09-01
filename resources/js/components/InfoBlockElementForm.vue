@@ -217,6 +217,20 @@
                 </option>
               </select>
 
+              <InfoBlockButtonField
+                  v-else-if="field.type === 'button'"
+                  v-model="form.properties[field.code]"
+                  :required="field.is_required"
+              />
+
+              <InfoBlockTableField
+                  v-else-if="field.type === 'table'"
+                  v-model="form.properties[field.code]"
+                  :required="field.is_required"
+                  :rows="field.settings?.rows"
+                  :cols="field.settings?.cols"
+              />
+
               <input
                   v-else
                   v-model="form.properties[field.code]"
@@ -270,6 +284,8 @@ import InfoBlockFileUpload from './InfoBlockFileUpload.vue';
 import InfoBlockEntitySelect from './InfoBlockEntitySelect.vue';
 import InfoBlockUserSelect from './InfoBlockUserSelect.vue';
 import InfoBlockMultipleField from './InfoBlockMultipleField.vue';
+import InfoBlockButtonField from './InfoBlockButtonField.vue';
+import InfoBlockTableField from './InfoBlockTableField.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -356,6 +372,10 @@ const loadFields = async () => {
             form.value.properties[field.code] = [];
           } else if (field.type === 'bool') {
             form.value.properties[field.code] = false;
+          } else if (field.type === 'button') {
+            form.value.properties[field.code] = { text: '', url: '' };
+          } else if (field.type === 'table') {
+            form.value.properties[field.code] = [];
           } else {
             form.value.properties[field.code] = '';
           }

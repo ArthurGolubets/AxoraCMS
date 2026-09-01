@@ -51,6 +51,8 @@ class TInfoBlockField extends Model
             'entity' => 'Привязка к элементу',
             'user' => 'Привязка к пользователю',
             'enum' => 'Список',
+            'button' => 'Кнопка',
+            'table' => 'Таблица',
         ];
     }
 
@@ -81,7 +83,20 @@ class TInfoBlockField extends Model
                 }
                 $options = $this->settings['options'] ?? [];
                 $codes = array_column($options, 'code');
+
                 return in_array($value, $codes);
+            case 'button':
+                if ($value === '' || $value === null) {
+                    return true;
+                }
+
+                return is_array($value) && isset($value['text'], $value['url']);
+            case 'table':
+                if ($value === '' || $value === null) {
+                    return true;
+                }
+
+                return is_array($value);
             default:
                 return true;
         }
@@ -113,6 +128,7 @@ class TInfoBlockField extends Model
                 return $value;
         }
     }
+
     public function getEnumTitle($code): ?string
     {
         $options = $this->settings['options'] ?? [];
@@ -121,7 +137,7 @@ class TInfoBlockField extends Model
                 return $option['title'];
             }
         }
+
         return null;
     }
-
 }

@@ -186,6 +186,7 @@
 
       <div class="flex justify-end space-x-3">
         <button type="button" @click="$router.back()" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium">Отмена</button>
+        <button type="button" @click="handleSubmit(true)" :disabled="loading" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium disabled:opacity-50">{{ loading ? 'Сохранение...' : 'Сохранить и продолжить' }}</button>
         <button type="submit" :disabled="loading" :style="buttonStyle" class="px-6 py-3 text-white rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50">{{ loading ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Создать') }}</button>
       </div>
     </form>
@@ -246,6 +247,15 @@
                 <ToggleSwitch v-model="deactivateSourceProduct" />
               </div>
 
+              <!-- Duplicate variant toggle -->
+              <div v-if="selectedProduct" class="mb-4 flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Создать дубль вариант
+                  <span class="block text-xs font-normal text-gray-500 dark:text-gray-400">В выбранном товаре тоже создать вариант на основе текущего товара</span>
+                </span>
+                <ToggleSwitch v-model="createDuplicateVariant" />
+              </div>
+
               <!-- Actions -->
               <div class="flex space-x-3">
                 <button @click="showProductSelectModal = false" type="button" class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition">Отмена</button>
@@ -279,6 +289,10 @@ const router = useRouter();
 
 const loading = ref(false);
 const isEdit = computed(() => !!route.params.id);
+// Numeric id of the product currently being edited (null in create mode)
+const currentProductId = computed(() =>
+  route.params.id ? String(route.params.id).replace(/\/edit$/, '') : null
+);
 const categories = ref([]);
 const categorySearch = ref('');
 const filteredCategories = ref([]);
@@ -290,6 +304,7 @@ const productSearchQuery = ref('');
 const searchedProducts = ref([]);
 const selectedProduct = ref(null);
 const deactivateSourceProduct = ref(true);
+const createDuplicateVariant = ref(true);
 const searchTimeout = ref(null);
 
 const tabs = [
@@ -395,7 +410,12 @@ const searchProducts = () => {
     }
 
     try {
-      const response = await fetch(`/admin/api/products/search?q=${encodeURIComponent(productSearchQuery.value)}`);
+      let searchUrl = `/admin/api/products/search?q=${encodeURIComponent(productSearchQuery.value)}`;
+      // Never offer the product being edited as a source for its own variant
+      if (currentProductId.value) {
+        searchUrl += `&exclude_id=${currentProductId.value}`;
+      }
+      const response = await fetch(searchUrl);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
       searchedProducts.value = data.products || [];
@@ -408,6 +428,12 @@ const searchProducts = () => {
 
 const createVariantFromProduct = async () => {
   if (!selectedProduct.value) return;
+
+  // A product cannot be a variant of itself
+  if (currentProductId.value && String(selectedProduct.value.id) === String(currentProductId.value)) {
+    await error('Нельзя сделать товар вариантом самого себя');
+    return;
+  }
 
   try {
     // Create variant from selected product
@@ -425,6 +451,8 @@ const createVariantFromProduct = async () => {
 
     form.value.variants.push(newVariant);
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
     // Deactivate source product if toggle is on
     if (deactivateSourceProduct.value) {
       try {
@@ -432,7 +460,7 @@ const createVariantFromProduct = async () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRF-TOKEN': csrfToken
           }
         });
 
@@ -444,7 +472,32 @@ const createVariantFromProduct = async () => {
       }
     }
 
-    success('Вариант успешно создан');
+    // Create the mirrored variant: the current product becomes a variant of the
+    // selected product too.
+    let duplicateWarning = false;
+    if (createDuplicateVariant.value) {
+      if (isEdit.value && currentProductId.value) {
+        try {
+          const dupResponse = await fetch(`/admin/api/products/${selectedProduct.value.id}/variants/from-product`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ based_on_product_id: Number(currentProductId.value) })
+          });
+
+          if (!dupResponse.ok) {
+            console.warn('Failed to create duplicate variant');
+          }
+        } catch (dupErr) {
+          console.error('Error creating duplicate variant:', dupErr);
+        }
+      } else {
+        duplicateWarning = true;
+      }
+    }
 
     // Reset modal state
     showProductSelectModal.value = false;
@@ -452,6 +505,13 @@ const createVariantFromProduct = async () => {
     searchedProducts.value = [];
     selectedProduct.value = null;
     deactivateSourceProduct.value = true;
+    createDuplicateVariant.value = true;
+
+    if (duplicateWarning) {
+      await success('Вариант добавлен. Дубль-вариант не создан: сначала сохраните текущий товар, затем добавьте вариант повторно.');
+    } else {
+      await success('Вариант успешно создан');
+    }
   } catch (err) {
     console.error('Error creating variant:', err);
     error('Ошибка создания варианта');
@@ -631,13 +691,17 @@ const loadProduct = async () => {
   }
 };
 
-const handleSubmit = async () => {
+const handleSubmit = async (stayParam) => {
+  // stayParam is `true` only when triggered by "Сохранить и продолжить";
+  // the native form submit passes an Event object instead.
+  const stay = stayParam === true;
+
   loading.value = true;
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     // Extract just the numeric ID from route params
-    const productId = route.params.id ? String(route.params.id).replace(/\/edit$/, '') : null;
+    const productId = currentProductId.value;
 
     console.log('=== SUBMITTING PRODUCT ===');
     console.log('route.params.id raw:', route.params.id);
@@ -672,6 +736,20 @@ const handleSubmit = async () => {
       throw new Error(data.message || 'Failed to save product');
     }
 
+    const saved = await response.json().catch(() => null);
+
+    if (stay) {
+      await success(isEdit.value ? 'Товар сохранён' : 'Товар создан');
+
+      if (!isEdit.value && saved && saved.id) {
+        // Switch the form into edit mode for the freshly created product
+        await router.replace(`/products/${saved.id}/edit`);
+      } else {
+        await loadProduct();
+      }
+      return;
+    }
+
     await success(isEdit.value ? 'Товар обновлен' : 'Товар создан');
     router.push('/catalog');
   } catch (err) {
@@ -681,6 +759,14 @@ const handleSubmit = async () => {
     loading.value = false;
   }
 };
+
+// Reload when the route id changes (e.g. after "Сохранить и продолжить" on a new
+// product switches the form from create mode to edit mode without a remount).
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    await loadProduct();
+  }
+});
 
 onMounted(async () => {
   await loadCategories();

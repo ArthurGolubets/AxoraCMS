@@ -12,6 +12,60 @@
 
     <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <form @submit.prevent="saveSettings">
+        <!-- Send mode -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Режим отправки
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-start gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                   :class="{ 'border-blue-500 ring-1 ring-blue-500': settings.send_mode === 'default' }">
+              <input type="radio" value="default" v-model="settings.send_mode" class="mt-1 w-4 h-4 text-blue-600" />
+              <span>
+                <span class="block text-sm font-medium text-gray-900 dark:text-white">Отправка по умолчанию</span>
+                <span class="block text-sm text-gray-500 dark:text-gray-400">Сообщения уходят напрямую через стандартный API Telegram</span>
+              </span>
+            </label>
+            <label class="flex items-start gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                   :class="{ 'border-blue-500 ring-1 ring-blue-500': settings.send_mode === 'external' }">
+              <input type="radio" value="external" v-model="settings.send_mode" class="mt-1 w-4 h-4 text-blue-600" />
+              <span>
+                <span class="block text-sm font-medium text-gray-900 dark:text-white">Отправка через внешний адрес</span>
+                <span class="block text-sm text-gray-500 dark:text-gray-400">Запрос уходит на указанный внешний сервис, который сам обращается к Telegram</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- External service settings -->
+        <div v-if="settings.send_mode === 'external'" class="mb-6 p-4 bg-gray-50 dark:bg-gray-900/40 rounded-lg space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Адрес внешнего сервиса <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="settings.external_url"
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="https://notify.holart-dev.store/api/telegram/sendMessage"
+            />
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Полный URL эндпоинта. На него будет отправляться POST-запрос с полями token, chat, message
+            </p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Защитный токен
+            </label>
+            <input
+              v-model="settings.external_token"
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Bearer-токен для авторизации на внешнем сервисе"
+            />
+          </div>
+        </div>
+
         <!-- Bot Token -->
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -98,7 +152,10 @@ const loading = ref(false);
 const saving = ref(false);
 const settings = ref({
   bot_token: '',
-  chat_ids: ['']
+  chat_ids: [''],
+  send_mode: 'default',
+  external_url: '',
+  external_token: ''
 });
 
 const loadSettings = async () => {
@@ -109,7 +166,10 @@ const loadSettings = async () => {
 
     settings.value = {
       bot_token: data.bot_token || '',
-      chat_ids: data.chat_ids && data.chat_ids.length > 0 ? data.chat_ids : ['']
+      chat_ids: data.chat_ids && data.chat_ids.length > 0 ? data.chat_ids : [''],
+      send_mode: data.send_mode || 'default',
+      external_url: data.external_url || '',
+      external_token: data.external_token || ''
     };
   } catch (err) {
     console.error('Error loading settings:', err);
@@ -128,6 +188,11 @@ const saveSettings = async () => {
     return;
   }
 
+  if (settings.value.send_mode === 'external' && !settings.value.external_url.trim()) {
+    await error('Укажите адрес внешнего сервиса');
+    return;
+  }
+
   saving.value = true;
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -139,7 +204,10 @@ const saveSettings = async () => {
       },
       body: JSON.stringify({
         bot_token: settings.value.bot_token,
-        chat_ids: chatIds
+        chat_ids: chatIds,
+        send_mode: settings.value.send_mode,
+        external_url: settings.value.external_url,
+        external_token: settings.value.external_token
       })
     });
 

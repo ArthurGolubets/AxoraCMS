@@ -134,6 +134,7 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('products/bulk-delete', [$productController, 'bulkDestroy']);
             Route::get('products/search', [$productController, 'search']);
             Route::post('products/{id}/deactivate', [$productController, 'deactivate']);
+            Route::post('products/{id}/variants/from-product', [$productController, 'createVariantFromProduct']);
 
             // Catalog generic routes
             Route::get('catalogs', [$catalogController, 'index']);

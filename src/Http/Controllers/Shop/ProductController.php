@@ -3,10 +3,9 @@
 namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
-use HolartWeb\AxoraCMS\Models\Shop\TProductVariant;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class ProductController extends Controller
@@ -20,7 +19,7 @@ class ProductController extends Controller
 
         // Search
         if ($search = $request->get('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
@@ -83,8 +82,9 @@ class ProductController extends Controller
         // Get available properties for this product's catalog
         $availableProperties = [];
         if ($product->catalog && method_exists($product->catalog, 'getAllProperties')) {
-            $availableProperties = $product->catalog->getAllProperties()->map(function($prop) use ($product) {
+            $availableProperties = $product->catalog->getAllProperties()->map(function ($prop) use ($product) {
                 $prop->is_inherited = $prop->catalog_id !== $product->catalog_id;
+
                 return $prop;
             });
         }
@@ -92,14 +92,14 @@ class ProductController extends Controller
         // Get property values - format for Vue: {property_id: value}
         $propertyValuesFormatted = [];
 
-        \Log::info('Product propertyValues count: ' . $product->propertyValues->count());
+        \Log::info('Product propertyValues count: '.$product->propertyValues->count());
 
         foreach ($product->propertyValues as $pv) {
             \Log::info('PropertyValue:', [
                 'id' => $pv->id,
                 'product_id' => $pv->product_id,
                 'property_id' => $pv->property_id,
-                'value' => $pv->value
+                'value' => $pv->value,
             ]);
 
             $value = $pv->value;
@@ -207,7 +207,7 @@ class ProductController extends Controller
             $variant = $product->variants()->create($variantData);
 
             // Save variant property values if provided
-            if (!empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
+            if (! empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
                 foreach ($variantPropertyValues as $propertyId => $value) {
                     // Skip null, empty string, or empty arrays
                     if ($value === null || $value === '' || (is_array($value) && empty($value))) {
@@ -216,7 +216,7 @@ class ProductController extends Controller
 
                     // For arrays, filter out empty values and encode
                     if (is_array($value)) {
-                        $value = array_values(array_filter($value, function($v) {
+                        $value = array_values(array_filter($value, function ($v) {
                             return $v !== null && $v !== '';
                         }));
 
@@ -237,39 +237,41 @@ class ProductController extends Controller
         }
 
         // Sync filter values if provided
-        if (!empty($filterValues) && method_exists($product, 'syncFilterValues')) {
+        if (! empty($filterValues) && method_exists($product, 'syncFilterValues')) {
             $product->syncFilterValues($filterValues);
         }
 
         // Save property values if provided
-        if (!empty($propertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
+        if (! empty($propertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
             \Log::info('Saving property values for product', [
                 'product_id' => $product->id,
-                'property_values' => $propertyValues
+                'property_values' => $propertyValues,
             ]);
 
             foreach ($propertyValues as $propertyId => $value) {
                 \Log::info('Processing property', [
                     'property_id' => $propertyId,
                     'value' => $value,
-                    'is_array' => is_array($value)
+                    'is_array' => is_array($value),
                 ]);
 
                 // Skip null, empty string, or empty arrays
                 if ($value === null || $value === '' || (is_array($value) && empty($value))) {
                     \Log::info('Skipping empty value for property', ['property_id' => $propertyId]);
+
                     continue;
                 }
 
                 // For arrays, filter out empty values and encode
                 if (is_array($value)) {
-                    $value = array_values(array_filter($value, function($v) {
+                    $value = array_values(array_filter($value, function ($v) {
                         return $v !== null && $v !== '';
                     }));
 
                     // Skip if array is empty after filtering
                     if (empty($value)) {
                         \Log::info('Skipping empty array after filtering for property', ['property_id' => $propertyId]);
+
                         continue;
                     }
 
@@ -279,7 +281,7 @@ class ProductController extends Controller
 
                 \Log::info('Creating property value', [
                     'property_id' => $propertyId,
-                    'final_value' => $value
+                    'final_value' => $value,
                 ]);
 
                 $product->propertyValues()->create([
@@ -291,7 +293,7 @@ class ProductController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'product', $product->id,
-            'Создан товар "' . $product->name . '" (SKU: ' . $product->sku . ')');
+            'Создан товар "'.$product->name.'" (SKU: '.$product->sku.')');
 
         return response()->json($product->load(['variants', 'propertyValues.property']), 201);
     }
@@ -306,13 +308,13 @@ class ProductController extends Controller
         $validated = $request->validate([
             'catalog_id' => 'required|exists:t_catalogs,id',
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:t_products,slug,' . $id,
+            'slug' => 'nullable|string|unique:t_products,slug,'.$id,
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'old_price' => 'nullable|numeric|min:0',
-            'sku' => 'required|string|unique:t_products,sku,' . $id,
+            'sku' => 'required|string|unique:t_products,sku,'.$id,
             'main_image' => 'nullable|string',
             'tags' => 'nullable|array',
             'is_new' => 'boolean',
@@ -361,10 +363,10 @@ class ProductController extends Controller
                 $variant = $product->variants()->create($variantData);
 
                 // Save variant property values if provided
-                if (!empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
+                if (! empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
                     \Log::info('Saving variant property values', [
                         'variant_id' => $variant->id,
-                        'property_values' => $variantPropertyValues
+                        'property_values' => $variantPropertyValues,
                     ]);
 
                     foreach ($variantPropertyValues as $propertyId => $value) {
@@ -375,7 +377,7 @@ class ProductController extends Controller
 
                         // For arrays, filter out empty values and encode
                         if (is_array($value)) {
-                            $value = array_values(array_filter($value, function($v) {
+                            $value = array_values(array_filter($value, function ($v) {
                                 return $v !== null && $v !== '';
                             }));
 
@@ -423,7 +425,7 @@ class ProductController extends Controller
 
                 // For arrays, filter out empty values and encode
                 if (is_array($value)) {
-                    $value = array_values(array_filter($value, function($v) {
+                    $value = array_values(array_filter($value, function ($v) {
                         return $v !== null && $v !== '';
                     }));
 
@@ -447,9 +449,9 @@ class ProductController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'product', $product->id,
-            'Обновлен товар "' . $product->name . '" (SKU: ' . $product->sku . ')', [
+            'Обновлен товар "'.$product->name.'" (SKU: '.$product->sku.')', [
                 'old' => $oldData,
-                'new' => $product->getAttributes()
+                'new' => $product->getAttributes(),
             ]);
 
         return response()->json($product->load(['variants', 'propertyValues.property']));
@@ -468,7 +470,7 @@ class ProductController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'product', $id,
-            'Удален товар "' . $productName . '" (SKU: ' . $productSku . ')');
+            'Удален товар "'.$productName.'" (SKU: '.$productSku.')');
 
         return response()->json(['message' => 'Товар удален']);
     }
@@ -488,7 +490,7 @@ class ProductController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'product', null,
-            'Массовое удаление товаров (количество: ' . $count . ')');
+            'Массовое удаление товаров (количество: '.$count.')');
 
         return response()->json(['message' => 'Товары удалены']);
     }
@@ -499,20 +501,22 @@ class ProductController extends Controller
     public function search(Request $request): JsonResponse
     {
         $query = $request->get('q', '');
+        $excludeId = $request->get('exclude_id');
 
         if (strlen($query) < 2) {
             return response()->json(['products' => []]);
         }
 
-        $products = TProduct::where(function($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                    ->orWhere('sku', 'like', "%{$query}%");
-            })
+        $products = TProduct::where(function ($q) use ($query) {
+            $q->where('name', 'like', "%{$query}%")
+                ->orWhere('sku', 'like', "%{$query}%");
+        })
             ->where('is_active', true)
+            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->with(['catalog'])
             ->limit(20)
             ->get()
-            ->map(function($product) {
+            ->map(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -531,6 +535,68 @@ class ProductController extends Controller
     }
 
     /**
+     * Create a variant on a product using another product as the source.
+     *
+     * Used by the "create duplicate variant" option: when product A adds
+     * product B as a variant, this endpoint mirrors the relation by adding
+     * product A as a variant of product B. Idempotent by generated SKU.
+     */
+    public function createVariantFromProduct(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'based_on_product_id' => 'required|exists:t_products,id',
+        ]);
+
+        $target = TProduct::findOrFail($id);
+        $source = TProduct::with('propertyValues')->findOrFail($validated['based_on_product_id']);
+
+        if ($target->id === $source->id) {
+            return response()->json(['message' => 'Нельзя создать вариант товара на основании его самого'], 422);
+        }
+
+        $variantSku = $source->sku.'-variant';
+
+        $existing = $target->variants()->where('sku', $variantSku)->first();
+        if ($existing) {
+            return response()->json([
+                'message' => 'Вариант уже существует',
+                'variant' => $existing,
+                'created' => false,
+            ]);
+        }
+
+        $variant = $target->variants()->create([
+            'name' => $source->name,
+            'sku' => $variantSku,
+            'price' => $source->price,
+            'old_price' => $source->old_price,
+            'attributes' => [],
+            'image' => $source->main_image ?: '',
+            'description' => $source->description ?: '',
+            'addition_info' => is_array($source->addition_info) ? $source->addition_info : [],
+        ]);
+
+        // Mirror the source product's property values onto the new variant
+        if (class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
+            foreach ($source->propertyValues as $propertyValue) {
+                $variant->propertyValues()->create([
+                    'property_id' => $propertyValue->property_id,
+                    'value' => $propertyValue->value,
+                ]);
+            }
+        }
+
+        TAdminAction::log('created', 'product_variant', $variant->id,
+            'Создан дубль-вариант "'.$variant->name.'" в товаре "'.$target->name.'" (SKU: '.$target->sku.')');
+
+        return response()->json([
+            'message' => 'Вариант создан',
+            'variant' => $variant->load('propertyValues'),
+            'created' => true,
+        ], 201);
+    }
+
+    /**
      * Deactivate product
      */
     public function deactivate($id): JsonResponse
@@ -540,7 +606,7 @@ class ProductController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'product', $product->id,
-            'Деактивирован товар "' . $product->name . '" (SKU: ' . $product->sku . ')');
+            'Деактивирован товар "'.$product->name.'" (SKU: '.$product->sku.')');
 
         return response()->json(['message' => 'Товар деактивирован']);
     }
