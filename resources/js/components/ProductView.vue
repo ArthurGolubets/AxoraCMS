@@ -94,6 +94,20 @@
       </div>
 
       <div class="space-y-6">
+        <div v-if="integration.commerceml_installed" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Интеграция и остатки</h3>
+          <div class="space-y-3">
+            <div>
+              <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Идентификатор 1С</h4>
+              <p class="text-sm text-gray-900 dark:text-white">{{ integration.onec_id || '—' }}</p>
+            </div>
+            <div>
+              <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Остаток</h4>
+              <p class="text-sm text-gray-900 dark:text-white">{{ integration.quantity ?? 0 }}</p>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">SEO</h3>
           <div class="space-y-3">
@@ -118,6 +132,12 @@ const { buttonStyle } = useTheme();
 const route = useRoute();
 const product = ref(null);
 const assignedFilters = ref([]);
+const integration = ref({
+  commerceml_installed: false,
+  can_edit_stock: false,
+  onec_id: null,
+  quantity: null
+});
 
 const getImageUrl = (imageString) => {
   if (!imageString) return '';
@@ -143,6 +163,9 @@ const loadProduct = async () => {
     const data = await response.json();
     product.value = data.product || data;
     assignedFilters.value = data.assigned_filters || [];
+    if (data.integration) {
+      integration.value = data.integration;
+    }
   } catch (err) {
     console.error('Error loading product:', err);
     await error('Ошибка при загрузке товара');

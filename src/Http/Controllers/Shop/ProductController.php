@@ -4,12 +4,52 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Models\TModule;
+use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
+    /**
+     * Whether the CommerceML stock integration is available.
+     */
+    protected function hasStockIntegration(): bool
+    {
+        return TModule::isInstalled('commerceml');
+    }
+
+    /**
+     * Whether admins are allowed to edit the stock (quantity) manually.
+     * Requires the integration to be present and the site setting to be enabled.
+     */
+    protected function stockEditingEnabled(): bool
+    {
+        return $this->hasStockIntegration()
+            && Schema::hasColumn('t_products', 'quantity')
+            && (bool) TPanelSettings::get('can_edit_product_stock', false);
+    }
+
+    /**
+     * Integration / stock block for a product, consumed by the
+     * "Интеграция и остатки" tab of the product form.
+     *
+     * @return array{commerceml_installed: bool, can_edit_stock: bool, onec_id: ?string, quantity: ?int}
+     */
+    protected function integrationPayload(TProduct $product): array
+    {
+        $installed = $this->hasStockIntegration();
+
+        return [
+            'commerceml_installed' => $installed,
+            'can_edit_stock' => $this->stockEditingEnabled(),
+            'onec_id' => $installed ? $product->getAttribute('1c_id') : null,
+            'quantity' => $installed ? (int) $product->getAttribute('quantity') : null,
+        ];
+    }
+
     /**
      * Get all products with filters
      */
@@ -122,6 +162,7 @@ class ProductController extends Controller
             'available_properties' => $availableProperties,
             'property_values' => $propertyValuesFormatted,
             'string_filter_values' => $product->string_filter_values ?? [],
+            'integration' => $this->integrationPayload($product),
         ];
 
         \Log::info('Full API response property_values:', $response['property_values']);
@@ -344,6 +385,15 @@ class ProductController extends Controller
             'string_filter_values' => 'nullable|array',
             'string_filter_values.*' => 'nullable|string',
         ]);
+
+        // Stock (quantity) is only writable when the CommerceML integration is
+        // installed and the "Можно редактировать остаток" site setting is on.
+        // The 1C identifier is never writable here — it is owned by the 1C sync.
+        if ($this->stockEditingEnabled() && $request->has('quantity')) {
+            $validated['quantity'] = $request->validate([
+                'quantity' => 'nullable|integer|min:0',
+            ])['quantity'] ?? 0;
+        }
 
         // Handle variants update
         if (isset($validated['variants'])) {

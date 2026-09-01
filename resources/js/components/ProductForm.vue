@@ -184,6 +184,48 @@
         </div>
       </div>
 
+      <!-- Integration & Stock Tab -->
+      <div v-show="activeTab === 'integration'" class="space-y-6">
+        <div v-if="integration.commerceml_installed" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Интеграция и остатки</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Идентификатор 1С (1c_id)</label>
+              <input
+                  :value="integration.onec_id || '—'"
+                  type="text"
+                  disabled
+                  class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              >
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Заполняется автоматически при обмене с 1С</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Остаток</label>
+              <input
+                  v-if="integration.can_edit_stock"
+                  v-model.number="form.quantity"
+                  type="number"
+                  min="0"
+                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
+              <input
+                  v-else
+                  :value="integration.quantity ?? 0"
+                  type="text"
+                  disabled
+                  class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
+              >
+              <p v-if="!integration.can_edit_stock" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Редактирование остатка отключено в настройках сайта
+              </p>
+            </div>
+          </div>
+        </div>
+        <div v-else class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <p class="text-gray-500 dark:text-gray-400">У вас не установлена интеграция с остатками</p>
+        </div>
+      </div>
+
       <div class="flex justify-end space-x-3">
         <button type="button" @click="$router.back()" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium">Отмена</button>
         <button type="button" @click="handleSubmit(true)" :disabled="loading" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium disabled:opacity-50">{{ loading ? 'Сохранение...' : 'Сохранить и продолжить' }}</button>
@@ -307,14 +349,28 @@ const deactivateSourceProduct = ref(true);
 const createDuplicateVariant = ref(true);
 const searchTimeout = ref(null);
 
-const tabs = [
-  { id: 'main', label: 'Основное' },
-  { id: 'seo', label: 'SEO' },
-  { id: 'variants', label: 'Варианты' },
-  { id: 'properties', label: 'Свойства и характеристики' },
-  { id: 'content', label: 'Контент' },
-  { id: 'filters', label: 'Фильтры' }
-];
+const tabs = computed(() => {
+  const list = [
+    { id: 'main', label: 'Основное' },
+    { id: 'seo', label: 'SEO' },
+    { id: 'variants', label: 'Варианты' },
+    { id: 'properties', label: 'Свойства и характеристики' },
+    { id: 'content', label: 'Контент' },
+    { id: 'filters', label: 'Фильтры' }
+  ];
+  if (isEdit.value) {
+    list.push({ id: 'integration', label: 'Интеграция и остатки' });
+  }
+  return list;
+});
+
+// Integration / stock info (filled from the product API on edit)
+const integration = ref({
+  commerceml_installed: false,
+  can_edit_stock: false,
+  onec_id: null,
+  quantity: null
+});
 
 const form = ref({
   catalog_id: null,
@@ -334,6 +390,7 @@ const form = ref({
   is_active: true,
   content: '',
   gallery: [],
+  quantity: null,
   variants: [],
   filter_values: [],
   range_filter_values: {},
@@ -685,6 +742,15 @@ const loadProduct = async () => {
       property_values: propertyValues,
       entity_filter_values: product.entity_filter_values || {},
       string_filter_values: product.string_filter_values || {},
+      quantity: data.integration?.quantity ?? null,
+    };
+
+    // Integration / stock block
+    integration.value = data.integration || {
+      commerceml_installed: false,
+      can_edit_stock: false,
+      onec_id: null,
+      quantity: null
     };
   } catch (err) {
     await error('Ошибка при загрузке товара');

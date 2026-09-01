@@ -117,6 +117,22 @@
         </div>
       </div>
 
+      <!-- Товары и остатки (только если установлена интеграция CommerceML) -->
+      <div v-if="hasCommerceMl" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Товары и остатки</h3>
+
+        <div class="flex items-start justify-between">
+          <div class="pr-4">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Можно редактировать остаток</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Если включено — поле «Остаток» на карточке товара доступно для ручного редактирования.
+              Если выключено — остаток отображается только для просмотра (управляется интеграцией).
+            </p>
+          </div>
+          <ToggleSwitch v-model="settings.can_edit_product_stock" />
+        </div>
+      </div>
+
       <!-- SEO по умолчанию -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">SEO по умолчанию</h3>
@@ -232,12 +248,14 @@
 import { ref, onMounted } from 'vue';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import ToggleSwitch from './ToggleSwitch.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
 
 const loading = ref(false);
 const hasSeoModule = ref(false);
+const hasCommerceMl = ref(false);
 const menus = ref([]);
 const settings = ref({
   panel_name: '',
@@ -254,7 +272,8 @@ const settings = ref({
   header_code: '',
   footer_code: '',
   header_menu_id: null,
-  footer_menu_id: null
+  footer_menu_id: null,
+  can_edit_product_stock: false
 });
 
 const checkSeoModule = async () => {
@@ -267,6 +286,15 @@ const checkSeoModule = async () => {
     }
   } catch (err) {
     hasSeoModule.value = false;
+  }
+};
+
+const checkCommerceMl = async () => {
+  try {
+    const response = await fetch('/admin/api/integrations/commerceml');
+    hasCommerceMl.value = response.ok;
+  } catch (err) {
+    hasCommerceMl.value = false;
   }
 };
 
@@ -375,6 +403,7 @@ const removeSocialLink = (index) => {
 
 onMounted(async () => {
   await checkSeoModule();
+  await checkCommerceMl();
   await fetchSettings();
 });
 </script>

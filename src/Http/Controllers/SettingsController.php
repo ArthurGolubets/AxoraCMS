@@ -2,12 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers;
 
+use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use HolartWeb\AxoraCMS\Models\TPanelSettings;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class SettingsController extends Controller
 {
@@ -19,7 +19,7 @@ class SettingsController extends Controller
         $user = Auth::guard('admin')->user();
 
         // Only super_admin and administrator can access settings
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -34,7 +34,7 @@ class SettingsController extends Controller
         $user = Auth::guard('admin')->user();
 
         // Only super_admin and administrator can update settings
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -57,9 +57,9 @@ class SettingsController extends Controller
         }
 
         // Log activity if there were changes
-        if (!empty($changes)) {
+        if (! empty($changes)) {
             $changedKeys = implode(', ', array_keys($changes));
-            TAdminAction::log('changed', 'setting', null, 'Изменены настройки: ' . $changedKeys, $changes);
+            TAdminAction::log('changed', 'setting', null, 'Изменены настройки: '.$changedKeys, $changes);
         }
 
         return response()->json(['message' => 'Настройки сохранены']);
@@ -72,7 +72,7 @@ class SettingsController extends Controller
     {
         $user = Auth::guard('admin')->user();
 
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -98,7 +98,7 @@ class SettingsController extends Controller
         return response()->json([
             'message' => 'Логотип загружен',
             'path' => $path,
-            'url' => Storage::disk('public')->url($path)
+            'url' => Storage::disk('public')->url($path),
         ]);
     }
 
@@ -109,7 +109,7 @@ class SettingsController extends Controller
     {
         $user = Auth::guard('admin')->user();
 
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -134,6 +134,7 @@ class SettingsController extends Controller
         return match ($key) {
             'phones', 'emails', 'addresses', 'header_template_settings', 'footer_template_settings', 'social_links' => 'json',
             'logo_width', 'logo_height', 'header_menu_id', 'footer_menu_id' => 'integer',
+            'can_edit_product_stock' => 'boolean',
             default => 'string',
         };
     }
