@@ -139,6 +139,17 @@
               <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Характеристики варианта</h4>
               <ProductCharacteristics v-model="variant.addition_info" applies-to="variant" />
             </div>
+
+            <!-- Сопутствующие товары варианта -->
+            <div v-if="panelSettings.related_products_enabled === true" class="mt-4">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Сопутствующие товары варианта</h4>
+              <p v-if="!variant.sku" class="text-xs text-amber-600 dark:text-amber-400 mb-2">Укажите SKU варианта, чтобы добавить сопутствующие товары.</p>
+              <RelatedProductsList
+                v-else
+                :links="form.variant_related_products[variant.sku] || []"
+                @update:links="setVariantRelated(variant.sku, $event)"
+              />
+            </div>
           </div>
           <div class="flex gap-3">
             <button type="button" @click="addVariant" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить вариант</button>
@@ -159,13 +170,16 @@
 
       <!-- Related (companion) products Tab -->
       <div v-if="activeTab === 'related'" class="space-y-6">
-        <ProductRelatedProducts
-          :product-links="form.related_products"
-          :variant-links="form.variant_related_products"
-          :variants="form.variants"
-          @update:productLinks="form.related_products = $event"
-          @update:variantLinks="form.variant_related_products = $event"
-        />
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Сопутствующие товары</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Общий список (доборы, фурнитура, комплектующие) для этого товара. Отдельные списки для вариантов — на вкладке «Варианты».
+          </p>
+          <RelatedProductsList
+            :links="form.related_products"
+            @update:links="form.related_products = $event"
+          />
+        </div>
       </div>
 
       <!-- Content Tab -->
@@ -334,7 +348,7 @@ import ProductFiltersBlock from './ProductFiltersBlock.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductPropertiesForm from './ProductPropertiesForm.vue';
-import ProductRelatedProducts from './ProductRelatedProducts.vue';
+import RelatedProductsList from './RelatedProductsList.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -789,6 +803,12 @@ const loadProduct = async () => {
   } catch (err) {
     await error('Ошибка при загрузке товара');
   }
+};
+
+// Companion products for a single variant, keyed by the variant SKU.
+const setVariantRelated = (sku, links) => {
+  if (!sku) return;
+  form.value.variant_related_products = { ...form.value.variant_related_products, [sku]: links };
 };
 
 // Flatten companion-product links into the shape the API expects:
