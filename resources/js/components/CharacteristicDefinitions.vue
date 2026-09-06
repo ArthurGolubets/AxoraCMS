@@ -52,8 +52,10 @@
               <span v-if="def.type === 'string'" class="inline-flex items-center gap-1">Строка</span>
               <span v-else-if="def.type === 'number'" class="inline-flex items-center gap-1">Число</span>
               <span v-else-if="def.type === 'boolean'" class="inline-flex items-center gap-1">Да/Нет</span>
-              <span v-else-if="def.type === 'color'" class="inline-flex items-center gap-1">Цвет</span>
+              <span v-else-if="def.type === 'color'" class="inline-flex items-center gap-1">🎨 Цвет</span>
               <span v-else-if="def.type === 'image'" class="inline-flex items-center gap-1">Изображение</span>
+              <span v-else-if="def.type === 'table'" class="inline-flex items-center gap-1">▦ Таблица</span>
+              <span v-else-if="def.type === 'entity'" class="inline-flex items-center gap-1">🔗 Привязка к элементам</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
               <span v-if="def.applies_to === 'catalog'" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">Каталог</span>
@@ -121,7 +123,39 @@
                 <option value="boolean">Да/Нет</option>
                 <option value="color">Цвет</option>
                 <option value="image">Изображение</option>
+                <option value="table">Таблица</option>
+                <option value="entity">Привязка к элементам</option>
               </select>
+            </div>
+
+            <!-- Entity settings -->
+            <div v-if="form.type === 'entity'" class="p-3 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2">
+              <p class="text-xs font-medium text-gray-700 dark:text-gray-300">К чему можно привязывать</p>
+              <label v-for="opt in entityTypeOptions" :key="opt.value" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" :value="opt.value" v-model="form.settings.entity_types"
+                  class="w-4 h-4 text-blue-600 rounded" :disabled="opt.value === 'infoblock' && !infoblocksModuleInstalled">
+                <span :class="{ 'opacity-40': opt.value === 'infoblock' && !infoblocksModuleInstalled }">{{ opt.label }}</span>
+                <span v-if="opt.value === 'infoblock' && !infoblocksModuleInstalled" class="text-xs text-gray-400">(модуль не установлен)</span>
+              </label>
+              <div v-if="form.settings.entity_types.includes('infoblock') && infoblocksModuleInstalled" class="pt-1">
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Закрепить за инфоблоком (необязательно)</label>
+                <select v-model="form.settings.infoblock_id" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">
+                  <option :value="null">— любой —</option>
+                  <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">{{ ib.name }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Table settings -->
+            <div v-if="form.type === 'table'" class="p-3 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Строк по умолчанию</label>
+                <input type="number" min="1" v-model.number="form.settings.table.rows" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Столбцов по умолчанию</label>
+                <input type="number" min="1" v-model.number="form.settings.table.cols" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">
+              </div>
             </div>
 
             <div>
@@ -137,7 +171,7 @@
               </select>
             </div>
 
-            <div v-if="form.type !== 'boolean'">
+            <div v-if="canBeMultiple">
               <label class="flex items-center space-x-2 cursor-pointer">
                 <input
                   v-model="form.multiple"
@@ -172,29 +206,61 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+
+const MULTIPLE_CAPABLE = ['string', 'number', 'color', 'image', 'entity'];
 
 const definitions = ref([]);
 const loading = ref(true);
 const showModal = ref(false);
 const editingDefinition = ref(null);
 const saving = ref(false);
+const infoBlocks = ref([]);
+const infoblocksModuleInstalled = ref(false);
 
-const form = ref({
+const entityTypeOptions = [
+  { value: 'product', label: 'Товары' },
+  { value: 'catalog', label: 'Категории' },
+  { value: 'infoblock', label: 'Элементы инфоблоков' },
+];
+
+const defaultSettings = () => ({
+  entity_types: ['product', 'catalog', 'infoblock'],
+  infoblock_id: null,
+  table: { rows: 3, cols: 3 },
+});
+
+const emptyForm = () => ({
   name: '',
   code: '',
   type: 'string',
   applies_to: 'product',
   multiple: false,
   sort_order: 500,
+  settings: defaultSettings(),
 });
+
+const form = ref(emptyForm());
 
 const codeManuallyEdited = ref(false);
 
+const canBeMultiple = computed(() => MULTIPLE_CAPABLE.includes(form.value.type));
+
 onMounted(() => {
   loadDefinitions();
+  loadInfoBlocks();
 });
+
+async function loadInfoBlocks() {
+  try {
+    const res = await axios.get('/admin/api/infoblocks');
+    infoBlocks.value = res.data.data || res.data;
+    infoblocksModuleInstalled.value = true;
+  } catch (e) {
+    infoblocksModuleInstalled.value = false;
+  }
+}
 
 async function loadDefinitions() {
   try {
@@ -211,20 +277,19 @@ async function loadDefinitions() {
 
 function openCreateModal() {
   editingDefinition.value = null;
-  form.value = {
-    name: '',
-    code: '',
-    type: 'string',
-    multiple: false,
-    sort_order: 500,
-  };
+  form.value = emptyForm();
   codeManuallyEdited.value = false;
   showModal.value = true;
 }
 
 function openEditModal(definition) {
   editingDefinition.value = definition;
-  form.value = { ...definition };
+  const settings = { ...defaultSettings(), ...(definition.settings || {}) };
+  settings.table = { ...defaultSettings().table, ...(definition.settings?.table || {}) };
+  if (!Array.isArray(settings.entity_types) || !settings.entity_types.length) {
+    settings.entity_types = ['product', 'catalog', 'infoblock'];
+  }
+  form.value = { ...emptyForm(), ...definition, settings };
   codeManuallyEdited.value = true;
   showModal.value = true;
 }
@@ -260,19 +325,36 @@ function autoGenerateCode() {
 }
 
 function handleTypeChange() {
-  if (form.value.type === 'boolean') {
+  if (!MULTIPLE_CAPABLE.includes(form.value.type)) {
     form.value.multiple = false;
   }
+}
+
+function buildPayload() {
+  const payload = { ...form.value };
+  if (payload.type === 'entity') {
+    payload.settings = {
+      entity_types: (form.value.settings.entity_types || []).filter((t) => t !== 'infoblock' || infoblocksModuleInstalled.value),
+      infoblock_id: form.value.settings.infoblock_id || null,
+    };
+    if (!payload.settings.entity_types.length) payload.settings.entity_types = ['product', 'catalog'];
+  } else if (payload.type === 'table') {
+    payload.settings = { table: { rows: Number(form.value.settings.table.rows) || 3, cols: Number(form.value.settings.table.cols) || 3 } };
+  } else {
+    payload.settings = null;
+  }
+  return payload;
 }
 
 async function saveDefinition() {
   try {
     saving.value = true;
 
+    const payload = buildPayload();
     if (editingDefinition.value) {
-      await axios.put(`/admin/api/characteristic-definitions/${editingDefinition.value.id}`, form.value);
+      await axios.put(`/admin/api/characteristic-definitions/${editingDefinition.value.id}`, payload);
     } else {
-      await axios.post('/admin/api/characteristic-definitions', form.value);
+      await axios.post('/admin/api/characteristic-definitions', payload);
     }
 
     await loadDefinitions();

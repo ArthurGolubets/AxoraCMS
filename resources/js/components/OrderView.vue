@@ -56,24 +56,52 @@
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Товары</h3>
           <div class="space-y-4">
-            <div v-for="item in order.items" :key="item.id" class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
-              <div class="flex-1">
-                <h4 class="font-medium text-gray-900 dark:text-white">{{ item.product_name }}</h4>
-                <div v-if="item.variant_data" class="mt-1">
-                  <p class="text-sm text-blue-600 dark:text-blue-400">Вариация: {{ item.variant_data.name }}</p>
-                  <div v-if="item.variant_data.characteristics && Object.keys(item.variant_data.characteristics).length > 0" class="mt-1">
-                    <span v-for="(value, key) in item.variant_data.characteristics" :key="key" class="inline-block mr-2 text-xs text-gray-600 dark:text-gray-400">
-                      {{ key }}: {{ value }}
-                    </span>
+            <template v-for="(group, gi) in groupedItems" :key="gi">
+              <!-- Standalone item -->
+              <div v-if="group.type === 'item'" class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ group.item.product_name }}</h4>
+                  <div v-if="group.item.variant_data" class="mt-1">
+                    <p class="text-sm text-blue-600 dark:text-blue-400">Вариация: {{ group.item.variant_data.name }}</p>
+                    <div v-if="group.item.variant_data.characteristics && Object.keys(group.item.variant_data.characteristics).length > 0" class="mt-1">
+                      <span v-for="(value, key) in group.item.variant_data.characteristics" :key="key" class="inline-block mr-2 text-xs text-gray-600 dark:text-gray-400">
+                        {{ key }}: {{ value }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Количество: {{ group.item.amount }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(group.item.total_price / group.item.amount) }} ₽</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Итого: {{ formatPrice(group.item.total_price) }} ₽</p>
+                </div>
+              </div>
+
+              <!-- Set / bundle -->
+              <div v-else class="pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold rounded bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    Набор
+                  </span>
+                  <span class="text-sm font-semibold text-gray-900 dark:text-white">Итого за набор: {{ formatPrice(group.total) }} ₽</span>
+                </div>
+                <div class="space-y-2 pl-3 border-l-2 border-purple-200 dark:border-purple-800">
+                  <div v-for="line in group.items" :key="line.id" class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <p class="text-sm" :class="line.set_role === 'parent' ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'">
+                        <span v-if="line.set_role !== 'parent'" class="text-gray-400 mr-1">+</span>{{ line.product_name }}
+                      </p>
+                      <p v-if="line.variant_data" class="text-xs text-blue-600 dark:text-blue-400">Вариация: {{ line.variant_data.name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Количество: {{ line.amount }}</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-sm text-gray-900 dark:text-white">{{ formatPrice(line.total_price) }} ₽</p>
+                    </div>
                   </div>
                 </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Количество: {{ item.amount }}</p>
               </div>
-              <div class="text-right">
-                <p class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(item.total_price / item.amount) }} ₽</p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Итого: {{ formatPrice(item.total_price) }} ₽</p>
-              </div>
-            </div>
+            </template>
           </div>
 
           <!-- Total -->
@@ -226,6 +254,36 @@ const order = ref(null);
 const subtotal = computed(() => {
   if (!order.value || !order.value.items) return 0;
   return order.value.items.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+});
+
+// Group order items: standalone items stay as-is, items sharing a `set_group`
+// are rendered together as one "набор".
+const groupedItems = computed(() => {
+  const items = order.value?.items || [];
+  const groups = [];
+  const bySet = {};
+
+  for (const item of items) {
+    if (item.set_group) {
+      if (!bySet[item.set_group]) {
+        bySet[item.set_group] = { type: 'set', set_group: item.set_group, items: [], total: 0 };
+        groups.push(bySet[item.set_group]);
+      }
+      bySet[item.set_group].items.push(item);
+      bySet[item.set_group].total += parseFloat(item.total_price || 0);
+    } else {
+      groups.push({ type: 'item', item });
+    }
+  }
+
+  // main item first within a set
+  for (const g of groups) {
+    if (g.type === 'set') {
+      g.items.sort((a, b) => (a.set_role === 'parent' ? -1 : 0) - (b.set_role === 'parent' ? -1 : 0));
+    }
+  }
+
+  return groups;
 });
 
 const total = computed(() => {

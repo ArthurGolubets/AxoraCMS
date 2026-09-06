@@ -2,18 +2,18 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CommerceUninstallCommand extends Command
 {
     const MODULE_NAME = 'commerce';
 
     protected $signature = 'axoracms:commerce-uninstall {--preserve-db : Preserve database tables}';
+
     protected $description = 'Uninstall AxoraCMS Commerce Module';
 
     public function handle(): int
@@ -31,7 +31,7 @@ class CommerceUninstallCommand extends Command
         $models = ['TOrders.php', 'TOrderItems.php', 'TPromocodes.php', 'TPaymentTransaction.php', 'TOrdersData.php'];
 
         foreach ($models as $model) {
-            $modelPath = $appModelsPath . '/' . $model;
+            $modelPath = $appModelsPath.'/'.$model;
             if (file_exists($modelPath)) {
                 unlink($modelPath);
                 $this->info("✓ Removed {$model}");
@@ -46,11 +46,11 @@ class CommerceUninstallCommand extends Command
             'OrdersController.php',
             'PromocodesController.php',
             'PaymentTransactionsController.php',
-            'OrdersDataController.php'
+            'OrdersDataController.php',
         ];
 
         foreach ($controllers as $controller) {
-            $controllerPath = $appControllersPath . '/' . $controller;
+            $controllerPath = $appControllersPath.'/'.$controller;
             if (file_exists($controllerPath)) {
                 unlink($controllerPath);
                 $this->info("✓ Removed {$controller}");
@@ -59,14 +59,14 @@ class CommerceUninstallCommand extends Command
         $this->newLine();
 
         // Step 3: Drop Database Tables (if not preserving)
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 3: Dropping database tables...');
             $tables = [
                 't_orders_data',
                 't_payment_transactions',
                 't_promocodes',
                 't_order_items',
-                't_orders'
+                't_orders',
             ];
 
             foreach ($tables as $table) {
@@ -85,24 +85,26 @@ class CommerceUninstallCommand extends Command
                 '2024_01_01_000033_create_t_payment_transactions_table.php',
                 '2024_01_01_000034_create_t_orders_data_table.php',
                 '2026_08_08_000001_add_variant_id_to_t_order_items_table.php',
+                '2026_09_07_000002_add_set_columns_to_t_order_items_table.php',
             ];
 
             try {
-                DB::table('migrations')->whereIn('migration', array_map(function($file) {
+                DB::table('migrations')->whereIn('migration', array_map(function ($file) {
                     return str_replace('.php', '', $file);
                 }, $migrationFiles))->delete();
                 $this->info('✓ Removed migration records from database');
             } catch (\Exception $e) {
-                $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+                $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
             }
 
-            // Remove migration files
-            $this->info('Removing migration files...');
+            // Clean up migration files that older installer versions copied into the
+            // application's database/migrations folder (current installer no longer copies them).
+            $this->info('Cleaning up legacy copied migration files...');
             foreach ($migrationFiles as $file) {
-                $migrationPath = database_path('migrations/' . $file);
+                $migrationPath = database_path('migrations/'.$file);
                 if (file_exists($migrationPath)) {
                     unlink($migrationPath);
-                    $this->info("✓ Removed migration {$file}");
+                    $this->info("✓ Removed legacy migration file {$file}");
                 }
             }
         } else {

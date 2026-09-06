@@ -2,15 +2,15 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
-use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
 use HolartWeb\AxoraCMS\Models\Commerce\TOrderItems;
+use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Services\Integrations\TelegramService;
 use HolartWeb\AxoraCMS\Services\Integrations\YookassaService;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class OrderService
 {
@@ -21,7 +21,7 @@ class OrderService
      */
     protected function checkCommerceModule(): void
     {
-        if (!Schema::hasTable('t_orders')) {
+        if (! Schema::hasTable('t_orders')) {
             throw new \Exception('Commerce module is not installed');
         }
     }
@@ -29,10 +29,10 @@ class OrderService
     /**
      * Create new order
      *
-     * @param array $orderData Order data (name, email, phone, etc.)
-     * @param array $items Order items [['product_id' => 1, 'product_name' => 'Product', 'amount' => 2, 'total_price' => 100], ...]
-     * @param int|null $userId User ID (optional)
-     * @return TOrders
+     * @param  array  $orderData  Order data (name, email, phone, etc.)
+     * @param  array  $items  Order items [['product_id' => 1, 'product_name' => 'Product', 'amount' => 2, 'total_price' => 100], ...]
+     * @param  int|null  $userId  User ID (optional)
+     *
      * @throws \Exception
      */
     public function createOrder(array $orderData, array $items, ?int $userId = null): TOrders
@@ -68,29 +68,41 @@ class OrderService
             ]));
 
             // Create order items
-            foreach ($items as $item) {
-                $productsDataString .= $item['product_name']." - ".$item['total_price']."руб. \n";
+            $hasSetColumns = Schema::hasColumn('t_order_items', 'set_group');
 
-                TOrderItems::create([
+            foreach ($items as $item) {
+                $productsDataString .= $item['product_name'].' - '.$item['total_price']."руб. \n";
+
+                $row = [
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
+                    'variant_id' => $item['variant_id'] ?? null,
+                    'variant_data' => $item['variant_data'] ?? null,
                     'product_name' => $item['product_name'],
                     'amount' => $item['amount'],
                     'total_price' => $item['total_price'],
-                ]);
+                ];
+
+                if ($hasSetColumns) {
+                    $row['set_group'] = $item['set_group'] ?? null;
+                    $row['set_role'] = $item['set_role'] ?? 'single';
+                }
+
+                TOrderItems::create($row);
             }
 
-            if(TModule::isInstalled('telegram')){
-                $orderDataString = "Заказ №".$order->id."\n";
-                $orderDataString .= "Имя: ".$order->name."\n";
-                $orderDataString .= "Телефон: ".$order->phone."\n";
-                $orderDataString .= "Адрес: ".$order->address."\n";
-                $orderDataString .= "Способ оплаты: ".$order->payment_status."\n";
-                $orderDataString .= "Способ доставки: ".$order->delivery_status."\n";
+            if (TModule::isInstalled('telegram')) {
+                $orderDataString = 'Заказ №'.$order->id."\n";
+                $orderDataString .= 'Имя: '.$order->name."\n";
+                $orderDataString .= 'Телефон: '.$order->phone."\n";
+                $orderDataString .= 'Адрес: '.$order->address."\n";
+                $orderDataString .= 'Способ оплаты: '.$order->payment_status."\n";
+                $orderDataString .= 'Способ доставки: '.$order->delivery_status."\n";
                 $orderDataString .= "Товары: \n \n".$productsDataString;
                 $message = $orderDataString;
                 (new TelegramService)->sendMessage($message);
             }
+
             return $order->load('items');
         });
     }
@@ -98,12 +110,13 @@ class OrderService
     /**
      * Get orders by user ID
      *
-     * @param int $userId User ID
-     * @param array $filter Additional filters
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page (null for no pagination)
-     * @param int $page Current page
+     * @param  int  $userId  User ID
+     * @param  array  $filter  Additional filters
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page (null for no pagination)
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getOrdersByUser(
@@ -130,11 +143,12 @@ class OrderService
     /**
      * Get orders by filter
      *
-     * @param array $filter Filters to apply
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page (null for no pagination)
-     * @param int $page Current page
+     * @param  array  $filter  Filters to apply
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page (null for no pagination)
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getOrders(
@@ -160,8 +174,8 @@ class OrderService
     /**
      * Get order by ID
      *
-     * @param int $id Order ID
-     * @return TOrders|null
+     * @param  int  $id  Order ID
+     *
      * @throws \Exception
      */
     public function getOrderById(int $id): ?TOrders
@@ -180,10 +194,10 @@ class OrderService
     /**
      * Update order status
      *
-     * @param int $id Order ID
-     * @param string $status Status (payment_status or delivery_status)
-     * @param string $value Status value
-     * @return TOrders
+     * @param  int  $id  Order ID
+     * @param  string  $status  Status (payment_status or delivery_status)
+     * @param  string  $value  Status value
+     *
      * @throws \Exception
      */
     public function updateOrderStatus(int $id, string $status, string $value): TOrders
@@ -200,7 +214,7 @@ class OrderService
                 TOrders::STATUS_REFUNDED,
             ];
 
-            if (!in_array($value, $allowedStatuses)) {
+            if (! in_array($value, $allowedStatuses)) {
                 throw new \Exception("Invalid payment status: {$value}");
             }
 
@@ -214,7 +228,7 @@ class OrderService
                 TOrders::DELIVERY_CANCELLED,
             ];
 
-            if (!in_array($value, $allowedStatuses)) {
+            if (! in_array($value, $allowedStatuses)) {
                 throw new \Exception("Invalid delivery status: {$value}");
             }
 
@@ -231,9 +245,9 @@ class OrderService
     /**
      * Update order payment status
      *
-     * @param int $id Order ID
-     * @param string $status Payment status
-     * @return TOrders
+     * @param  int  $id  Order ID
+     * @param  string  $status  Payment status
+     *
      * @throws \Exception
      */
     public function updatePaymentStatus(int $id, string $status): TOrders
@@ -244,9 +258,9 @@ class OrderService
     /**
      * Update order delivery status
      *
-     * @param int $id Order ID
-     * @param string $status Delivery status
-     * @return TOrders
+     * @param  int  $id  Order ID
+     * @param  string  $status  Delivery status
+     *
      * @throws \Exception
      */
     public function updateDeliveryStatus(int $id, string $status): TOrders
@@ -257,8 +271,8 @@ class OrderService
     /**
      * Cancel order
      *
-     * @param int $id Order ID
-     * @return TOrders
+     * @param  int  $id  Order ID
+     *
      * @throws \Exception
      */
     public function cancelOrder(int $id): TOrders
@@ -269,8 +283,8 @@ class OrderService
     /**
      * Get orders count by filter
      *
-     * @param array $filter Filters to apply
-     * @return int
+     * @param  array  $filter  Filters to apply
+     *
      * @throws \Exception
      */
     public function countOrders(array $filter = []): int
@@ -287,12 +301,13 @@ class OrderService
     /**
      * Get orders by status
      *
-     * @param string $statusType 'payment_status' or 'delivery_status'
-     * @param string $status Status value
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
+     * @param  string  $statusType  'payment_status' or 'delivery_status'
+     * @param  string  $status  Status value
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getOrdersByStatus(
@@ -302,7 +317,7 @@ class OrderService
         ?int $perPage = null,
         int $page = 1
     ) {
-        if (!in_array($statusType, ['payment_status', 'delivery_status'])) {
+        if (! in_array($statusType, ['payment_status', 'delivery_status'])) {
             throw new \Exception("Invalid status type: {$statusType}");
         }
 
@@ -312,9 +327,10 @@ class OrderService
     /**
      * Get pending orders
      *
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getPendingOrders(?int $perPage = null, int $page = 1)
@@ -325,9 +341,10 @@ class OrderService
     /**
      * Get paid orders
      *
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getPaidOrders(?int $perPage = null, int $page = 1)
@@ -338,9 +355,9 @@ class OrderService
     /**
      * Calculate order total
      *
-     * @param array $items Order items
-     * @param float $deliveryPrice Delivery price
-     * @param float $promocodeDiscount Promocode discount
+     * @param  array  $items  Order items
+     * @param  float  $deliveryPrice  Delivery price
+     * @param  float  $promocodeDiscount  Promocode discount
      * @return array ['goods_price', 'total_price']
      */
     public function calculateOrderTotal(array $items, float $deliveryPrice = 0, float $promocodeDiscount = 0): array
@@ -364,8 +381,8 @@ class OrderService
     /**
      * Delete order
      *
-     * @param int $id Order ID
-     * @return bool
+     * @param  int  $id  Order ID
+     *
      * @throws \Exception
      */
     public function deleteOrder(int $id): bool
@@ -374,7 +391,7 @@ class OrderService
 
         $order = TOrders::find($id);
 
-        if (!$order) {
+        if (! $order) {
             return false;
         }
 
@@ -390,9 +407,9 @@ class OrderService
     /**
      * Update order data
      *
-     * @param int $id Order ID
-     * @param array $data Data to update
-     * @return TOrders
+     * @param  int  $id  Order ID
+     * @param  array  $data  Data to update
+     *
      * @throws \Exception
      */
     public function updateOrder(int $id, array $data): TOrders
@@ -409,8 +426,8 @@ class OrderService
     /**
      * Get order statistics
      *
-     * @param array $filter Optional filters
-     * @return array
+     * @param  array  $filter  Optional filters
+     *
      * @throws \Exception
      */
     public function getOrderStatistics(array $filter = []): array
@@ -437,17 +454,13 @@ class OrderService
 
     /**
      * Apply filters to query
-     *
-     * @param $query
-     * @param array $filter
-     * @return void
      */
     protected function applyFilters($query, array $filter): void
     {
         foreach ($filter as $key => $value) {
             if (in_array($key, [
                 'id', 'user_id', 'payment_status', 'delivery_status',
-                'payment_type', 'delivery_type', 'promocode_id'
+                'payment_type', 'delivery_type', 'promocode_id',
             ])) {
                 $query->where($key, $value);
             } elseif (in_array($key, ['name', 'email', 'phone'])) {
@@ -466,23 +479,19 @@ class OrderService
 
     /**
      * Apply ordering to query
-     *
-     * @param $query
-     * @param array $order
-     * @return void
      */
     protected function applyOrdering($query, array $order): void
     {
         foreach ($order as $field => $direction) {
             $direction = strtolower($direction);
 
-            if (!in_array($direction, ['asc', 'desc'])) {
+            if (! in_array($direction, ['asc', 'desc'])) {
                 $direction = 'asc';
             }
 
             if (in_array($field, [
                 'id', 'created_at', 'updated_at', 'total_price',
-                'goods_price', 'delivery_price', 'payment_status', 'delivery_status'
+                'goods_price', 'delivery_price', 'payment_status', 'delivery_status',
             ])) {
                 $query->orderBy($field, $direction);
             }
@@ -492,23 +501,24 @@ class OrderService
     /**
      * Generate payment link for order (only if Yookassa module is configured)
      *
-     * @param int $orderId Order ID
+     * @param  int  $orderId  Order ID
      * @return string|null Payment link or null if Yookassa is not configured
+     *
      * @throws \Exception
      */
     public function generatePaymentLink(int $orderId, string $routeName = 'order.success'): ?string
     {
         $this->checkCommerceModule();
 
-        $yookassaService = new YookassaService();
+        $yookassaService = new YookassaService;
 
-        if (!$yookassaService->isConfigured()) {
+        if (! $yookassaService->isConfigured()) {
             throw new \Exception('Yookassa module is not configured');
         }
 
         $order = $this->getOrderById($orderId);
 
-        if (!$order) {
+        if (! $order) {
             throw new \Exception("Order not found: {$orderId}");
         }
 
@@ -533,6 +543,6 @@ class OrderService
             'items' => $items,
         ];
 
-        return $yookassaService->createOrderPayment($paymentData,$routeName);
+        return $yookassaService->createOrderPayment($paymentData, $routeName);
     }
 }

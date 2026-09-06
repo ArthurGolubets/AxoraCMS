@@ -1,11 +1,26 @@
 <template>
   <div>
-    <div class="mb-6">
+    <div class="mb-4">
       <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Настройки системы</h2>
       <p class="text-gray-600 dark:text-gray-400 mt-1">Управление параметрами административной панели</p>
     </div>
 
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+      <nav class="-mb-px flex space-x-6">
+        <button
+          v-for="t in tabs"
+          :key="t.id"
+          type="button"
+          @click="activeTab = t.id"
+          :class="['py-3 px-1 border-b-2 text-sm font-medium transition-colors', activeTab === t.id ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300']"
+        >
+          {{ t.label }}
+        </button>
+      </nav>
+    </div>
+
     <form @submit.prevent="saveSettings" class="space-y-6">
+      <div v-show="activeTab === 'general'" class="space-y-6">
       <!-- Основные настройки -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Основные настройки</h3>
@@ -117,22 +132,6 @@
         </div>
       </div>
 
-      <!-- Товары и остатки (только если установлена интеграция CommerceML) -->
-      <div v-if="hasCommerceMl" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Товары и остатки</h3>
-
-        <div class="flex items-start justify-between">
-          <div class="pr-4">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Можно редактировать остаток</p>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Если включено — поле «Остаток» на карточке товара доступно для ручного редактирования.
-              Если выключено — остаток отображается только для просмотра (управляется интеграцией).
-            </p>
-          </div>
-          <ToggleSwitch v-model="settings.can_edit_product_stock" />
-        </div>
-      </div>
-
       <!-- SEO по умолчанию -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">SEO по умолчанию</h3>
@@ -233,6 +232,69 @@
           </div>
         </div>
       </div>
+      </div>
+      <!-- /Основные -->
+
+      <!-- Системные настройки -->
+      <div v-show="activeTab === 'system'" class="space-y-6">
+        <!-- Каталог и товары (если установлен модуль каталога) -->
+        <div v-if="hasShopModule" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Каталог и товары</h3>
+
+          <div class="space-y-5">
+            <div class="flex items-start justify-between">
+              <div class="pr-4">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Список товаров</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Показывать пункт меню «Список товаров». Отключите, если пользуетесь только деревом каталога.
+                </p>
+              </div>
+              <ToggleSwitch v-model="settings.products_list_enabled" />
+            </div>
+
+            <div class="flex items-start justify-between border-t border-gray-100 dark:border-gray-700 pt-5">
+              <div class="pr-4">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Варианты товаров</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Показывать вкладку «Варианты» в карточке товара.
+                </p>
+              </div>
+              <ToggleSwitch v-model="settings.product_variants_enabled" />
+            </div>
+
+            <div class="flex items-start justify-between border-t border-gray-100 dark:border-gray-700 pt-5">
+              <div class="pr-4">
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Сопутствующие товары</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Включает вкладку «Сопутствующие товары» в карточке товара и варианта — товары-наборы (доборы, фурнитура и т.п.).
+                </p>
+              </div>
+              <ToggleSwitch v-model="settings.related_products_enabled" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Товары и остатки (только если установлена интеграция CommerceML) -->
+        <div v-if="hasCommerceMl" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Товары и остатки</h3>
+
+          <div class="flex items-start justify-between">
+            <div class="pr-4">
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Можно редактировать остаток</p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Если включено — поле «Остаток» на карточке товара доступно для ручного редактирования.
+                Если выключено — остаток отображается только для просмотра (управляется интеграцией).
+              </p>
+            </div>
+            <ToggleSwitch v-model="settings.can_edit_product_stock" />
+          </div>
+        </div>
+
+        <div v-if="!hasShopModule && !hasCommerceMl" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-sm text-gray-500 dark:text-gray-400">
+          Системные настройки появятся после установки модуля каталога.
+        </div>
+      </div>
+      <!-- /Системные -->
 
       <!-- Кнопка сохранения -->
       <div class="flex justify-end">
@@ -256,7 +318,13 @@ const { buttonStyle } = useTheme();
 const loading = ref(false);
 const hasSeoModule = ref(false);
 const hasCommerceMl = ref(false);
+const hasShopModule = ref(false);
 const menus = ref([]);
+const activeTab = ref('general');
+const tabs = [
+  { id: 'general', label: 'Основные' },
+  { id: 'system', label: 'Системные настройки' },
+];
 const settings = ref({
   panel_name: '',
   theme_color: 'red',
@@ -273,7 +341,10 @@ const settings = ref({
   footer_code: '',
   header_menu_id: null,
   footer_menu_id: null,
-  can_edit_product_stock: false
+  can_edit_product_stock: false,
+  products_list_enabled: true,
+  product_variants_enabled: true,
+  related_products_enabled: false,
 });
 
 const checkSeoModule = async () => {
@@ -295,6 +366,18 @@ const checkCommerceMl = async () => {
     hasCommerceMl.value = response.ok;
   } catch (err) {
     hasCommerceMl.value = false;
+  }
+};
+
+const checkShopModule = async () => {
+  try {
+    const response = await fetch('/admin/api/modules/status', { headers: { Accept: 'application/json' } });
+    if (response.ok) {
+      const data = await response.json();
+      hasShopModule.value = !!data.modules?.find((m) => m.id === 'shop')?.installed;
+    }
+  } catch (err) {
+    hasShopModule.value = false;
   }
 };
 
@@ -404,6 +487,7 @@ const removeSocialLink = (index) => {
 onMounted(async () => {
   await checkSeoModule();
   await checkCommerceMl();
+  await checkShopModule();
   await fetchSettings();
 });
 </script>

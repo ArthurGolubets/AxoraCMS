@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 class PagesInstallCommand extends Command
 {
     protected $signature = 'axoracms:pages-install';
+
     protected $description = 'Install AxoraCMS Pages Module';
 
     public function handle(): int
@@ -21,7 +22,7 @@ class PagesInstallCommand extends Command
 
         // Determine package path
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
@@ -35,29 +36,30 @@ class PagesInstallCommand extends Command
         $menusTablesExist = Schema::hasTable('t_menus') && Schema::hasTable('t_menu_items');
 
         try {
-            if (!$tablesExist) {
-                $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/pages';
+            if (! $tablesExist) {
                 Artisan::call('migrate', [
-                    '--path' => $migrationsPath,
-                    '--force' => true
+                    '--path' => $packagePath.'/database/migrations/pages',
+                    '--realpath' => true,
+                    '--force' => true,
                 ]);
                 $this->info('✓ Pages migrations completed successfully');
             } else {
                 $this->info('✓ Pages tables already exist');
             }
 
-            if (!$menusTablesExist) {
-                $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/menus';
+            if (! $menusTablesExist) {
                 Artisan::call('migrate', [
-                    '--path' => $migrationsPath,
-                    '--force' => true
+                    '--path' => $packagePath.'/database/migrations/menus',
+                    '--realpath' => true,
+                    '--force' => true,
                 ]);
                 $this->info('✓ Menus migrations completed successfully');
             } else {
                 $this->info('✓ Menus tables already exist');
             }
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
         $this->newLine();
@@ -70,7 +72,7 @@ class PagesInstallCommand extends Command
 
         // Step 3: Build Frontend Assets
         $this->info('Step 3: Building frontend assets...');
-        if (file_exists($packagePath . '/package.json')) {
+        if (file_exists($packagePath.'/package.json')) {
             $this->info('Installing npm dependencies...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnVar);
 
@@ -123,7 +125,7 @@ class PagesInstallCommand extends Command
         $this->info('╚═══════════════════════════════════════╝');
         $this->newLine();
         $this->info('You can now create pages in your admin panel.');
-        $this->info('Navigate to: ' . url('/admin/pages'));
+        $this->info('Navigate to: '.url('/admin/pages'));
         $this->newLine();
 
         return self::SUCCESS;
@@ -205,8 +207,9 @@ class PagesInstallCommand extends Command
     {
         $bootstrapPath = base_path('bootstrap/app.php');
 
-        if (!file_exists($bootstrapPath)) {
+        if (! file_exists($bootstrapPath)) {
             $this->warn('⚠ bootstrap/app.php not found. Please register middleware manually.');
+
             return;
         }
 
@@ -216,6 +219,7 @@ class PagesInstallCommand extends Command
         // Check if already registered
         if (str_contains($content, 'SharePageData')) {
             $this->info('   Middleware already registered');
+
             return;
         }
 
@@ -239,6 +243,7 @@ class PagesInstallCommand extends Command
                     $content = substr_replace($content, $middlewareCode, $insertPosition, 0);
                     file_put_contents($bootstrapPath, $content);
                     $this->info('   Middleware registered successfully');
+
                     return;
                 }
             }
@@ -247,7 +252,7 @@ class PagesInstallCommand extends Command
         // Fallback: couldn't auto-register
         $this->warn('⚠ Could not auto-register middleware. Please add manually to bootstrap/app.php:');
         $this->warn('   $middleware->web(append: [');
-        $this->warn('       ' . $sharePageDataMiddleware . ',');
+        $this->warn('       '.$sharePageDataMiddleware.',');
         $this->warn('   ]);');
     }
 }

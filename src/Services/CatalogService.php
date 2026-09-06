@@ -2,10 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Pagination\LengthAwarePaginator;
+use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
+use HolartWeb\AxoraCMS\Models\Shop\TProduct;
+use HolartWeb\AxoraCMS\Models\Shop\TProductVariant;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Schema;
 
 class CatalogService
 {
@@ -14,10 +16,11 @@ class CatalogService
      */
     protected function getCatalogModel(): ?string
     {
-        if (!Schema::hasTable('t_catalogs')) {
+        if (! Schema::hasTable('t_catalogs')) {
             return null;
         }
-        return config('axora-cms.models.catalog', \HolartWeb\AxoraCMS\Models\Shop\TCatalog::class);
+
+        return config('axora-cms.models.catalog', TCatalog::class);
     }
 
     /**
@@ -25,22 +28,22 @@ class CatalogService
      */
     protected function getProductModel(): ?string
     {
-        if (!Schema::hasTable('t_products')) {
+        if (! Schema::hasTable('t_products')) {
             return null;
         }
-        return config('axora-cms.models.product', \HolartWeb\AxoraCMS\Models\Shop\TProduct::class);
+
+        return config('axora-cms.models.product', TProduct::class);
     }
 
     /**
      * Get entire catalog tree
      *
-     * @param bool $activeOnly Only active catalogs
-     * @return array
+     * @param  bool  $activeOnly  Only active catalogs
      */
     public function getCatalogTree(bool $activeOnly = false): array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return [];
         }
 
@@ -81,19 +84,17 @@ class CatalogService
     /**
      * Get catalog with its children
      *
-     * @param int $catalogId
-     * @param bool $activeOnly Only active children
-     * @return array|null
+     * @param  bool  $activeOnly  Only active children
      */
     public function getCatalogWithChildren(int $catalogId, bool $activeOnly = false): ?array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return null;
         }
 
         $catalog = $catalogModel::find($catalogId);
-        if (!$catalog) {
+        if (! $catalog) {
             return null;
         }
 
@@ -114,10 +115,9 @@ class CatalogService
     /**
      * Get all products from catalog
      *
-     * @param int $catalogId
-     * @param int|null $limit Limit number of products (null for all)
-     * @param int $page Page number for pagination
-     * @param bool $activeOnly Only active products
+     * @param  int|null  $limit  Limit number of products (null for all)
+     * @param  int  $page  Page number for pagination
+     * @param  bool  $activeOnly  Only active products
      * @return LengthAwarePaginator|Collection
      */
     public function getCatalogProducts(
@@ -127,7 +127,7 @@ class CatalogService
         bool $activeOnly = false
     ) {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
@@ -147,10 +147,7 @@ class CatalogService
     /**
      * Get catalogs by characteristics
      *
-     * @param array $characteristics ['code' => value] pairs
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  array  $characteristics  ['code' => value] pairs
      * @return LengthAwarePaginator|Collection
      */
     public function getCatalogsByCharacteristics(
@@ -160,7 +157,7 @@ class CatalogService
         bool $activeOnly = false
     ) {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 
@@ -175,7 +172,7 @@ class CatalogService
         foreach ($characteristics as $code => $value) {
             if (is_bool($value)) {
                 // For boolean values, compare directly with JSON boolean
-                $jsonPath = '$.' . $code;
+                $jsonPath = '$.'.$code;
                 $boolValue = $value ? 'true' : 'false';
                 $query->whereRaw(
                     'JSON_EXTRACT(addition_info, ?) = CAST(? AS JSON)',
@@ -183,18 +180,18 @@ class CatalogService
                 );
             } else {
                 // For other values, compare as text or check if it's in array
-                $jsonPath = '$.' . $code;
-                $query->where(function($q) use ($jsonPath, $value) {
+                $jsonPath = '$.'.$code;
+                $query->where(function ($q) use ($jsonPath, $value) {
                     // Check if the key exists and value matches
                     $q->whereRaw(
                         'JSON_EXTRACT(addition_info, ?) = ?',
                         [$jsonPath, $value]
                     )
                     // Or if it's an array, check if value is in the array
-                    ->orWhereRaw(
-                        'JSON_CONTAINS(JSON_EXTRACT(addition_info, ?), ?)',
-                        [$jsonPath, json_encode($value)]
-                    );
+                        ->orWhereRaw(
+                            'JSON_CONTAINS(JSON_EXTRACT(addition_info, ?), ?)',
+                            [$jsonPath, json_encode($value)]
+                        );
                 });
             }
         }
@@ -211,11 +208,8 @@ class CatalogService
     /**
      * Get products by characteristics
      *
-     * @param array $characteristics ['code' => value] pairs
-     * @param int|null $catalogId Optional catalog filter
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  array  $characteristics  ['code' => value] pairs
+     * @param  int|null  $catalogId  Optional catalog filter
      * @return LengthAwarePaginator|Collection
      */
     public function getProductsByCharacteristics(
@@ -226,7 +220,7 @@ class CatalogService
         bool $activeOnly = false
     ) {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
@@ -245,7 +239,7 @@ class CatalogService
         foreach ($characteristics as $code => $value) {
             if (is_bool($value)) {
                 // For boolean values, compare directly with JSON boolean
-                $jsonPath = '$.' . $code;
+                $jsonPath = '$.'.$code;
                 $boolValue = $value ? 'true' : 'false';
                 $query->whereRaw(
                     'JSON_EXTRACT(addition_info, ?) = CAST(? AS JSON)',
@@ -253,18 +247,18 @@ class CatalogService
                 );
             } else {
                 // For other values, compare as text or check if it's in array
-                $jsonPath = '$.' . $code;
-                $query->where(function($q) use ($jsonPath, $value) {
+                $jsonPath = '$.'.$code;
+                $query->where(function ($q) use ($jsonPath, $value) {
                     // Check if the key exists and value matches
                     $q->whereRaw(
                         'JSON_EXTRACT(addition_info, ?) = ?',
                         [$jsonPath, $value]
                     )
                     // Or if it's an array, check if value is in the array
-                    ->orWhereRaw(
-                        'JSON_CONTAINS(JSON_EXTRACT(addition_info, ?), ?)',
-                        [$jsonPath, json_encode($value)]
-                    );
+                        ->orWhereRaw(
+                            'JSON_CONTAINS(JSON_EXTRACT(addition_info, ?), ?)',
+                            [$jsonPath, json_encode($value)]
+                        );
                 });
             }
         }
@@ -280,19 +274,16 @@ class CatalogService
 
     /**
      * Get product variants
-     *
-     * @param int $productId
-     * @return array
      */
     public function getProductVariants(int $productId): array
     {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return [];
         }
 
         $product = $productModel::find($productId);
-        if (!$product) {
+        if (! $product) {
             return [];
         }
 
@@ -310,10 +301,8 @@ class CatalogService
      * - Operators: ['field' => ['>', 100]] - comparison
      * - Like: ['field' => ['LIKE', '%text%']] - pattern matching
      *
-     * @param array $filters Advanced filters
-     * @param int|null $limit
-     * @param int $page
-     * @param array $order Ordering ['field' => 'asc|desc']
+     * @param  array  $filters  Advanced filters
+     * @param  array  $order  Ordering ['field' => 'asc|desc']
      * @return LengthAwarePaginator|Collection
      */
     public function getCatalogsWithFilters(
@@ -323,7 +312,7 @@ class CatalogService
         array $order = ['name' => 'asc']
     ) {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 
@@ -348,11 +337,9 @@ class CatalogService
      * - Operators: ['price' => ['>', 1000]] - comparison
      * - Like: ['name' => ['LIKE', '%text%']] - pattern matching
      *
-     * @param array $filters Advanced filters
-     * @param int|null $catalogId Optional catalog filter
-     * @param int|null $limit
-     * @param int $page
-     * @param array $order Ordering ['field' => 'asc|desc']
+     * @param  array  $filters  Advanced filters
+     * @param  int|null  $catalogId  Optional catalog filter
+     * @param  array  $order  Ordering ['field' => 'asc|desc']
      * @return LengthAwarePaginator|Collection
      */
     public function getProductsWithFilters(
@@ -363,7 +350,7 @@ class CatalogService
         array $order = ['name' => 'asc']
     ) {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
@@ -385,14 +372,11 @@ class CatalogService
 
     /**
      * Get catalog by slug
-     *
-     * @param string $slug
-     * @return array|null
      */
     public function getCatalogBySlug(string $slug): ?array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return null;
         }
 
@@ -404,20 +388,18 @@ class CatalogService
     /**
      * Get product by slug
      *
-     * @param string $slug
-     * @param bool $withVariants Include variants
-     * @return array|null
+     * @param  bool  $withVariants  Include variants
      */
     public function getProductBySlug(string $slug, bool $withVariants = true): ?array
     {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return null;
         }
 
         $product = $productModel::where('slug', $slug)->first();
 
-        if (!$product) {
+        if (! $product) {
             return null;
         }
 
@@ -434,9 +416,6 @@ class CatalogService
      * Get breadcrumbs for catalog
      * Returns: Main - Catalog - Catalog Name (if catalogId provided)
      * Returns: Main - Catalog (if catalogId is null)
-     *
-     * @param int|null $catalogId
-     * @return array
      */
     public function getCatalogBreadcrumbs(?int $catalogId = null): array
     {
@@ -448,7 +427,7 @@ class CatalogService
             [
                 'name' => 'Каталог',
                 'url' => '/catalog',
-            ]
+            ],
         ];
 
         if ($catalogId === null) {
@@ -456,12 +435,12 @@ class CatalogService
         }
 
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return $breadcrumbs;
         }
 
         $catalog = $catalogModel::find($catalogId);
-        if (!$catalog) {
+        if (! $catalog) {
             return $breadcrumbs;
         }
 
@@ -471,7 +450,7 @@ class CatalogService
                 'id' => $catalog->id,
                 'name' => $catalog->name,
                 'slug' => $catalog->slug,
-                'url' => '/catalog/' . $catalog->slug,
+                'url' => '/catalog/'.$catalog->slug,
             ]);
 
             $catalog = $catalog->parent_id ? $catalogModel::find($catalog->parent_id) : null;
@@ -483,29 +462,26 @@ class CatalogService
     /**
      * Get breadcrumbs for product
      * Returns: Main - Catalog - Catalog Name - Product Name
-     *
-     * @param int $productId
-     * @return array
      */
     public function getProductBreadcrumbs(int $productId): array
     {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return [
                 [
                     'name' => 'Главная',
                     'url' => '/',
-                ]
+                ],
             ];
         }
 
         $product = $productModel::find($productId);
-        if (!$product) {
+        if (! $product) {
             return [
                 [
                     'name' => 'Главная',
                     'url' => '/',
-                ]
+                ],
             ];
         }
 
@@ -517,7 +493,7 @@ class CatalogService
             'id' => $product->id,
             'name' => $product->name,
             'slug' => $product->slug,
-            'url' => '/product/' . $product->slug,
+            'url' => '/product/'.$product->slug,
         ];
 
         return $breadcrumbs;
@@ -526,11 +502,8 @@ class CatalogService
     /**
      * Search products
      *
-     * @param string $query Search query
-     * @param int|null $catalogId Optional catalog filter
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  string  $query  Search query
+     * @param  int|null  $catalogId  Optional catalog filter
      * @return LengthAwarePaginator|Collection
      */
     public function searchProducts(
@@ -541,7 +514,7 @@ class CatalogService
         bool $activeOnly = false
     ) {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
@@ -557,8 +530,8 @@ class CatalogService
 
         $queryBuilder->where(function ($q) use ($query) {
             $q->where('name', 'LIKE', "%{$query}%")
-              ->orWhere('description', 'LIKE', "%{$query}%")
-              ->orWhere('sku', 'LIKE', "%{$query}%");
+                ->orWhere('description', 'LIKE', "%{$query}%")
+                ->orWhere('sku', 'LIKE', "%{$query}%");
         });
 
         $queryBuilder->orderBy('name');
@@ -573,10 +546,7 @@ class CatalogService
     /**
      * Search catalogs
      *
-     * @param string $query Search query
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  string  $query  Search query
      * @return LengthAwarePaginator|Collection
      */
     public function searchCatalogs(
@@ -586,7 +556,7 @@ class CatalogService
         bool $activeOnly = false
     ) {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 
@@ -598,7 +568,7 @@ class CatalogService
 
         $queryBuilder->where(function ($q) use ($query) {
             $q->where('name', 'LIKE', "%{$query}%")
-              ->orWhere('description', 'LIKE', "%{$query}%");
+                ->orWhere('description', 'LIKE', "%{$query}%");
         });
 
         $queryBuilder->orderBy('name');
@@ -612,11 +582,6 @@ class CatalogService
 
     /**
      * Get related products (from same catalog)
-     *
-     * @param int $productId
-     * @param int $limit
-     * @param bool $activeOnly
-     * @return Collection
      */
     public function getRelatedProducts(
         int $productId,
@@ -624,12 +589,12 @@ class CatalogService
         bool $activeOnly = true
     ): Collection {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
         $product = $productModel::find($productId);
-        if (!$product) {
+        if (! $product) {
             return collect([]);
         }
 
@@ -644,13 +609,78 @@ class CatalogService
     }
 
     /**
+     * Get curated companion products (сопутствующие товары / наборы) configured
+     * for a product in the admin panel — optionally scoped to a specific variant.
+     *
+     * Product-level companions always apply; passing $variantId or $variantSku
+     * additionally returns companions attached to that variant.
+     *
+     * @return array<int, array{
+     *     product: TProduct,
+     *     variant: ?TProductVariant,
+     *     sort: int
+     * }>
+     */
+    public function getCompanionProducts(
+        int $productId,
+        int|string|null $variant = null,
+        bool $activeOnly = true
+    ): array {
+        $productModel = $this->getProductModel();
+        if (! $productModel || ! Schema::hasTable('t_product_related')) {
+            return [];
+        }
+
+        $product = $productModel::find($productId);
+        if (! $product) {
+            return [];
+        }
+
+        $variantSku = $this->resolveVariantSku($productId, $variant);
+
+        $rows = $product->companionProducts($variantSku);
+
+        return $rows
+            ->filter(function ($row) use ($activeOnly) {
+                return ! $activeOnly || (bool) ($row['product']->is_active ?? false);
+            })
+            ->map(fn ($row) => [
+                'product' => $row['product'],
+                'variant' => $row['variant'],
+                'sort' => (int) ($row['link']->sort ?? 500),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Normalise a variant reference (id or SKU) to a SKU for companion lookups.
+     */
+    protected function resolveVariantSku(int $productId, int|string|null $variant): ?string
+    {
+        if ($variant === null || $variant === '') {
+            return null;
+        }
+
+        if (is_string($variant) && ! ctype_digit($variant)) {
+            return $variant;
+        }
+
+        $variantClass = TProductVariant::class;
+        if (! class_exists($variantClass) || ! Schema::hasTable('t_product_variants')) {
+            return null;
+        }
+
+        return $variantClass::where('product_id', $productId)
+            ->where('id', (int) $variant)
+            ->value('sku');
+    }
+
+    /**
      * Get featured products (is_hot, is_new, is_recommended)
      *
-     * @param string $type 'hot', 'new', or 'recommended'
-     * @param int|null $catalogId Optional catalog filter
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  string  $type  'hot', 'new', or 'recommended'
+     * @param  int|null  $catalogId  Optional catalog filter
      * @return LengthAwarePaginator|Collection
      */
     public function getFeaturedProducts(
@@ -666,7 +696,7 @@ class CatalogService
             'recommended' => 'is_recommended',
         ];
 
-        if (!isset($fieldMap[$type])) {
+        if (! isset($fieldMap[$type])) {
             return collect([]);
         }
 
@@ -682,13 +712,13 @@ class CatalogService
     /**
      * Get all available characteristic codes from products
      *
-     * @param int|null $catalogId Optional catalog filter
+     * @param  int|null  $catalogId  Optional catalog filter
      * @return array Array of unique characteristic codes
      */
     public function getAvailableProductCharacteristics(?int $catalogId = null): array
     {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return [];
         }
 
@@ -704,7 +734,7 @@ class CatalogService
         foreach ($products as $product) {
             if (is_array($product->addition_info)) {
                 foreach ($product->addition_info as $char) {
-                    if (isset($char['code']) && !in_array($char['code'], $characteristics)) {
+                    if (isset($char['code']) && ! in_array($char['code'], $characteristics)) {
                         $characteristics[] = $char['code'];
                     }
                 }
@@ -722,7 +752,7 @@ class CatalogService
     public function getAvailableCatalogCharacteristics(): array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return [];
         }
 
@@ -732,7 +762,7 @@ class CatalogService
         foreach ($catalogs as $catalog) {
             if (is_array($catalog->addition_info)) {
                 foreach ($catalog->addition_info as $char) {
-                    if (isset($char['code']) && !in_array($char['code'], $characteristics)) {
+                    if (isset($char['code']) && ! in_array($char['code'], $characteristics)) {
                         $characteristics[] = $char['code'];
                     }
                 }
@@ -744,15 +774,11 @@ class CatalogService
 
     /**
      * Get product count by catalog
-     *
-     * @param int $catalogId
-     * @param bool $activeOnly
-     * @return int
      */
     public function getCatalogProductCount(int $catalogId, bool $activeOnly = false): int
     {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return 0;
         }
 
@@ -768,14 +794,12 @@ class CatalogService
     /**
      * Get price range for catalog products
      *
-     * @param int $catalogId
-     * @param bool $activeOnly
      * @return array ['min' => float, 'max' => float]
      */
     public function getCatalogPriceRange(int $catalogId, bool $activeOnly = false): array
     {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return ['min' => 0, 'max' => 0];
         }
 
@@ -794,11 +818,8 @@ class CatalogService
     /**
      * Search products by properties
      *
-     * @param array $properties ['property_code' => 'value'] or ['property_id' => 'value']
-     * @param int|null $catalogId Optional catalog filter
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  array  $properties  ['property_code' => 'value'] or ['property_id' => 'value']
+     * @param  int|null  $catalogId  Optional catalog filter
      * @return LengthAwarePaginator|Collection
      */
     public function searchProductsByProperties(
@@ -809,11 +830,11 @@ class CatalogService
         bool $activeOnly = false
     ) {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductPropertyValue')) {
             return collect([]);
         }
 
@@ -835,14 +856,14 @@ class CatalogService
             // Determine if key is property_id or property_code
             if (is_numeric($key)) {
                 // Search by property_id
-                $query->whereHas('propertyValues', function($q) use ($key, $value) {
+                $query->whereHas('propertyValues', function ($q) use ($key, $value) {
                     $q->where('property_id', $key)
-                      ->where('value', $value);
+                        ->where('value', $value);
                 });
             } else {
                 // Search by property code
-                $query->whereHas('propertyValues', function($q) use ($key, $value, $propertyClass) {
-                    $q->whereHas('property', function($pq) use ($key) {
+                $query->whereHas('propertyValues', function ($q) use ($key, $value) {
+                    $q->whereHas('property', function ($pq) use ($key) {
                         $pq->where('code', $key);
                     })->where('value', $value);
                 });
@@ -860,19 +881,16 @@ class CatalogService
 
     /**
      * Get all available properties for a catalog (including inherited)
-     *
-     * @param int $catalogId
-     * @return array
      */
     public function getCatalogProperties(int $catalogId): array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return [];
         }
 
         $catalog = $catalogModel::find($catalogId);
-        if (!$catalog) {
+        if (! $catalog) {
             return [];
         }
 
@@ -882,12 +900,8 @@ class CatalogService
     /**
      * Get products of catalog and all its subcatalogs recursively
      *
-     * @param int $catalogId
-     * @param array $filters Additional filters
-     * @param array $order Ordering
-     * @param int|null $limit
-     * @param int $page
-     * @param bool $activeOnly
+     * @param  array  $filters  Additional filters
+     * @param  array  $order  Ordering
      * @return LengthAwarePaginator|Collection
      */
     public function getProductsByCatalogRecursive(
@@ -899,17 +913,17 @@ class CatalogService
         bool $activeOnly = true
     ) {
         $productModel = $this->getProductModel();
-        if (!$productModel) {
+        if (! $productModel) {
             return collect([]);
         }
 
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 
         $catalog = $catalogModel::find($catalogId);
-        if (!$catalog) {
+        if (! $catalog) {
             return collect([]);
         }
 
@@ -935,14 +949,11 @@ class CatalogService
 
     /**
      * Get all descendant catalog IDs recursively
-     *
-     * @param $catalog
-     * @return array
      */
     protected function getDescendantCatalogIds($catalog): array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return [];
         }
 
@@ -959,10 +970,6 @@ class CatalogService
 
     /**
      * Apply advanced filters to catalog query
-     *
-     * @param $query
-     * @param array $filters
-     * @return void
      */
     protected function applyCatalogFilters($query, array $filters): void
     {
@@ -995,10 +1002,6 @@ class CatalogService
 
     /**
      * Apply advanced filters to product query
-     *
-     * @param $query
-     * @param array $filters
-     * @return void
      */
     protected function applyProductFilters($query, array $filters): void
     {
@@ -1032,11 +1035,7 @@ class CatalogService
     /**
      * Apply JSON field filter
      *
-     * @param $query
-     * @param string $jsonField
-     * @param string $key
-     * @param mixed $value
-     * @return void
+     * @param  mixed  $value
      */
     protected function applyJsonFilter($query, string $jsonField, string $key, $value): void
     {
@@ -1055,7 +1054,7 @@ class CatalogService
                 }
             } else {
                 // Array filter (IN)
-                $query->where(function($q) use ($jsonField, $key, $value) {
+                $query->where(function ($q) use ($jsonField, $key, $value) {
                     foreach ($value as $v) {
                         $q->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT({$jsonField}, '$.{$key}')) = ?", [$v]);
                     }
@@ -1075,17 +1074,13 @@ class CatalogService
 
     /**
      * Apply ordering to query
-     *
-     * @param $query
-     * @param array $order
-     * @return void
      */
     protected function applyOrdering($query, array $order): void
     {
         foreach ($order as $field => $direction) {
             $direction = strtolower($direction);
 
-            if (!in_array($direction, ['asc', 'desc'])) {
+            if (! in_array($direction, ['asc', 'desc'])) {
                 $direction = 'asc';
             }
 
@@ -1096,14 +1091,11 @@ class CatalogService
 
     /**
      * Get catalog by code
-     *
-     * @param string $code
-     * @return array|null
      */
     public function getCatalogByCode(string $code): ?array
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return null;
         }
 
@@ -1114,11 +1106,6 @@ class CatalogService
 
     /**
      * Get all catalogs (flat list)
-     *
-     * @param array $filters
-     * @param array $order
-     * @param bool $activeOnly
-     * @return Collection
      */
     public function getAllCatalogs(
         array $filters = [],
@@ -1126,7 +1113,7 @@ class CatalogService
         bool $activeOnly = true
     ): Collection {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 
@@ -1144,14 +1131,11 @@ class CatalogService
 
     /**
      * Get root catalogs (catalogs without parent)
-     *
-     * @param bool $activeOnly
-     * @return Collection
      */
     public function getRootCatalogs(bool $activeOnly = true): Collection
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 
@@ -1166,15 +1150,11 @@ class CatalogService
 
     /**
      * Get child catalogs
-     *
-     * @param int $parentId
-     * @param bool $activeOnly
-     * @return Collection
      */
     public function getChildCatalogs(int $parentId, bool $activeOnly = true): Collection
     {
         $catalogModel = $this->getCatalogModel();
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return collect([]);
         }
 

@@ -5,13 +5,65 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalogPropertyGroup;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
 class CatalogController extends Controller
 {
+    /**
+     * Supported catalog property value types.
+     */
+    protected const PROPERTY_TYPES = ['string', 'text', 'number', 'color', 'image', 'table', 'entity'];
+
+    /**
+     * Property types that support the "is_multiple" flag.
+     */
+    protected const MULTIPLE_CAPABLE_PROPERTY_TYPES = ['string', 'text', 'number', 'color', 'image', 'entity'];
+
+    /**
+     * Build a persistable attribute set for a catalog property from raw request input,
+     * clamping the type to a known value and keeping "settings" consistent with it.
+     *
+     * @param  array<string, mixed>  $property
+     * @param  int|string|null  $groupId
+     * @return array<string, mixed>
+     */
+    protected function propertyAttributes(array $property, $groupId): array
+    {
+        $type = in_array($property['type'] ?? null, self::PROPERTY_TYPES, true)
+            ? $property['type']
+            : 'string';
+
+        $settings = is_array($property['settings'] ?? null) ? $property['settings'] : [];
+
+        if ($type === 'entity') {
+            $settings['entity_types'] = array_values(array_intersect(
+                $settings['entity_types'] ?? ['product', 'catalog', 'infoblock'],
+                ['product', 'catalog', 'infoblock']
+            )) ?: ['product', 'catalog', 'infoblock'];
+        } else {
+            unset($settings['entity_types'], $settings['infoblock_id']);
+        }
+
+        if ($type !== 'table') {
+            unset($settings['table']);
+        }
+
+        return [
+            'code' => $property['code'],
+            'name' => $property['name'],
+            'type' => $type,
+            'settings' => $settings ?: null,
+            'is_multiple' => in_array($type, self::MULTIPLE_CAPABLE_PROPERTY_TYPES, true)
+                ? (bool) ($property['is_multiple'] ?? false)
+                : false,
+            'sort_order' => $property['sort_order'] ?? 500,
+            'group_id' => $groupId,
+        ];
+    }
+
     /**
      * Get all catalogs with hierarchy
      */
@@ -21,11 +73,11 @@ class CatalogController extends Controller
 
         if ($search) {
             $catalogs = TCatalog::where('name', 'like', "%{$search}%")
-                ->orWhereHas('products', function($query) use ($search) {
+                ->orWhereHas('products', function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%");
                 })
-                ->with(['children', 'products' => function($query) use ($search) {
+                ->with(['children', 'products' => function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%");
                 }])
@@ -85,13 +137,14 @@ class CatalogController extends Controller
         // Get all properties including inherited
         $allProperties = $catalog->getAllProperties();
         $ownProperties = $catalog->properties;
-        $inheritedProperties = $allProperties->filter(function($prop) use ($ownProperties) {
-            return !$ownProperties->contains('id', $prop->id);
-        })->map(function($prop) {
+        $inheritedProperties = $allProperties->filter(function ($prop) use ($ownProperties) {
+            return ! $ownProperties->contains('id', $prop->id);
+        })->map(function ($prop) {
             $prop->is_inherited = true;
             if ($prop->catalog) {
                 $prop->catalog_name = $prop->catalog->name;
             }
+
             return $prop;
         });
 
@@ -140,7 +193,9 @@ class CatalogController extends Controller
         // Create property groups
         $groupIdMap = []; // temp_id => real_id
         foreach ($propertyGroups as $group) {
-            if (empty($group['name'])) continue;
+            if (empty($group['name'])) {
+                continue;
+            }
 
             $created = TCatalogPropertyGroup::create([
                 'catalog_id' => $catalog->id,
@@ -155,29 +210,24 @@ class CatalogController extends Controller
         }
 
         // Create properties
-        if (!empty($properties) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalogProperty')) {
+        if (! empty($properties) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalogProperty')) {
             foreach ($properties as $property) {
-                if (empty($property['code']) || empty($property['name'])) continue;
+                if (empty($property['code']) || empty($property['name'])) {
+                    continue;
+                }
 
                 // Resolve group_id: temp_id -> real_id
                 $groupId = null;
-                if (!empty($property['group_id'])) {
+                if (! empty($property['group_id'])) {
                     $groupId = $groupIdMap[$property['group_id']] ?? $property['group_id'];
                 }
 
-                $catalog->properties()->create([
-                    'code' => $property['code'],
-                    'name' => $property['name'],
-                    'type' => $property['type'] ?? 'string',
-                    'is_multiple' => $property['is_multiple'] ?? false,
-                    'sort_order' => $property['sort_order'] ?? 500,
-                    'group_id' => $groupId,
-                ]);
+                $catalog->properties()->create($this->propertyAttributes($property, $groupId));
             }
         }
 
         TAdminAction::log('created', 'catalog', $catalog->id,
-            'Создана категория "' . $catalog->name . '"');
+            'Создана категория "'.$catalog->name.'"');
 
         return response()->json($catalog->load('properties'), 201);
     }
@@ -192,7 +242,7 @@ class CatalogController extends Controller
         $validated = $request->validate([
             'parent_id' => 'nullable|exists:t_catalogs,id',
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:t_catalogs,slug,' . $id,
+            'slug' => 'required|string|max:255|unique:t_catalogs,slug,'.$id,
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
@@ -227,7 +277,9 @@ class CatalogController extends Controller
                 ->delete();
 
             foreach ($propertyGroups as $group) {
-                if (empty($group['name'])) continue;
+                if (empty($group['name'])) {
+                    continue;
+                }
 
                 if (isset($group['id'])) {
                     // Update existing
@@ -261,40 +313,32 @@ class CatalogController extends Controller
             $catalog->properties()->whereNotIn('id', $propertyIds)->delete();
 
             foreach ($properties as $property) {
-                if (empty($property['code']) || empty($property['name'])) continue;
+                if (empty($property['code']) || empty($property['name'])) {
+                    continue;
+                }
 
                 // Resolve group_id
                 $groupId = null;
-                if (!empty($property['group_id'])) {
+                if (! empty($property['group_id'])) {
                     $groupId = isset($groupIdMap) ? ($groupIdMap[$property['group_id']] ?? $property['group_id']) : $property['group_id'];
                 }
 
-                if (isset($property['id'])) {
-                    $catalog->properties()->where('id', $property['id'])->update([
-                        'code' => $property['code'],
-                        'name' => $property['name'],
-                        'type' => $property['type'] ?? 'string',
-                        'is_multiple' => $property['is_multiple'] ?? false,
-                        'sort_order' => $property['sort_order'] ?? 500,
-                        'group_id' => $groupId,
-                    ]);
+                $existingProperty = isset($property['id'])
+                    ? $catalog->properties()->where('id', $property['id'])->first()
+                    : null;
+
+                if ($existingProperty) {
+                    $existingProperty->update($this->propertyAttributes($property, $groupId));
                 } else {
-                    $catalog->properties()->create([
-                        'code' => $property['code'],
-                        'name' => $property['name'],
-                        'type' => $property['type'] ?? 'string',
-                        'is_multiple' => $property['is_multiple'] ?? false,
-                        'sort_order' => $property['sort_order'] ?? 500,
-                        'group_id' => $groupId,
-                    ]);
+                    $catalog->properties()->create($this->propertyAttributes($property, $groupId));
                 }
             }
         }
 
         TAdminAction::log('updated', 'catalog', $catalog->id,
-            'Обновлена категория "' . $catalog->name . '"', [
+            'Обновлена категория "'.$catalog->name.'"', [
                 'old' => $oldData,
-                'new' => $catalog->getAttributes()
+                'new' => $catalog->getAttributes(),
             ]);
 
         return response()->json($catalog->load('properties'));
@@ -310,20 +354,20 @@ class CatalogController extends Controller
 
         if ($catalog->products()->exists()) {
             return response()->json([
-                'message' => 'Невозможно удалить категорию с товарами'
+                'message' => 'Невозможно удалить категорию с товарами',
             ], 422);
         }
 
         if ($catalog->hasChildren()) {
             return response()->json([
-                'message' => 'Невозможно удалить категорию с подкатегориями'
+                'message' => 'Невозможно удалить категорию с подкатегориями',
             ], 422);
         }
 
         $catalog->delete();
 
         TAdminAction::log('deleted', 'catalog', $id,
-            'Удалена категория "' . $catalogName . '"');
+            'Удалена категория "'.$catalogName.'"');
 
         return response()->json(['message' => 'Категория удалена']);
     }
@@ -353,7 +397,7 @@ class CatalogController extends Controller
     private function loadDescendants($catalog): void
     {
         if ($catalog->children_count > 0) {
-            $catalog->load(['children' => function($query) {
+            $catalog->load(['children' => function ($query) {
                 $query->with('products')->withCount(['children', 'products']);
             }]);
 

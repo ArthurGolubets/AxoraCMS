@@ -2,17 +2,19 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
-use HolartWeb\AxoraCMS\Services\LicenseService;
 use HolartWeb\AxoraCMS\Models\TModule;
+use HolartWeb\AxoraCMS\Services\LicenseService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
 class ShopInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'shop';
 
     protected $signature = 'axoracms:shop-install';
+
     protected $description = 'Install AxoraCMS Shop Module';
 
     protected LicenseService $licenseService;
@@ -32,9 +34,10 @@ class ShopInstallCommand extends Command
 
         // Step 1: Check License
         $this->info('Step 1: Checking license...');
-        if (!$this->checkLicense()) {
+        if (! $this->checkLicense()) {
             $this->error('❌ License verification failed!');
             $this->error('Please contact support to obtain a valid license key.');
+
             return self::FAILURE;
         }
         $this->info('✓ License verified successfully');
@@ -45,20 +48,23 @@ class ShopInstallCommand extends Command
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
         try {
-            // Run shop module migrations from package directory
-            $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/shop';
+            // Run shop module migrations straight from the package directory.
+            // Absolute path + --realpath so it also works on Windows.
+            $migrationsPath = $packagePath.'/database/migrations/shop';
             Artisan::call('migrate', [
                 '--path' => $migrationsPath,
-                '--force' => true
+                '--realpath' => true,
+                '--force' => true,
             ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
         $this->newLine();
@@ -66,7 +72,7 @@ class ShopInstallCommand extends Command
         // Step 3: Build Frontend Assets
         $this->info('Step 3: Building frontend assets...');
 
-        if (file_exists($packagePath . '/package.json')) {
+        if (file_exists($packagePath.'/package.json')) {
             $this->info('Installing npm dependencies...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnVar);
 
@@ -110,7 +116,7 @@ class ShopInstallCommand extends Command
         // Step 6: Register module in database
         $this->info('Step 6: Registering module...');
         TModule::install(self::MODULE_NAME, self::VERSION);
-        $this->info('✓ Module registered successfully (version ' . self::VERSION . ')');
+        $this->info('✓ Module registered successfully (version '.self::VERSION.')');
         $this->newLine();
 
         // Success Message
@@ -119,7 +125,7 @@ class ShopInstallCommand extends Command
         $this->info('╚══════════════════════════════════════╝');
         $this->newLine();
         $this->info('You can now access the shop features in your admin panel.');
-        $this->info('Navigate to: ' . url('/admin/catalog'));
+        $this->info('Navigate to: '.url('/admin/catalog'));
         $this->newLine();
 
         return self::SUCCESS;
@@ -143,13 +149,15 @@ class ShopInstallCommand extends Command
         }
 
         // Validate license
-        if (!$this->licenseService->checkLicense($key, 'shop-install')) {
+        if (! $this->licenseService->checkLicense($key, 'shop-install')) {
             $this->error('Invalid license key!');
+
             return false;
         }
 
         // Save license
         $this->licenseService->saveLicense($key);
+
         return true;
     }
 }

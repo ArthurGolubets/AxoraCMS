@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
+use HolartWeb\AxoraCMS\Models\Shop\TProductRelated;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Models\TPanelSettings;
@@ -60,6 +61,97 @@ class ProductController extends Controller
             'commerceml_installed' => $this->hasStockIntegration(),
             'can_edit_stock' => $this->stockEditingEnabled(),
         ]);
+    }
+
+    /**
+     * Replace the companion-product links for a product at a given scope
+     * (product level when $variantSku is null, otherwise that variant).
+     *
+     * @param  array<int, array{related_product_id: int, related_variant_sku?: ?string, sort?: ?int}>  $links
+     */
+    protected function syncRelatedProducts(TProduct $product, ?string $variantSku, array $links): void
+    {
+        $relatedClass = 'HolartWeb\AxoraCMS\Models\Shop\TProductRelated';
+        if (! class_exists($relatedClass)) {
+            return;
+        }
+
+        if ($variantSku !== null) {
+            $relatedClass::where('product_id', $product->id)
+                ->where('variant_sku', $variantSku)
+                ->delete();
+        }
+
+        $seen = [];
+
+        foreach ($links as $link) {
+            $relatedProductId = (int) ($link['related_product_id'] ?? 0);
+            if ($relatedProductId <= 0) {
+                continue;
+            }
+
+            $relatedVariantSku = $link['related_variant_sku'] ?? null;
+            $dedupeKey = $relatedProductId.'|'.($relatedVariantSku ?? '');
+            if (isset($seen[$dedupeKey])) {
+                continue;
+            }
+            $seen[$dedupeKey] = true;
+
+            $relatedClass::create([
+                'product_id' => $product->id,
+                'variant_sku' => $variantSku,
+                'related_product_id' => $relatedProductId,
+                'related_variant_sku' => $relatedVariantSku ?: null,
+                'sort' => (int) ($link['sort'] ?? 500),
+            ]);
+        }
+    }
+
+    /**
+     * Companion-product links for a product, shaped for the admin form.
+     *
+     * @return array{product: array<int, array<string, mixed>>, variants: array<string, array<int, array<string, mixed>>>}
+     */
+    protected function relatedProductsPayload(TProduct $product): array
+    {
+        $relatedClass = 'HolartWeb\AxoraCMS\Models\Shop\TProductRelated';
+        $result = ['product' => [], 'variants' => []];
+
+        if (! class_exists($relatedClass)) {
+            return $result;
+        }
+
+        $links = $relatedClass::where('product_id', $product->id)
+            ->with('relatedProduct:id,name,sku,main_image,price,catalog_id')
+            ->orderBy('sort')
+            ->get();
+
+        foreach ($links as $link) {
+            if (! $link->relatedProduct) {
+                continue;
+            }
+
+            $row = [
+                'related_product_id' => $link->related_product_id,
+                'related_variant_sku' => $link->related_variant_sku,
+                'sort' => $link->sort,
+                'related_product' => [
+                    'id' => $link->relatedProduct->id,
+                    'name' => $link->relatedProduct->name,
+                    'sku' => $link->relatedProduct->sku,
+                    'main_image' => $link->relatedProduct->main_image,
+                    'price' => $link->relatedProduct->price,
+                ],
+            ];
+
+            if ($link->variant_sku === null) {
+                $result['product'][] = $row;
+            } else {
+                $result['variants'][$link->variant_sku][] = $row;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -175,6 +267,7 @@ class ProductController extends Controller
             'property_values' => $propertyValuesFormatted,
             'string_filter_values' => $product->string_filter_values ?? [],
             'integration' => $this->integrationPayload($product),
+            'related_products' => $this->relatedProductsPayload($product),
         ];
 
         \Log::info('Full API response property_values:', $response['property_values']);
@@ -225,6 +318,14 @@ class ProductController extends Controller
             'entity_filter_values.*' => 'nullable|integer',
             'string_filter_values' => 'nullable|array',
             'string_filter_values.*' => 'nullable|string',
+            'related_products' => 'nullable|array',
+            'related_products.*.related_product_id' => 'required|integer|exists:t_products,id',
+            'related_products.*.related_variant_sku' => 'nullable|string',
+            'related_products.*.sort' => 'nullable|integer',
+            'variants.*.related_products' => 'nullable|array',
+            'variants.*.related_products.*.related_product_id' => 'required|integer|exists:t_products,id',
+            'variants.*.related_products.*.related_variant_sku' => 'nullable|string',
+            'variants.*.related_products.*.sort' => 'nullable|integer',
         ]);
 
         // Generate slug if not provided
@@ -248,6 +349,10 @@ class ProductController extends Controller
         $propertyValues = $validated['property_values'] ?? [];
         unset($validated['property_values']);
 
+        // Extract companion products (product level)
+        $relatedProducts = $validated['related_products'] ?? null;
+        unset($validated['related_products']);
+
         $product = TProduct::create($validated);
 
         // Create variants if provided
@@ -256,8 +361,16 @@ class ProductController extends Controller
             $variantPropertyValues = $variantData['property_values'] ?? [];
             unset($variantData['property_values']);
 
+            // Extract companion products for this variant
+            $variantRelated = $variantData['related_products'] ?? null;
+            unset($variantData['related_products']);
+
             // Create variant
             $variant = $product->variants()->create($variantData);
+
+            if ($variantRelated !== null) {
+                $this->syncRelatedProducts($product, $variant->sku, $variantRelated);
+            }
 
             // Save variant property values if provided
             if (! empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
@@ -292,6 +405,11 @@ class ProductController extends Controller
         // Sync filter values if provided
         if (! empty($filterValues) && method_exists($product, 'syncFilterValues')) {
             $product->syncFilterValues($filterValues);
+        }
+
+        // Sync product-level companion products
+        if ($relatedProducts !== null) {
+            $this->syncRelatedProducts($product, null, $relatedProducts);
         }
 
         // Save property values if provided
@@ -396,6 +514,14 @@ class ProductController extends Controller
             'entity_filter_values.*' => 'nullable|integer',
             'string_filter_values' => 'nullable|array',
             'string_filter_values.*' => 'nullable|string',
+            'related_products' => 'nullable|array',
+            'related_products.*.related_product_id' => 'required|integer|exists:t_products,id',
+            'related_products.*.related_variant_sku' => 'nullable|string',
+            'related_products.*.sort' => 'nullable|integer',
+            'variants.*.related_products' => 'nullable|array',
+            'variants.*.related_products.*.related_product_id' => 'required|integer|exists:t_products,id',
+            'variants.*.related_products.*.related_variant_sku' => 'nullable|string',
+            'variants.*.related_products.*.sort' => 'nullable|integer',
         ]);
 
         // Stock (quantity) is only writable when the CommerceML integration is
@@ -407,10 +533,23 @@ class ProductController extends Controller
             ])['quantity'] ?? 0;
         }
 
+        // Companion products (product level) — synced after variants so variant
+        // SKUs referenced by variant-scoped links exist.
+        $relatedProducts = $validated['related_products'] ?? null;
+        unset($validated['related_products']);
+
         // Handle variants update
         if (isset($validated['variants'])) {
             $variants = $validated['variants'];
             unset($validated['variants']);
+
+            // Variant-scoped companion links are keyed by SKU and rebuilt from the
+            // payload, so drop the current ones before recreating variants.
+            if (class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductRelated')) {
+                TProductRelated::where('product_id', $product->id)
+                    ->whereNotNull('variant_sku')
+                    ->delete();
+            }
 
             // Delete old variants (cascade will delete property values)
             $product->variants()->delete();
@@ -421,8 +560,16 @@ class ProductController extends Controller
                 $variantPropertyValues = $variantData['property_values'] ?? [];
                 unset($variantData['property_values']);
 
+                // Extract companion products for this variant
+                $variantRelated = $variantData['related_products'] ?? null;
+                unset($variantData['related_products']);
+
                 // Create variant
                 $variant = $product->variants()->create($variantData);
+
+                if ($variantRelated !== null) {
+                    $this->syncRelatedProducts($product, $variant->sku, $variantRelated);
+                }
 
                 // Save variant property values if provided
                 if (! empty($variantPropertyValues) && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductVariantPropertyValue')) {
@@ -468,6 +615,14 @@ class ProductController extends Controller
             if (method_exists($product, 'syncFilterValues')) {
                 $product->syncFilterValues($filterValues);
             }
+        }
+
+        // Sync product-level companion products
+        if ($relatedProducts !== null && class_exists('HolartWeb\AxoraCMS\Models\Shop\TProductRelated')) {
+            TProductRelated::where('product_id', $product->id)
+                ->whereNull('variant_sku')
+                ->delete();
+            $this->syncRelatedProducts($product, null, $relatedProducts);
         }
 
         // Handle property values update
@@ -575,7 +730,7 @@ class ProductController extends Controller
         })
             ->where('is_active', true)
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
-            ->with(['catalog'])
+            ->with(['catalog', 'variants:id,product_id,name,sku,price'])
             ->limit(20)
             ->get()
             ->map(function ($product) {
@@ -590,6 +745,12 @@ class ProductController extends Controller
                     'addition_info' => $product->addition_info,
                     'property_values' => $product->propertyValues->pluck('value', 'property_id')->toArray(),
                     'catalog_name' => $product->catalog->name ?? null,
+                    'variants' => $product->variants->map(fn ($v) => [
+                        'id' => $v->id,
+                        'name' => $v->name,
+                        'sku' => $v->sku,
+                        'price' => $v->price,
+                    ]),
                 ];
             });
 

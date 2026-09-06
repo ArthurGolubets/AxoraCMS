@@ -165,6 +165,14 @@
           Отмена
         </button>
         <button
+            type="button"
+            @click="handleSubmit(true)"
+            :disabled="loading"
+            class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium disabled:opacity-50"
+        >
+          {{ loading ? 'Сохранение...' : 'Сохранить и продолжить' }}
+        </button>
+        <button
             type="submit"
             :disabled="loading"
             :style="buttonStyle"
@@ -178,7 +186,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
@@ -324,7 +332,11 @@ const loadCatalog = async () => {
   }
 };
 
-const handleSubmit = async () => {
+const handleSubmit = async (stayParam) => {
+  // `true` only when triggered by "Сохранить и продолжить";
+  // the native form submit passes an Event object instead.
+  const stay = stayParam === true;
+
   loading.value = true;
   try {
     // Ensure slug is generated if empty
@@ -371,8 +383,21 @@ const handleSubmit = async () => {
       throw new Error(data.message || 'Failed to save catalog');
     }
 
+    const saved = await response.json().catch(() => null);
+
+    if (stay) {
+      await success(isEdit.value ? 'Категория сохранена' : 'Категория создана');
+
+      if (!isEdit.value && saved && saved.id) {
+        await router.replace({ path: `/catalog/${saved.id}/edit`, query: route.query });
+      } else if (isEdit.value) {
+        await loadCatalog();
+      }
+      return;
+    }
+
     await success(isEdit.value ? 'Категория обновлена' : 'Категория создана');
-    router.push('/catalog');
+    router.push(route.query.return || '/catalog');
   } catch (err) {
     console.error('Error saving catalog:', err);
     await error(err.message || 'Ошибка при сохранении категории');
@@ -391,6 +416,14 @@ onMounted(() => {
   // Set parent_id from query parameter
   if (route.query.parent_id) {
     form.value.parent_id = parseInt(route.query.parent_id);
+  }
+});
+
+// Reload when the route id changes (e.g. after "Сохранить и продолжить" on a new
+// category switches the form from create mode to edit mode without a remount).
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    await loadCatalog();
   }
 });
 </script>

@@ -157,6 +157,17 @@
         <ProductCharacteristics v-model="form.addition_info" applies-to="product" />
       </div>
 
+      <!-- Related (companion) products Tab -->
+      <div v-if="activeTab === 'related'" class="space-y-6">
+        <ProductRelatedProducts
+          :product-links="form.related_products"
+          :variant-links="form.variant_related_products"
+          :variants="form.variants"
+          @update:productLinks="form.related_products = $event"
+          @update:variantLinks="form.variant_related_products = $event"
+        />
+      </div>
+
       <!-- Content Tab -->
       <div v-show="activeTab === 'content'" class="space-y-6">
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
@@ -323,6 +334,7 @@ import ProductFiltersBlock from './ProductFiltersBlock.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductPropertiesForm from './ProductPropertiesForm.vue';
+import ProductRelatedProducts from './ProductRelatedProducts.vue';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -349,20 +361,38 @@ const deactivateSourceProduct = ref(true);
 const createDuplicateVariant = ref(true);
 const searchTimeout = ref(null);
 
+const panelSettings = ref({});
+
 const tabs = computed(() => {
   const list = [
     { id: 'main', label: 'Основное' },
     { id: 'seo', label: 'SEO' },
-    { id: 'variants', label: 'Варианты' },
-    { id: 'properties', label: 'Свойства и характеристики' },
-    { id: 'content', label: 'Контент' },
-    { id: 'filters', label: 'Фильтры' }
   ];
+  if (panelSettings.value.product_variants_enabled !== false) {
+    list.push({ id: 'variants', label: 'Варианты' });
+  }
+  list.push({ id: 'properties', label: 'Свойства и характеристики' });
+  if (panelSettings.value.related_products_enabled === true) {
+    list.push({ id: 'related', label: 'Сопутствующие товары' });
+  }
+  list.push({ id: 'content', label: 'Контент' });
+  list.push({ id: 'filters', label: 'Фильтры' });
   if (isEdit.value) {
     list.push({ id: 'integration', label: 'Интеграция и остатки' });
   }
   return list;
 });
+
+const loadPanelSettings = async () => {
+  try {
+    const response = await fetch('/admin/api/settings', { headers: { Accept: 'application/json' } });
+    if (response.ok) {
+      panelSettings.value = await response.json();
+    }
+  } catch (e) {
+    panelSettings.value = {};
+  }
+};
 
 // Integration / stock info (filled from the product API on edit)
 const integration = ref({
@@ -398,6 +428,8 @@ const form = ref({
   property_values: {},
   entity_filter_values: {},
   string_filter_values: {},
+  related_products: [],
+  variant_related_products: {},
 });
 
 const availableProperties = ref([]);
@@ -743,6 +775,8 @@ const loadProduct = async () => {
       entity_filter_values: product.entity_filter_values || {},
       string_filter_values: product.string_filter_values || {},
       quantity: data.integration?.quantity ?? null,
+      related_products: data.related_products?.product || [],
+      variant_related_products: data.related_products?.variants || {},
     };
 
     // Integration / stock block
@@ -755,6 +789,26 @@ const loadProduct = async () => {
   } catch (err) {
     await error('Ошибка при загрузке товара');
   }
+};
+
+// Flatten companion-product links into the shape the API expects:
+// - product-level under `related_products`
+// - variant-level injected into each `variants[i].related_products` by SKU
+const buildProductPayload = () => {
+  const slimLink = (l) => ({
+    related_product_id: l.related_product_id,
+    related_variant_sku: l.related_variant_sku || null,
+    sort: l.sort ?? 500,
+  });
+
+  const payload = { ...form.value };
+  payload.related_products = (form.value.related_products || []).map(slimLink);
+  payload.variants = (form.value.variants || []).map((v) => ({
+    ...v,
+    related_products: ((form.value.variant_related_products || {})[v.sku] || []).map(slimLink),
+  }));
+  delete payload.variant_related_products;
+  return payload;
 };
 
 const handleSubmit = async (stayParam) => {
@@ -794,7 +848,7 @@ const handleSubmit = async (stayParam) => {
         'X-CSRF-TOKEN': token,
         'Accept': 'application/json'
       },
-      body: JSON.stringify(form.value),
+      body: JSON.stringify(buildProductPayload()),
     });
 
     if (!response.ok) {
@@ -809,7 +863,7 @@ const handleSubmit = async (stayParam) => {
 
       if (!isEdit.value && saved && saved.id) {
         // Switch the form into edit mode for the freshly created product
-        await router.replace(`/products/${saved.id}/edit`);
+        await router.replace({ path: `/products/${saved.id}/edit`, query: route.query });
       } else {
         await loadProduct();
       }
@@ -817,7 +871,7 @@ const handleSubmit = async (stayParam) => {
     }
 
     await success(isEdit.value ? 'Товар обновлен' : 'Товар создан');
-    router.push('/catalog');
+    router.push(route.query.return || '/catalog');
   } catch (err) {
     console.error('Error saving product:', err);
     await error(err.message || 'Ошибка при сохранении товара');
@@ -835,6 +889,7 @@ watch(() => route.params.id, async (newId, oldId) => {
 });
 
 onMounted(async () => {
+  await loadPanelSettings();
   await loadCategories();
   if (isEdit.value) {
     await loadProduct();

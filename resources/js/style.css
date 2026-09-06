@@ -11,7 +11,7 @@
   }
 
   #app {
-    @apply w-full h-screen;
+    @apply w-full h-screen overflow-hidden;
   }
 
   /* Fix dark mode input/select text color */

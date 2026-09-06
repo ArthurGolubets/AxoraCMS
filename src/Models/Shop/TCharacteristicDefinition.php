@@ -12,15 +12,27 @@ class TCharacteristicDefinition extends Model
         'name',
         'code',
         'type',
+        'settings',
         'multiple',
         'applies_to',
         'sort_order',
     ];
 
     protected $casts = [
+        'settings' => 'array',
         'multiple' => 'boolean',
         'sort_order' => 'integer',
     ];
+
+    /**
+     * Field types that support the "multiple" flag.
+     */
+    public const MULTIPLE_CAPABLE_TYPES = ['string', 'number', 'color', 'image', 'entity'];
+
+    /**
+     * All supported characteristic value types.
+     */
+    public const TYPES = ['string', 'number', 'boolean', 'color', 'image', 'table', 'entity'];
 
     /**
      * Get definitions for catalogs
@@ -67,7 +79,7 @@ class TCharacteristicDefinition extends Model
             'Ж' => 'Zh', 'З' => 'Z', 'И' => 'I', 'Й' => 'Y', 'К' => 'K', 'Л' => 'L', 'М' => 'M',
             'Н' => 'N', 'О' => 'O', 'П' => 'P', 'Р' => 'R', 'С' => 'S', 'Т' => 'T', 'У' => 'U',
             'Ф' => 'F', 'Х' => 'H', 'Ц' => 'Ts', 'Ч' => 'Ch', 'Ш' => 'Sh', 'Щ' => 'Sch', 'Ъ' => '',
-            'Ы' => 'Y', 'Ь' => '', 'Э' => 'E', 'Ю' => 'Yu', 'Я' => 'Ya'
+            'Ы' => 'Y', 'Ь' => '', 'Э' => 'E', 'Ю' => 'Yu', 'Я' => 'Ya',
         ];
 
         $code = mb_convert_case($name, MB_CASE_LOWER);
@@ -80,7 +92,7 @@ class TCharacteristicDefinition extends Model
         $count = 1;
 
         while (static::where('code', $code)->exists()) {
-            $code = $originalCode . '_' . $count;
+            $code = $originalCode.'_'.$count;
             $count++;
         }
 

@@ -2,11 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
-use HolartWeb\AxoraCMS\Models\TAdministrator;
 use HolartWeb\AxoraCMS\Enums\AdminRole;
+use HolartWeb\AxoraCMS\Models\TAdministrator;
 use HolartWeb\AxoraCMS\Services\LicenseService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 
 class InstallCommand extends Command
 {
@@ -47,8 +48,9 @@ class InstallCommand extends Command
         $this->newLine();
 
         // Check license
-        if (!$this->checkLicense()) {
+        if (! $this->checkLicense()) {
             $this->error('❌ Установка отменена: недействительный лицензионный ключ');
+
             return self::FAILURE;
         }
 
@@ -66,24 +68,34 @@ class InstallCommand extends Command
 
         // Determine package path
         $packagePath = dirname(__DIR__, 2); // Go up from src/ to package root
-        $migrationPath = $packagePath . '/database/migrations';
+        $migrationPath = $packagePath.'/database/migrations';
 
         $this->line("Migration path: {$migrationPath}");
 
-        if (!file_exists($migrationPath)) {
-            $this->error('❌ Директория миграций не найдена: ' . $migrationPath);
+        if (! file_exists($migrationPath)) {
+            $this->error('❌ Директория миграций не найдена: '.$migrationPath);
+
             return self::FAILURE;
         }
 
-        // Run only core migrations (not module-specific subdirectories)
+        // Run only core migrations (not module-specific subdirectories).
+        // Pass the absolute path with --realpath so it also works on Windows,
+        // where str_replace(base_path().'/', ...) fails to strip the prefix
+        // because the real directory separator is "\".
         try {
-            \Illuminate\Support\Facades\Artisan::call('migrate', [
-                '--path' => str_replace(base_path() . '/', '', $migrationPath),
-                '--force' => true
+            Artisan::call('migrate', [
+                '--path' => $migrationPath,
+                '--realpath' => true,
+                '--force' => true,
             ]);
             $this->info('✓ Базовые миграции завершены');
+            $out = trim(Artisan::output());
+            if ($out !== '') {
+                $this->line($out);
+            }
         } catch (\Exception $e) {
-            $this->error('❌ Ошибка при выполнении миграций: ' . $e->getMessage());
+            $this->error('❌ Ошибка при выполнении миграций: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -108,7 +120,7 @@ class InstallCommand extends Command
         $this->newLine();
         $this->info('✅ AxoraCMS успешно установлен!');
         $this->newLine();
-        $this->line('Админ-панель доступна по адресу: ' . url(config('axora-cms.route_prefix', 'admin')));
+        $this->line('Админ-панель доступна по адресу: '.url(config('axora-cms.route_prefix', 'admin')));
 
         return self::SUCCESS;
     }
@@ -121,13 +133,14 @@ class InstallCommand extends Command
         $packagePath = dirname(__DIR__, 2);
 
         // Check if node_modules exists
-        if (!File::exists($packagePath . '/node_modules')) {
+        if (! File::exists($packagePath.'/node_modules')) {
             $this->warn('📥 Установка npm зависимостей...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnCode);
 
             if ($returnCode !== 0) {
                 $this->error('Ошибка при установке npm зависимостей');
-                $this->line('Попробуйте вручную: cd ' . $packagePath . ' && npm install');
+                $this->line('Попробуйте вручную: cd '.$packagePath.' && npm install');
+
                 return;
             }
         }
@@ -140,7 +153,7 @@ class InstallCommand extends Command
             $this->info('✅ Фронтенд успешно собран!');
         } else {
             $this->error('Ошибка при сборке фронтенда');
-            $this->line('Попробуйте вручную: cd ' . $packagePath . ' && npm run build');
+            $this->line('Попробуйте вручную: cd '.$packagePath.' && npm run build');
         }
     }
 
@@ -155,6 +168,7 @@ class InstallCommand extends Command
         $savedKey = $this->licenseService->getSavedLicense();
         if ($savedKey && $this->licenseService->checkLicense($savedKey, 'install')) {
             $this->info('✅ Лицензия действительна');
+
             return true;
         }
 
@@ -162,14 +176,15 @@ class InstallCommand extends Command
         $this->warn('Для установки AxoraCMS требуется лицензионный ключ');
         $key = $this->ask('Введите лицензионный ключ');
 
-        if (!$key) {
+        if (! $key) {
             return false;
         }
 
         $this->line('Проверка ключа...');
 
-        if (!$this->licenseService->checkLicense($key, 'install')) {
+        if (! $this->licenseService->checkLicense($key, 'install')) {
             $this->error('❌ Недействительный лицензионный ключ');
+
             return false;
         }
 
@@ -194,17 +209,20 @@ class InstallCommand extends Command
 
         if ($password !== $passwordConfirmation) {
             $this->error('❌ Пароли не совпадают!');
+
             return;
         }
 
         if (strlen($password) < 8) {
             $this->error('❌ Пароль должен содержать минимум 8 символов!');
+
             return;
         }
 
         // Check if email exists
         if (TAdministrator::where('email', $email)->exists()) {
             $this->error('❌ Пользователь с таким email уже существует!');
+
             return;
         }
 
@@ -223,7 +241,7 @@ class InstallCommand extends Command
                 [[$name, $email, 'Супер Администратор']]
             );
         } catch (\Exception $e) {
-            $this->error('❌ Ошибка создания администратора: ' . $e->getMessage());
+            $this->error('❌ Ошибка создания администратора: '.$e->getMessage());
         }
     }
 }

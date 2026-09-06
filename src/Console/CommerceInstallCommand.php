@@ -2,19 +2,21 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
+use HolartWeb\AxoraCMS\Models\Commerce\TOrdersData;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Services\LicenseService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 class CommerceInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'commerce';
 
     protected $signature = 'axoracms:commerce-install';
+
     protected $description = 'Install AxoraCMS Commerce Module';
 
     protected LicenseService $licenseService;
@@ -34,10 +36,11 @@ class CommerceInstallCommand extends Command
 
         // Step 1: Check Shop Module Dependency
         $this->info('Step 1: Checking Shop module dependency...');
-        if (!$this->checkShopModuleInstalled()) {
+        if (! $this->checkShopModuleInstalled()) {
             $this->error('❌ Shop module is not installed!');
             $this->error('Commerce module requires Shop module to be installed first.');
             $this->error('Please install Shop module using: php artisan axoracms:shop-install');
+
             return self::FAILURE;
         }
         $this->info('✓ Shop module is installed');
@@ -45,9 +48,10 @@ class CommerceInstallCommand extends Command
 
         // Step 2: Check License
         $this->info('Step 2: Checking license...');
-        if (!$this->checkLicense()) {
+        if (! $this->checkLicense()) {
             $this->error('❌ License verification failed!');
             $this->error('Please contact support to obtain a valid license key.');
+
             return self::FAILURE;
         }
         $this->info('✓ License verified successfully');
@@ -58,84 +62,37 @@ class CommerceInstallCommand extends Command
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
-        $this->info('Step 4: Copying and running database migrations...');
-        $migrationFiles = [
-            '2024_01_01_000030_create_t_orders_table.php',
-            '2024_01_01_000031_create_t_order_items_table.php',
-            '2024_01_01_000032_create_t_promocodes_table.php',
-            '2024_01_01_000033_create_t_payment_transactions_table.php',
-            '2024_01_01_000034_create_t_orders_data_table.php',
-            '2026_08_08_000001_add_variant_id_to_t_order_items_table.php',
-        ];
+        try {
+            // Run commerce module migrations directly from the package directory.
+            // Do NOT copy migration files into the application's database/migrations folder.
+            // Absolute path + --realpath so it also works on Windows.
+            $migrationsPath = $packagePath.'/database/migrations/commerce';
+            Artisan::call('migrate', [
+                '--path' => $migrationsPath,
+                '--realpath' => true,
+                '--force' => true,
+            ]);
+            $this->info('✓ Migrations completed successfully');
+        } catch (\Exception $e) {
+            $this->error('❌ Migration failed: '.$e->getMessage());
 
-        foreach ($migrationFiles as $file) {
-            $source = $packagePath . '/database/migrations/commerce/' . $file;
-            $destination = database_path('migrations/' . $file);
-
-            // Remove old migration file if exists
-            if (file_exists($destination)) {
-                unlink($destination);
-                $this->info("✓ Removed old migration {$file}");
-            }
-
-            if (file_exists($source)) {
-                copy($source, $destination);
-                $this->info("✓ Copied migration {$file}");
-            } else {
-                $this->warn("⚠ Source migration not found: {$source}");
-            }
-        }
-
-        // Check if tables already exist
-        $tables = ['t_orders', 't_order_items', 't_promocodes', 't_payment_transactions', 't_orders_data'];
-        $existingTables = [];
-        foreach ($tables as $table) {
-            if (Schema::hasTable($table)) {
-                $existingTables[] = $table;
-            }
-        }
-
-        if (!empty($existingTables)) {
-            $this->info('✓ Tables already exist: ' . implode(', ', $existingTables));
-            $this->info('✓ Skipping migrations (database already configured)');
-        } else {
-            // Remove migration records from database
-            try {
-                \DB::table('migrations')->whereIn('migration', array_map(function($file) {
-                    return str_replace('.php', '', $file);
-                }, $migrationFiles))->delete();
-                $this->info('✓ Cleaned migration records');
-            } catch (\Exception $e) {
-                $this->warn('⚠ Could not clean migration records: ' . $e->getMessage());
-            }
-
-            try {
-                // Run only commerce module migrations
-                foreach ($migrationFiles as $file) {
-                    $migrationPath = database_path('migrations/' . $file);
-                    if (file_exists($migrationPath)) {
-                        Artisan::call('migrate', [
-                            '--path' => 'database/migrations/' . $file,
-                            '--force' => true
-                        ]);
-                    }
-                }
-                $this->info('✓ Migrations completed successfully');
-            } catch (\Exception $e) {
-                $this->error('❌ Migration failed: ' . $e->getMessage());
-                return self::FAILURE;
-            }
+            return self::FAILURE;
         }
         $this->newLine();
 
-        // Step 5: Build Frontend Assets
-        $this->info('Step 5: Building frontend assets...');
+        // Step 3b: Seed default order settings
+        $this->info('Seeding default order settings...');
+        $this->seedOrderSettings();
+        $this->newLine();
 
-        if (file_exists($packagePath . '/package.json')) {
+        // Step 4: Build Frontend Assets
+        $this->info('Step 4: Building frontend assets...');
+
+        if (file_exists($packagePath.'/package.json')) {
             $this->info('Installing npm dependencies...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnVar);
 
@@ -159,8 +116,8 @@ class CommerceInstallCommand extends Command
         }
         $this->newLine();
 
-        // Step 6: Publish Assets
-        $this->info('Step 6: Publishing assets...');
+        // Step 5: Publish Assets
+        $this->info('Step 5: Publishing assets...');
         Artisan::call('vendor:publish', [
             '--tag' => 'axora-cms-assets',
             '--force' => true,
@@ -168,8 +125,8 @@ class CommerceInstallCommand extends Command
         $this->info('✓ Assets published successfully');
         $this->newLine();
 
-        // Step 7: Clear Cache
-        $this->info('Step 7: Clearing application cache...');
+        // Step 6: Clear Cache
+        $this->info('Step 6: Clearing application cache...');
         Artisan::call('config:clear');
         Artisan::call('route:clear');
         Artisan::call('view:clear');
@@ -188,10 +145,63 @@ class CommerceInstallCommand extends Command
         $this->info('╚═══════════════════════════════════════════╝');
         $this->newLine();
         $this->info('You can now access the commerce features in your admin panel.');
-        $this->info('Navigate to: ' . url('/admin/orders'));
+        $this->info('Navigate to: '.url('/admin/orders'));
         $this->newLine();
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Create the default order-settings rows in t_orders_data.
+     *
+     * Idempotent: existing keys keep their current value, only missing keys
+     * are inserted. Previously these rows only appeared after an admin opened
+     * "Настройки заказов" and pressed Save.
+     */
+    protected function seedOrderSettings(): void
+    {
+        if (! Schema::hasTable('t_orders_data')) {
+            $this->warn('⚠ t_orders_data not found, skipping order settings seed');
+
+            return;
+        }
+
+        $defaults = [
+            // General
+            ['order_notifications_enabled', true, TOrdersData::TYPE_BOOLEAN],
+            ['min_order_amount', '0', TOrdersData::TYPE_STRING],
+            // Delivery
+            ['delivery_pickup_enabled', true, TOrdersData::TYPE_BOOLEAN],
+            ['delivery_courier_enabled', true, TOrdersData::TYPE_BOOLEAN],
+            ['delivery_courier_price', '0', TOrdersData::TYPE_STRING],
+            ['delivery_post_enabled', false, TOrdersData::TYPE_BOOLEAN],
+            ['delivery_post_price', '0', TOrdersData::TYPE_STRING],
+            ['delivery_zones_enabled', false, TOrdersData::TYPE_BOOLEAN],
+            ['free_delivery_from', '0', TOrdersData::TYPE_STRING],
+            ['delivery_zones', [], TOrdersData::TYPE_JSON],
+            // Payment
+            ['payment_online_enabled', true, TOrdersData::TYPE_BOOLEAN],
+            ['payment_provider', 'transfer', TOrdersData::TYPE_STRING],
+            ['payment_cash_enabled', true, TOrdersData::TYPE_BOOLEAN],
+            // Checkout form
+            ['require_phone', true, TOrdersData::TYPE_BOOLEAN],
+            ['require_email', true, TOrdersData::TYPE_BOOLEAN],
+            ['show_comments_field', true, TOrdersData::TYPE_BOOLEAN],
+        ];
+
+        $created = 0;
+        foreach ($defaults as [$key, $value, $type]) {
+            if (TOrdersData::where('key', $key)->exists()) {
+                continue;
+            }
+
+            TOrdersData::setValue($key, $value, $type);
+            $created++;
+        }
+
+        $this->info($created > 0
+            ? "✓ Order settings seeded ({$created} keys)"
+            : '✓ Order settings already present');
     }
 
     protected function checkShopModuleInstalled(): bool
@@ -227,13 +237,15 @@ class CommerceInstallCommand extends Command
             }
 
             // Validate license
-            if (!$this->licenseService->checkLicense($key, 'commerce-install')) {
+            if (! $this->licenseService->checkLicense($key, 'commerce-install')) {
                 $this->error('Invalid license key!');
+
                 return false;
             }
 
             // Save license
             $this->licenseService->saveLicense($key);
+
             return true;
         }
 
@@ -243,6 +255,7 @@ class CommerceInstallCommand extends Command
         }
 
         $this->warn('⚠ No license key found, but continuing installation...');
+
         return true;
     }
 }

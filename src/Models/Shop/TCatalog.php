@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Models\Shop;
 
+use HolartWeb\AxoraCMS\Services\EntityLinkResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -83,7 +84,7 @@ class TCatalog extends Model
             $catalogProperties = $catalog->properties;
             foreach ($catalogProperties as $property) {
                 // Add only if not already exists (child properties override parent)
-                if (!$properties->contains('code', $property->code)) {
+                if (! $properties->contains('code', $property->code)) {
                     $properties->push($property);
                 }
             }
@@ -99,6 +100,38 @@ class TCatalog extends Model
     public function hasChildren(): bool
     {
         return $this->children()->exists();
+    }
+
+    /**
+     * Get this catalog's characteristic values, keyed by characteristic code,
+     * with "entity" values resolved into real models.
+     *
+     * @return array<string, mixed>
+     */
+    public function getResolvedCharacteristics(): array
+    {
+        $raw = is_array($this->addition_info) ? $this->addition_info : [];
+
+        if (empty($raw)) {
+            return [];
+        }
+
+        $definitions = TCharacteristicDefinition::whereIn('applies_to', ['catalog', 'both'])
+            ->get()
+            ->keyBy('code');
+
+        $resolver = new EntityLinkResolver;
+        $result = [];
+
+        foreach ($raw as $code => $value) {
+            $definition = $definitions->get($code);
+
+            $result[$code] = ($definition && $definition->type === 'entity')
+                ? $resolver->resolve($value)
+                : $value;
+        }
+
+        return $result;
     }
 
     /**
@@ -152,7 +185,7 @@ class TCatalog extends Model
      */
     public function getProductsCountWithChildrenOptimized(): int
     {
-        $result = \DB::selectOne("
+        $result = \DB::selectOne('
         WITH RECURSIVE catalog_tree AS (
             SELECT id FROM t_catalogs WHERE id = ?
             UNION ALL
@@ -163,7 +196,7 @@ class TCatalog extends Model
         SELECT COUNT(*) as products_count
         FROM t_products
         WHERE catalog_id IN (SELECT id FROM catalog_tree)
-    ", [$this->id]);
+    ', [$this->id]);
 
         return (int) $result->products_count;
     }

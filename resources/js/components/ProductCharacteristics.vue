@@ -68,7 +68,9 @@
             <span v-else-if="definition.type === 'boolean'">✓ Да/Нет</span>
             <span v-else-if="definition.type === 'color'">🎨 Цвет</span>
             <span v-else-if="definition.type === 'image'">🖼️ Изображение</span>
-            <span v-if="definition.multiple" class="text-blue-600 dark:text-blue-400">• Множественное</span>
+            <span v-else-if="definition.type === 'table'">▦ Таблица</span>
+            <span v-else-if="definition.type === 'entity'">🔗 Привязка к элементам</span>
+            <span v-if="definition.multiple && definition.type !== 'entity'" class="text-blue-600 dark:text-blue-400">• Множественное</span>
           </div>
         </div>
 
@@ -80,14 +82,28 @@
           />
         </div>
 
-        <!-- Color type - single -->
-        <div v-else-if="definition.type === 'color' && !definition.multiple" class="flex items-center gap-3">
-          <input
+        <!-- Color type -->
+        <div v-else-if="definition.type === 'color'">
+          <ColorField v-model="values[definition.code]" :is-multiple="!!definition.multiple" />
+        </div>
+
+        <!-- Table type -->
+        <div v-else-if="definition.type === 'table'">
+          <InfoBlockTableField
             v-model="values[definition.code]"
-            type="color"
-            class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+            :rows="definition.settings?.table?.rows || 3"
+            :cols="definition.settings?.table?.cols || 3"
           />
-          <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{ values[definition.code] || '#000000' }}</span>
+        </div>
+
+        <!-- Entity link type -->
+        <div v-else-if="definition.type === 'entity'">
+          <EntityLinkField
+            v-model="values[definition.code]"
+            :is-multiple="!!definition.multiple"
+            :allowed-types="definition.settings?.entity_types || ['product', 'catalog', 'infoblock']"
+            :locked-infoblock-id="definition.settings?.infoblock_id || null"
+          />
         </div>
 
         <!-- Image type - single -->
@@ -168,6 +184,9 @@ import { ref, watch, onMounted } from 'vue';
 import axios from 'axios';
 import ToggleSwitch from './ToggleSwitch.vue';
 import ImageUpload from './ImageUpload.vue';
+import ColorField from './fields/ColorField.vue';
+import EntityLinkField from './fields/EntityLinkField.vue';
+import InfoBlockTableField from './InfoBlockTableField.vue';
 
 const props = defineProps({
   modelValue: {
@@ -244,6 +263,8 @@ function initializeValues() {
     if (!(def.code in newValues)) {
       if (def.type === 'boolean') {
         newValues[def.code] = false;
+      } else if (def.type === 'entity' || def.type === 'table') {
+        newValues[def.code] = [];
       } else if (def.multiple) {
         newValues[def.code] = [];
       } else {

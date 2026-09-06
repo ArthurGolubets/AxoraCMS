@@ -70,6 +70,8 @@
                 <option value="number">Число</option>
                 <option value="color">Цвет</option>
                 <option value="image">Изображение</option>
+                <option value="table">Таблица</option>
+                <option value="entity">Привязка к элементам</option>
               </select>
             </div>
             <div class="flex items-end">
@@ -96,6 +98,40 @@
                       class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium whitespace-nowrap">
                 Удалить
               </button>
+            </div>
+          </div>
+
+          <!-- Type-specific settings -->
+          <div v-if="property.type === 'entity'" class="mt-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg space-y-2">
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300">К чему можно привязывать</p>
+            <div class="flex flex-wrap gap-4">
+              <label v-for="opt in entityTypeOptions" :key="opt.value" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" :value="opt.value" :checked="propEntityTypes(property).includes(opt.value)"
+                       @change="toggleEntityType(property, opt.value, $event.target.checked)"
+                       :disabled="opt.value === 'infoblock' && !infoblocksModuleInstalled"
+                       class="w-4 h-4 text-blue-600 rounded">
+                <span :class="{ 'opacity-40': opt.value === 'infoblock' && !infoblocksModuleInstalled }">{{ opt.label }}</span>
+              </label>
+            </div>
+            <div v-if="infoblocksModuleInstalled && propEntityTypes(property).includes('infoblock')">
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Закрепить за инфоблоком (необязательно)</label>
+              <select :value="property.settings?.infoblock_id || ''" @change="setInfoblockId(property, $event.target.value)"
+                      class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white">
+                <option value="">— любой —</option>
+                <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">{{ ib.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div v-else-if="property.type === 'table'" class="mt-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Строк по умолчанию</label>
+              <input type="number" min="1" :value="property.settings?.table?.rows || 3" @input="setTableDim(property, 'rows', $event.target.value)"
+                     class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Столбцов по умолчанию</label>
+              <input type="number" min="1" :value="property.settings?.table?.cols || 3" @input="setTableDim(property, 'cols', $event.target.value)"
+                     class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white">
             </div>
           </div>
         </div>
@@ -129,6 +165,8 @@
                 <option value="number">Число</option>
                 <option value="color">Цвет</option>
                 <option value="image">Изображение</option>
+                <option value="table">Таблица</option>
+                <option value="entity">Привязка к элементам</option>
               </select>
             </div>
             <div class="flex items-end">
@@ -152,6 +190,40 @@
                       class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium whitespace-nowrap">
                 Удалить
               </button>
+            </div>
+          </div>
+
+          <!-- Type-specific settings -->
+          <div v-if="property.type === 'entity'" class="mt-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg space-y-2">
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300">К чему можно привязывать</p>
+            <div class="flex flex-wrap gap-4">
+              <label v-for="opt in entityTypeOptions" :key="opt.value" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" :value="opt.value" :checked="propEntityTypes(property).includes(opt.value)"
+                       @change="toggleEntityType(property, opt.value, $event.target.checked)"
+                       :disabled="opt.value === 'infoblock' && !infoblocksModuleInstalled"
+                       class="w-4 h-4 text-blue-600 rounded">
+                <span :class="{ 'opacity-40': opt.value === 'infoblock' && !infoblocksModuleInstalled }">{{ opt.label }}</span>
+              </label>
+            </div>
+            <div v-if="infoblocksModuleInstalled && propEntityTypes(property).includes('infoblock')">
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Закрепить за инфоблоком (необязательно)</label>
+              <select :value="property.settings?.infoblock_id || ''" @change="setInfoblockId(property, $event.target.value)"
+                      class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white">
+                <option value="">— любой —</option>
+                <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">{{ ib.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div v-else-if="property.type === 'table'" class="mt-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Строк по умолчанию</label>
+              <input type="number" min="1" :value="property.settings?.table?.rows || 3" @input="setTableDim(property, 'rows', $event.target.value)"
+                     class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Столбцов по умолчанию</label>
+              <input type="number" min="1" :value="property.settings?.table?.cols || 3" @input="setTableDim(property, 'cols', $event.target.value)"
+                     class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-white">
             </div>
           </div>
         </div>
@@ -205,6 +277,13 @@ export default {
       groups: [],
       editingGroupIndex: null,
       initialized: false,
+      infoBlocks: [],
+      infoblocksModuleInstalled: false,
+      entityTypeOptions: [
+        { value: 'product', label: 'Товары' },
+        { value: 'catalog', label: 'Категории' },
+        { value: 'infoblock', label: 'Элементы инфоблоков' },
+      ],
     }
   },
   computed: {
@@ -215,6 +294,7 @@ export default {
   },
   mounted() {
     this.tryInit();
+    this.loadInfoBlocks();
   },
   watch: {
     initialProperties() { this.tryInit(); },
@@ -301,9 +381,50 @@ export default {
       this.groups.splice(gIndex, 1);
     },
 
+    async loadInfoBlocks() {
+      try {
+        const res = await fetch('/admin/api/infoblocks', { headers: { Accept: 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          this.infoBlocks = data.data || data;
+          this.infoblocksModuleInstalled = true;
+        }
+      } catch (e) {
+        this.infoblocksModuleInstalled = false;
+      }
+    },
+
     addProperty(group) {
       const groupKey = group ? (group.id || group.temp_id) : null;
-      this.properties.push({ code: '', name: '', type: 'string', is_multiple: false, sort_order: 500, group_id: groupKey });
+      this.properties.push({ code: '', name: '', type: 'string', settings: null, is_multiple: false, sort_order: 500, group_id: groupKey });
+    },
+
+    propEntityTypes(property) {
+      return property.settings?.entity_types || ['product', 'catalog', 'infoblock'];
+    },
+
+    ensureSettings(property) {
+      if (!property.settings || typeof property.settings !== 'object') {
+        property.settings = {};
+      }
+      return property.settings;
+    },
+
+    toggleEntityType(property, value, checked) {
+      const settings = this.ensureSettings(property);
+      const current = new Set(settings.entity_types || ['product', 'catalog', 'infoblock']);
+      checked ? current.add(value) : current.delete(value);
+      settings.entity_types = [...current];
+    },
+
+    setInfoblockId(property, value) {
+      this.ensureSettings(property).infoblock_id = value ? Number(value) : null;
+    },
+
+    setTableDim(property, key, value) {
+      const settings = this.ensureSettings(property);
+      settings.table = { rows: 3, cols: 3, ...(settings.table || {}) };
+      settings.table[key] = Math.max(1, Number(value) || 1);
     },
 
     removeProperty(property) {
@@ -327,7 +448,10 @@ export default {
     },
 
     getTypeLabel(type) {
-      return { string: 'Строка', text: 'Текст', number: 'Число' }[type] || type;
+      return {
+        string: 'Строка', text: 'Текст', number: 'Число',
+        color: 'Цвет', image: 'Изображение', table: 'Таблица', entity: 'Привязка к элементам',
+      }[type] || type;
     }
   }
 }

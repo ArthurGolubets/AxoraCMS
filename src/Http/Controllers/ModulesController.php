@@ -2,12 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers;
 
+use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Models\TModule;
+use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schema;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
-use HolartWeb\AxoraCMS\Models\TModule;
 
 class ModulesController extends Controller
 {
@@ -101,12 +101,12 @@ class ModulesController extends Controller
                 'type' => 'integration',
                 'dependencies' => ['shop'],
                 'can_install' => $this->isShopModuleInstalled(),
-            ]
+            ],
         ];
 
         return response()->json([
             'modules' => $modules,
-            'show_modules_page' => config('axora-cms.show_modules', false)
+            'show_modules_page' => config('axora-cms.show_modules', false),
         ]);
     }
 
@@ -116,7 +116,7 @@ class ModulesController extends Controller
     public function index()
     {
         // Check if modules page is enabled
-        if (!config('axora-cms.show_modules', false)) {
+        if (! config('axora-cms.show_modules', false)) {
             abort(404);
         }
 
@@ -211,11 +211,11 @@ class ModulesController extends Controller
                 'type' => 'integration',
                 'dependencies' => ['shop'],
                 'can_install' => $this->isShopModuleInstalled(),
-            ]
+            ],
         ];
 
         // Add version information to each module
-        $modules = array_map(function($module) {
+        $modules = array_map(function ($module) {
             $moduleId = $module['id'];
             $module['current_version'] = self::MODULES_VERSIONS[$moduleId] ?? null;
             $module['installed_version'] = TModule::getInstalledVersion($moduleId);
@@ -223,11 +223,12 @@ class ModulesController extends Controller
                                       $module['installed_version'] &&
                                       $module['current_version'] &&
                                       version_compare($module['installed_version'], $module['current_version'], '<');
+
             return $module;
         }, $modules);
 
         return response()->json([
-            'modules' => $modules
+            'modules' => $modules,
         ]);
     }
 
@@ -247,12 +248,12 @@ class ModulesController extends Controller
             return response()->json([
                 'success' => true,
                 'output' => $output,
-                'message' => 'Обновление выполнено успешно'
+                'message' => 'Обновление выполнено успешно',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при обновлении: ' . $e->getMessage()
+                'message' => 'Ошибка при обновлении: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -263,7 +264,7 @@ class ModulesController extends Controller
     public function install(Request $request, $moduleId)
     {
         $request->validate([
-            'module_id' => 'required|string'
+            'module_id' => 'required|string',
         ]);
 
         try {
@@ -303,7 +304,7 @@ class ModulesController extends Controller
                 default:
                     return response()->json([
                         'success' => false,
-                        'message' => 'Неизвестный модуль'
+                        'message' => 'Неизвестный модуль',
                     ], 404);
             }
 
@@ -314,26 +315,26 @@ class ModulesController extends Controller
                 return response()->json([
                     'success' => false,
                     'output' => $output,
-                    'message' => 'Ошибка при установке модуля. Проверьте вывод команды.'
+                    'message' => 'Ошибка при установке модуля. Проверьте вывод команды.',
                 ], 400);
             }
 
             // Log activity
             $moduleNames = ['shop' => 'Каталог и товары', 'callback' => 'Обратная связь', 'commerce' => 'Коммерция', 'logging' => 'Журнал активности', 'infoblocks' => 'Информационные блоки', 'seo' => 'Страницы и SEO',
-                'pagebuilder' => 'Конструктор страниц'
+                'pagebuilder' => 'Конструктор страниц',
             ];
             $moduleName = $moduleNames[$moduleId] ?? $moduleId;
-            TAdminAction::log('installed', 'module', null, 'Установлен модуль: ' . $moduleName);
+            TAdminAction::log('installed', 'module', null, 'Установлен модуль: '.$moduleName);
 
             return response()->json([
                 'success' => true,
                 'output' => $output,
-                'message' => 'Модуль установлен успешно'
+                'message' => 'Модуль установлен успешно',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при установке модуля: ' . $e->getMessage()
+                'message' => 'Ошибка при установке модуля: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -344,7 +345,7 @@ class ModulesController extends Controller
     public function updateModule(Request $request, $moduleId)
     {
         $request->validate([
-            'module_id' => 'required|string'
+            'module_id' => 'required|string',
         ]);
 
         try {
@@ -385,7 +386,7 @@ class ModulesController extends Controller
                 default:
                     return response()->json([
                         'success' => false,
-                        'message' => 'Неизвестный модуль'
+                        'message' => 'Неизвестный модуль',
                     ], 404);
             }
 
@@ -396,7 +397,7 @@ class ModulesController extends Controller
                 return response()->json([
                     'success' => false,
                     'output' => $output,
-                    'message' => 'Ошибка при обновлении модуля. Проверьте вывод команды.'
+                    'message' => 'Ошибка при обновлении модуля. Проверьте вывод команды.',
                 ], 400);
             }
 
@@ -410,20 +411,20 @@ class ModulesController extends Controller
                 'seo' => 'Страницы и SEO',
                 'pagebuilder' => 'Конструктор страниц',
                 'telegram' => 'Telegram',
-                'yookassa' => 'ЮКassa'
+                'yookassa' => 'ЮКassa',
             ];
             $moduleName = $moduleNames[$moduleId] ?? $moduleId;
-            TAdminAction::log('updated', 'module', null, 'Обновлен модуль: ' . $moduleName);
+            TAdminAction::log('updated', 'module', null, 'Обновлен модуль: '.$moduleName);
 
             return response()->json([
                 'success' => true,
                 'output' => $output,
-                'message' => 'Модуль обновлен успешно'
+                'message' => 'Модуль обновлен успешно',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при обновлении модуля: ' . $e->getMessage()
+                'message' => 'Ошибка при обновлении модуля: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -435,7 +436,7 @@ class ModulesController extends Controller
     {
         $request->validate([
             'preserve_database' => 'boolean',
-            'remove_components' => 'boolean'
+            'remove_components' => 'boolean',
         ]);
 
         $preserveDatabase = $request->input('preserve_database', false);
@@ -445,58 +446,58 @@ class ModulesController extends Controller
             switch ($moduleId) {
                 case 'shop':
                     Artisan::call('axoracms:shop-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'callback':
                     Artisan::call('axoracms:callback-user-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'commerce':
                     Artisan::call('axoracms:commerce-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'logging':
                     Artisan::call('axoracms:logging-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'infoblocks':
                     Artisan::call('axoracms:infoblocks-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'seo':
                     Artisan::call('axoracms:seo-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'pagebuilder':
                     Artisan::call('axoracms:pagebuilder-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'telegram':
                     Artisan::call('axoracms:telegram-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'yookassa':
                     Artisan::call('axoracms:yookassa-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 case 'commerceml':
                     Artisan::call('axoracms:commerceml-uninstall', [
-                        '--preserve-db' => $preserveDatabase
+                        '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
                 default:
                     return response()->json([
                         'success' => false,
-                        'message' => 'Неизвестный модуль'
+                        'message' => 'Неизвестный модуль',
                     ], 404);
             }
 
@@ -505,17 +506,17 @@ class ModulesController extends Controller
             // Log activity
             $moduleNames = ['shop' => 'Каталог и товары', 'callback' => 'Обратная связь', 'commerce' => 'Коммерция', 'logging' => 'Журнал активности', 'infoblocks' => 'Информационные блоки', 'seo' => 'Страницы и SEO', 'pagebuilder' => 'Конструктор страниц'];
             $moduleName = $moduleNames[$moduleId] ?? $moduleId;
-            TAdminAction::log('uninstalled', 'module', null, 'Удален модуль: ' . $moduleName);
+            TAdminAction::log('uninstalled', 'module', null, 'Удален модуль: '.$moduleName);
 
             return response()->json([
                 'success' => true,
                 'output' => $output,
-                'message' => 'Модуль удален успешно'
+                'message' => 'Модуль удален успешно',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при удалении модуля: ' . $e->getMessage()
+                'message' => 'Ошибка при удалении модуля: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -601,6 +602,89 @@ class ModulesController extends Controller
     }
 
     /**
+     * Package migrations root (absolute path, works from vendor/, packages/ or plugins/).
+     */
+    private function packageMigrationsPath(): string
+    {
+        return dirname(__DIR__, 3).'/database/migrations';
+    }
+
+    /**
+     * Map: installed module code => migration sources it owns.
+     * "dirs" are sub-folders of the package migrations root; "files" are single
+     * migration basenames that live in the root folder.
+     *
+     * Some folders are shared (menus by seo+pages, integrations by telegram+yookassa).
+     *
+     * @return array{dirs: string[], files: string[]}
+     */
+    private function moduleMigrationSources(string $moduleId): array
+    {
+        $map = [
+            'shop' => ['dirs' => ['shop'], 'files' => []],
+            'callback' => ['dirs' => ['callback'], 'files' => []],
+            'commerce' => ['dirs' => ['commerce'], 'files' => []],
+            'infoblocks' => ['dirs' => ['infoblocks'], 'files' => []],
+            'seo' => ['dirs' => ['seo', 'menus'], 'files' => []],
+            'pages' => ['dirs' => ['pages', 'menus'], 'files' => []],
+            'telegram' => ['dirs' => ['integrations'], 'files' => []],
+            'yookassa' => ['dirs' => ['integrations'], 'files' => []],
+            'commerceml' => ['dirs' => ['commerceml'], 'files' => []],
+            'logging' => ['dirs' => [], 'files' => ['2026_02_27_125658_create_t_admin_actions_table']],
+        ];
+
+        return $map[$moduleId] ?? ['dirs' => [], 'files' => []];
+    }
+
+    /**
+     * The migration basenames a module is expected to have applied, discovered
+     * by scanning the actual package migration folders (no stale hard-coded list).
+     *
+     * @return array<int, array{name: string, dir: ?string, path: string}>
+     */
+    private function expectedModuleMigrations(string $moduleId): array
+    {
+        $root = $this->packageMigrationsPath();
+        $sources = $this->moduleMigrationSources($moduleId);
+        $expected = [];
+
+        foreach ($sources['dirs'] as $dir) {
+            $full = $root.'/'.$dir;
+            if (! is_dir($full)) {
+                continue;
+            }
+            foreach (glob($full.'/*.php') ?: [] as $file) {
+                $expected[] = [
+                    'name' => basename($file, '.php'),
+                    'dir' => $dir,
+                    'path' => $file,
+                ];
+            }
+        }
+
+        foreach ($sources['files'] as $name) {
+            $file = $root.'/'.$name.'.php';
+            if (is_file($file)) {
+                $expected[] = ['name' => $name, 'dir' => null, 'path' => $file];
+            }
+        }
+
+        // De-dupe by name (shared folders can be listed twice via two modules,
+        // but within one module a folder is only scanned once — keep it safe anyway).
+        $seen = [];
+        $unique = [];
+        foreach ($expected as $item) {
+            if (isset($seen[$item['name']])) {
+                continue;
+            }
+            $seen[$item['name']] = true;
+            $unique[] = $item;
+        }
+
+        return $unique;
+    }
+
+    /**
      * Check database migrations for all installed modules
      */
     public function checkDatabase()
@@ -609,87 +693,35 @@ class ModulesController extends Controller
             $results = [];
             $hasIssues = false;
 
-            // Define migrations for each module
-            $moduleMigrations = [
-                'shop' => [
-                    '2024_01_01_000010_create_t_catalogs_table',
-                    '2024_01_01_000011_create_t_products_table',
-                    '2024_01_01_000012_create_t_product_variants_table',
-                    '2026_03_29_000090_create_t_catalog_properties_table',
-                    '2026_03_29_000091_create_t_product_property_values_table',
-                    '2026_08_02_135901_create_t_product_variant_property_values_table',
-                ],
-                'callback' => [
-                    '2024_01_01_000020_create_t_users_emails_table',
-                    '2024_01_01_000021_create_t_comments_table',
-                    '2024_01_01_000022_create_t_user_requests_table',
-                ],
-                'commerce' => [
-                    '2024_01_01_000030_create_t_orders_table',
-                    '2024_01_01_000031_create_t_order_items_table',
-                    '2024_01_01_000032_create_t_promocodes_table',
-                    '2024_01_01_000033_create_t_payment_transactions_table',
-                    '2024_01_01_000034_create_t_orders_data_table',
-                    '2026_08_08_000001_add_variant_id_to_t_order_items_table',
-                ],
-                'logging' => [
-                    '2026_02_27_125658_create_t_admin_actions_table',
-                ],
-                'infoblocks' => [
-                    '2024_01_01_000040_create_t_info_blocks_table',
-                    '2024_01_01_000041_create_t_info_block_fields_table',
-                    '2024_01_01_000042_create_t_info_block_elements_table',
-                ],
-                'seo' => [
-                    '2024_03_09_000001_create_t_pages_table',
-                ],
-                'pagebuilder' => [
-                    '2024_01_01_000070_create_t_page_blocks_table',
-                ],
-                'telegram' => [
-                    '2024_01_01_000080_create_t_telegram_settings_table',
-                ],
-                'yookassa' => [
-                    '2024_01_01_000090_create_t_yookassa_settings_table',
-                ],
-                'commerceml' => [
-                    '2024_01_01_000100_create_t_commerceml_settings_table',
-                ],
-            ];
+            $ran = \DB::table('migrations')->pluck('migration')->flip();
 
-            // Get all installed modules
-            $installedModules = TModule::all();
-
-            foreach ($installedModules as $module) {
+            foreach (TModule::all() as $module) {
                 $moduleId = $module->module_name;
+                $expected = $this->expectedModuleMigrations($moduleId);
 
-                if (!isset($moduleMigrations[$moduleId])) {
+                if (empty($expected)) {
+                    // Module has no tracked migrations (e.g. pagebuilder) — nothing to check.
                     continue;
                 }
 
-                $migrations = $moduleMigrations[$moduleId];
                 $missing = [];
-                $installed = [];
+                $installedCount = 0;
 
-                foreach ($migrations as $migration) {
-                    $exists = \DB::table('migrations')
-                        ->where('migration', $migration)
-                        ->exists();
-
-                    if ($exists) {
-                        $installed[] = $migration;
+                foreach ($expected as $item) {
+                    if ($ran->has($item['name'])) {
+                        $installedCount++;
                     } else {
-                        $missing[] = $migration;
+                        $missing[] = $item['name'];
                         $hasIssues = true;
                     }
                 }
 
                 $results[] = [
                     'module' => $moduleId,
-                    'total' => count($migrations),
-                    'installed' => count($installed),
-                    'missing' => $missing,
-                    'status' => empty($missing) ? 'ok' : 'error'
+                    'total' => count($expected),
+                    'installed' => $installedCount,
+                    'missing' => array_values($missing),
+                    'status' => empty($missing) ? 'ok' : 'error',
                 ];
             }
 
@@ -699,150 +731,85 @@ class ModulesController extends Controller
                 'results' => $results,
                 'message' => $hasIssues
                     ? 'Обнаружены проблемы с базой данных'
-                    : 'Все миграции установлены корректно'
+                    : 'Все миграции установлены корректно',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при проверке базы данных: ' . $e->getMessage()
+                'message' => 'Ошибка при проверке базы данных: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Install missing migrations for modules
+     * Install missing migrations for installed modules.
+     *
+     * Runs `migrate` straight from the package folders with --realpath (so it
+     * works on Windows too) and --force. Laravel skips migrations already
+     * recorded, so this only applies what is actually pending. No file copying.
      */
     public function installMissingMigrations()
     {
         try {
             $output = [];
+            $root = $this->packageMigrationsPath();
 
-            // Define migrations for each module
-            $moduleMigrations = [
-                'shop' => [
-                    '2024_01_01_000010_create_t_catalogs_table',
-                    '2024_01_01_000011_create_t_products_table',
-                    '2024_01_01_000012_create_t_product_variants_table',
-                    '2026_03_29_000090_create_t_catalog_properties_table',
-                    '2026_03_29_000091_create_t_product_property_values_table',
-                    '2026_08_02_135901_create_t_product_variant_property_values_table',
-                ],
-                'callback' => [
-                    '2024_01_01_000020_create_t_users_emails_table',
-                    '2024_01_01_000021_create_t_comments_table',
-                    '2024_01_01_000022_create_t_user_requests_table',
-                ],
-                'commerce' => [
-                    '2024_01_01_000030_create_t_orders_table',
-                    '2024_01_01_000031_create_t_order_items_table',
-                    '2024_01_01_000032_create_t_promocodes_table',
-                    '2024_01_01_000033_create_t_payment_transactions_table',
-                    '2024_01_01_000034_create_t_orders_data_table',
-                    '2026_08_08_000001_add_variant_id_to_t_order_items_table',
-                ],
-                'logging' => [
-                    '2026_02_27_125658_create_t_admin_actions_table',
-                ],
-                'infoblocks' => [
-                    '2024_01_01_000040_create_t_info_blocks_table',
-                    '2024_01_01_000041_create_t_info_block_fields_table',
-                    '2024_01_01_000042_create_t_info_block_elements_table',
-                ],
-                'seo' => [
-                    '2024_03_09_000001_create_t_pages_table',
-                ],
-                'pagebuilder' => [
-                    '2024_01_01_000070_create_t_page_blocks_table',
-                ],
-                'telegram' => [
-                    '2024_01_01_000080_create_t_telegram_settings_table',
-                ],
-                'yookassa' => [
-                    '2024_01_01_000090_create_t_yookassa_settings_table',
-                ],
-                'commerceml' => [
-                    '2024_01_01_000100_create_t_commerceml_settings_table',
-                ],
-            ];
+            // Collect the distinct targets across every installed module.
+            $dirTargets = [];
+            $fileTargets = [];
 
-            // Map module IDs to their migration directories
-            $modulePaths = [
-                'shop' => 'shop',
-                'callback' => 'callback',
-                'commerce' => 'commerce',
-                'logging' => 'logging',
-                'infoblocks' => 'infoblocks',
-                'seo' => 'seo',
-                'pagebuilder' => 'pagebuilder',
-                'telegram' => 'telegram',
-                'yookassa' => 'yookassa',
-                'commerceml' => 'commerceml',
-            ];
+            foreach (TModule::all() as $module) {
+                $sources = $this->moduleMigrationSources($module->module_name);
 
-            // Determine package path (check vendor first, then packages, then plugins for development)
-            $packagePath = base_path('vendor/holartweb/axora-cms');
-            if (!file_exists($packagePath)) {
-                $packagePath = base_path('packages/holartweb/axora-cms');
-                if (!file_exists($packagePath)) {
-                    $packagePath = base_path('plugins/axora');
-                }
-            }
-
-            // Get all installed modules
-            $installedModules = TModule::all();
-            $installedCount = 0;
-
-            foreach ($installedModules as $module) {
-                $moduleId = $module->module_name;
-
-                if (!isset($moduleMigrations[$moduleId]) || !isset($modulePaths[$moduleId])) {
-                    continue;
+                foreach ($sources['dirs'] as $dir) {
+                    $full = $root.'/'.$dir;
+                    if (is_dir($full)) {
+                        $dirTargets[$dir] = $full;
+                    }
                 }
 
-                $migrations = $moduleMigrations[$moduleId];
-                $modulePath = $modulePaths[$moduleId];
-
-                foreach ($migrations as $migration) {
-                    // Check if migration already exists
-                    $exists = \DB::table('migrations')
-                        ->where('migration', $migration)
-                        ->exists();
-
-                    if (!$exists) {
-                        // Copy migration file to database/migrations
-                        $sourceFile = $migration . '.php';
-                        $source = $packagePath . '/database/migrations/' . $modulePath . '/' . $sourceFile;
-                        $destination = database_path('migrations/' . $sourceFile);
-
-                        if (file_exists($source)) {
-                            // Remove old file if exists
-                            if (file_exists($destination)) {
-                                unlink($destination);
-                            }
-
-                            copy($source, $destination);
-                            $output[] = "Скопирован файл миграции: {$sourceFile}";
-
-                            // Run the migration
-                            try {
-                                Artisan::call('migrate', [
-                                    '--path' => 'database/migrations/' . $sourceFile,
-                                    '--force' => true
-                                ]);
-
-                                $output[] = "✓ Установлена миграция: {$migration}";
-                                $installedCount++;
-                            } catch (\Exception $e) {
-                                $output[] = "✗ Ошибка при установке {$migration}: " . $e->getMessage();
-                            }
-                        } else {
-                            $output[] = "⚠ Файл миграции не найден: {$source}";
-                        }
+                foreach ($sources['files'] as $name) {
+                    $file = $root.'/'.$name.'.php';
+                    if (is_file($file)) {
+                        $fileTargets[$name] = $file;
                     }
                 }
             }
 
-            // Log activity
+            $before = \DB::table('migrations')->count();
+
+            foreach ($dirTargets as $dir => $full) {
+                try {
+                    Artisan::call('migrate', [
+                        '--path' => $full,
+                        '--realpath' => true,
+                        '--force' => true,
+                    ]);
+                    $output[] = "✓ Проверена папка миграций: {$dir}";
+                    $out = trim(Artisan::output());
+                    if ($out !== '') {
+                        $output[] = $out;
+                    }
+                } catch (\Exception $e) {
+                    $output[] = "✗ Ошибка в папке {$dir}: ".$e->getMessage();
+                }
+            }
+
+            foreach ($fileTargets as $name => $file) {
+                try {
+                    Artisan::call('migrate', [
+                        '--path' => $file,
+                        '--realpath' => true,
+                        '--force' => true,
+                    ]);
+                    $output[] = "✓ Проверена миграция: {$name}";
+                } catch (\Exception $e) {
+                    $output[] = "✗ Ошибка в миграции {$name}: ".$e->getMessage();
+                }
+            }
+
+            $installedCount = max(0, \DB::table('migrations')->count() - $before);
+
             TAdminAction::log('installed', 'migrations', null, "Установлено пропущенных миграций: {$installedCount}");
 
             return response()->json([
@@ -851,12 +818,12 @@ class ModulesController extends Controller
                 'output' => implode("\n", $output),
                 'message' => $installedCount > 0
                     ? "Установлено миграций: {$installedCount}"
-                    : 'Все миграции уже установлены'
+                    : 'Все миграции уже установлены',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при установке миграций: ' . $e->getMessage()
+                'message' => 'Ошибка при установке миграций: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -867,9 +834,11 @@ class ModulesController extends Controller
     private function getLicenseKey()
     {
         if (class_exists('HolartWeb\AxoraCMS\Models\TPanelSettings')) {
-            $settings = \HolartWeb\AxoraCMS\Models\TPanelSettings::first();
+            $settings = TPanelSettings::first();
+
             return $settings->license_key ?? '';
         }
+
         return '';
     }
 }

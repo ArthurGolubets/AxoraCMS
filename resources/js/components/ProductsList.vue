@@ -6,7 +6,7 @@
         <p class="text-gray-600 dark:text-gray-400 mt-1">Управление товарами</p>
       </div>
       <div class="flex items-center space-x-3">
-        <ThemeButton variant="primary" @click="$router.push('/products/create')">
+        <ThemeButton variant="primary" @click="$router.push('/products/create?return=/products')">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           Создать товар
         </ThemeButton>
@@ -99,8 +99,8 @@
               </button>
             </td>
             <td class="px-6 py-4 text-right text-sm">
-              <button @click="$router.push(`/products/${product.id}`)" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-3">Просмотр</button>
-              <button @click="$router.push(`/products/${product.id}/edit`)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 mr-3">Редактировать</button>
+              <button @click="$router.push(`/products/${product.id}?return=/products`)" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 mr-3">Просмотр</button>
+              <button @click="$router.push(`/products/${product.id}/edit?return=/products`)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 mr-3">Редактировать</button>
               <button @click="handleDelete(product)" class="text-red-600 hover:text-red-800 dark:text-red-400">Удалить</button>
             </td>
           </tr>

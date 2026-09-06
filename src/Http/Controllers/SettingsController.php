@@ -134,7 +134,7 @@ class SettingsController extends Controller
         return match ($key) {
             'phones', 'emails', 'addresses', 'header_template_settings', 'footer_template_settings', 'social_links' => 'json',
             'logo_width', 'logo_height', 'header_menu_id', 'footer_menu_id' => 'integer',
-            'can_edit_product_stock' => 'boolean',
+            'can_edit_product_stock', 'products_list_enabled', 'product_variants_enabled', 'related_products_enabled' => 'boolean',
             default => 'string',
         };
     }

@@ -285,7 +285,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useTreeExpansion } from '../composables/useTreeExpansion';
 
 const props = defineProps({
   catalog: {
@@ -323,7 +324,9 @@ defineEmits([
   'refresh'
 ]);
 
-const isExpanded = ref(false);
+const tree = useTreeExpansion('catalog');
+const isExpanded = computed(() => tree.isExpanded(props.catalog.id));
+const childrenLoaded = ref(false);
 
 const hasChildren = computed(() => {
   return (props.catalog.children_count > 0) || (props.catalog.products_count > 0) ||
@@ -331,36 +334,48 @@ const hasChildren = computed(() => {
          (props.catalog.products && props.catalog.products.length > 0);
 });
 
-const toggleExpand = async () => {
-  if (!isExpanded.value && (!props.catalog.children || props.catalog.children.length === 0)) {
-    // Load children on demand
-    try {
-      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-      const response = await fetch(`/admin/api/catalogs/${props.catalog.id}/children`, {
-        headers: {
-          'X-CSRF-TOKEN': token,
-          'Accept': 'application/json'
-        }
-      });
-      const children = await response.json();
-      props.catalog.children = children;
-
-      // Load products if not already loaded
-      if (!props.catalog.products) {
-        const catalogResponse = await fetch(`/admin/api/catalogs/${props.catalog.id}`, {
-          headers: {
-            'X-CSRF-TOKEN': token,
-            'Accept': 'application/json'
-          }
-        });
-        const data = await catalogResponse.json();
-        props.catalog.products = data.catalog.products || [];
-      }
-    } catch (err) {
-      console.error('Error loading children:', err);
-    }
+// Load a node's children + products once, lazily.
+const loadChildren = async () => {
+  if (childrenLoaded.value) return;
+  if (props.catalog.children && props.catalog.children.length > 0 && props.catalog.products) {
+    childrenLoaded.value = true;
+    return;
   }
 
-  isExpanded.value = !isExpanded.value;
+  try {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const response = await fetch(`/admin/api/catalogs/${props.catalog.id}/children`, {
+      headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }
+    });
+    props.catalog.children = await response.json();
+
+    if (!props.catalog.products) {
+      const catalogResponse = await fetch(`/admin/api/catalogs/${props.catalog.id}`, {
+        headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }
+      });
+      const data = await catalogResponse.json();
+      props.catalog.products = data.catalog.products || [];
+    }
+
+    childrenLoaded.value = true;
+  } catch (err) {
+    console.error('Error loading children:', err);
+  }
 };
+
+const toggleExpand = async () => {
+  if (!isExpanded.value) {
+    await loadChildren();
+    tree.expand(props.catalog.id);
+  } else {
+    tree.collapse(props.catalog.id);
+  }
+};
+
+// Restore previously-expanded state (persisted across navigation / new tab).
+onMounted(() => {
+  if (isExpanded.value) {
+    loadChildren();
+  }
+});
 </script>

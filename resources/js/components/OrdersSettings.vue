@@ -27,12 +27,6 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email для уведомлений</label>
-            <input v-model="settings.notification_email" type="email" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="orders@example.com">
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Email, на который будут приходить уведомления о новых заказах</p>
-          </div>
-
-          <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Минимальная сумма заказа (₽)</label>
             <input v-model="settings.min_order_amount" type="number" step="0.01" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="0">
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Минимальная сумма для оформления заказа (0 = без ограничений)</p>
@@ -220,7 +214,6 @@ const saving = ref(false);
 const settings = ref({
   // General
   order_notifications_enabled: true,
-  notification_email: '',
   min_order_amount: 0,
 
   // Delivery
@@ -283,6 +276,7 @@ const loadSettings = async () => {
 
     if (response.ok) {
       const data = await response.json();
+      delete data.notification_email; // removed from the UI
       settings.value = { ...settings.value, ...data };
 
       if (data.delivery_zones) {

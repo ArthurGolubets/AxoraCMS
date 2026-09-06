@@ -34,6 +34,7 @@ class CharacteristicDefinitionsController extends Controller
     public function show($id)
     {
         $definition = TCharacteristicDefinition::findOrFail($id);
+
         return response()->json($definition);
     }
 
@@ -45,27 +46,29 @@ class CharacteristicDefinitionsController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:255|unique:t_characteristic_definitions,code',
-            'type' => 'required|in:string,number,boolean,color,image',
+            'type' => 'required|in:string,number,boolean,color,image,table,entity',
             'multiple' => 'boolean',
             'applies_to' => 'required|in:catalog,product,both',
             'sort_order' => 'integer',
+            'settings' => 'nullable|array',
+            'settings.entity_types' => 'nullable|array',
+            'settings.entity_types.*' => 'in:product,catalog,infoblock',
+            'settings.infoblock_id' => 'nullable|integer',
+            'settings.table' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
+        $data = $request->only(['name', 'code', 'type', 'multiple', 'applies_to', 'sort_order', 'settings']);
 
         // Generate code if not provided
         if (empty($data['code'])) {
             $data['code'] = TCharacteristicDefinition::generateCode($data['name']);
         }
 
-        // Ensure boolean type is not multiple
-        if ($data['type'] === 'boolean') {
-            $data['multiple'] = false;
-        }
+        $data = $this->normalizeTypeConstraints($data);
 
         $definition = TCharacteristicDefinition::create($data);
 
@@ -81,27 +84,64 @@ class CharacteristicDefinitionsController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
-            'code' => 'sometimes|required|string|max:255|unique:t_characteristic_definitions,code,' . $id,
-            'type' => 'sometimes|required|in:string,number,boolean,color,image',
+            'code' => 'sometimes|required|string|max:255|unique:t_characteristic_definitions,code,'.$id,
+            'type' => 'sometimes|required|in:string,number,boolean,color,image,table,entity',
             'multiple' => 'boolean',
             'applies_to' => 'sometimes|required|in:catalog,product,both',
             'sort_order' => 'integer',
+            'settings' => 'nullable|array',
+            'settings.entity_types' => 'nullable|array',
+            'settings.entity_types.*' => 'in:product,catalog,infoblock',
+            'settings.infoblock_id' => 'nullable|integer',
+            'settings.table' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
-
-        // Ensure boolean type is not multiple
-        if (isset($data['type']) && $data['type'] === 'boolean') {
-            $data['multiple'] = false;
-        }
+        $data = $request->only(['name', 'code', 'type', 'multiple', 'applies_to', 'sort_order', 'settings']);
+        $data = $this->normalizeTypeConstraints($data, $definition);
 
         $definition->update($data);
 
         return response()->json($definition);
+    }
+
+    /**
+     * Keep the "multiple" flag and the "settings" payload consistent with the field type.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function normalizeTypeConstraints(array $data, ?TCharacteristicDefinition $existing = null): array
+    {
+        $type = $data['type'] ?? $existing?->type ?? 'string';
+
+        if (! in_array($type, TCharacteristicDefinition::MULTIPLE_CAPABLE_TYPES, true)) {
+            $data['multiple'] = false;
+        }
+
+        if (array_key_exists('settings', $data)) {
+            $settings = is_array($data['settings']) ? $data['settings'] : [];
+
+            if ($type !== 'entity') {
+                unset($settings['entity_types'], $settings['infoblock_id']);
+            } else {
+                $settings['entity_types'] = array_values(array_intersect(
+                    $settings['entity_types'] ?? ['product', 'catalog', 'infoblock'],
+                    ['product', 'catalog', 'infoblock']
+                )) ?: ['product', 'catalog', 'infoblock'];
+            }
+
+            if ($type !== 'table') {
+                unset($settings['table']);
+            }
+
+            $data['settings'] = $settings ?: null;
+        }
+
+        return $data;
     }
 
     /**

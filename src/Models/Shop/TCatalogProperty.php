@@ -16,6 +16,7 @@ class TCatalogProperty extends Model
         'name',
         'group_id',
         'type',
+        'settings',
         'is_multiple',
         'sort_order',
     ];
@@ -23,6 +24,7 @@ class TCatalogProperty extends Model
     protected $casts = [
         'catalog_id' => 'integer',
         'group_id' => 'integer',
+        'settings' => 'array',
         'is_multiple' => 'boolean',
         'sort_order' => 'integer',
     ];

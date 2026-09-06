@@ -141,40 +141,26 @@
 
         <!-- Color type -->
         <div v-else-if="property.type === 'color'">
-          <input
-            v-if="!property.is_multiple"
+          <ColorField v-model="propertyValues[property.id]" :is-multiple="!!property.is_multiple" />
+        </div>
+
+        <!-- Table type -->
+        <div v-else-if="property.type === 'table'">
+          <InfoBlockTableField
             v-model="propertyValues[property.id]"
-            type="color"
-            class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg cursor-pointer"
-          >
-          <div v-else class="space-y-2">
-            <div
-              v-for="(value, idx) in (ensureArrayExists(property.id), propertyValues[property.id])"
-              :key="idx"
-              class="flex gap-2 items-center"
-            >
-              <input
-                v-model="propertyValues[property.id][idx]"
-                type="color"
-                class="w-20 h-10 px-1 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg cursor-pointer"
-              >
-              <span class="text-sm text-gray-600 dark:text-gray-300 font-mono">{{ propertyValues[property.id][idx] }}</span>
-              <button
-                @click="removeMultipleValue(property.id, idx)"
-                type="button"
-                class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg ml-auto"
-              >
-                ✕
-              </button>
-            </div>
-            <button
-              @click="addMultipleValue(property.id, '#000000')"
-              type="button"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-            >
-              + Добавить цвет
-            </button>
-          </div>
+            :rows="property.settings?.table?.rows || 3"
+            :cols="property.settings?.table?.cols || 3"
+          />
+        </div>
+
+        <!-- Entity link type -->
+        <div v-else-if="property.type === 'entity'">
+          <EntityLinkField
+            v-model="propertyValues[property.id]"
+            :is-multiple="!!property.is_multiple"
+            :allowed-types="property.settings?.entity_types || ['product', 'catalog', 'infoblock']"
+            :locked-infoblock-id="property.settings?.infoblock_id || null"
+          />
         </div>
 
         <!-- Image type -->
@@ -220,11 +206,17 @@
 
 <script>
 import ImageUpload from './ImageUpload.vue';
+import ColorField from './fields/ColorField.vue';
+import EntityLinkField from './fields/EntityLinkField.vue';
+import InfoBlockTableField from './InfoBlockTableField.vue';
 
 export default {
   name: 'ProductPropertiesForm',
   components: {
-    ImageUpload
+    ImageUpload,
+    ColorField,
+    EntityLinkField,
+    InfoBlockTableField
   },
   props: {
     availableProperties: {

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen bg-gray-50 dark:bg-gray-900" :class="{ 'dark': isDark }">
+  <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900" :class="{ 'dark': isDark }">
     <!-- Mobile Overlay -->
     <div
       v-if="isMobileMenuOpen"
@@ -55,7 +55,7 @@
                 Каталог
               </a>
             </router-link>
-            <router-link to="/products" v-slot="{ isActive }" custom>
+            <router-link v-if="productsListEnabled" to="/products" v-slot="{ isActive }" custom>
               <a @click="$router.push('/products'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 Список товаров
@@ -337,7 +337,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col">
+    <main class="flex-1 flex flex-col min-w-0 min-h-0">
       <!-- Header -->
       <header class="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 flex items-center justify-between">
         <!-- Mobile Menu Button -->
@@ -423,7 +423,7 @@
       </header>
 
       <!-- Content Area -->
-      <div class="flex-1 p-6 overflow-auto">
+      <div class="flex-1 min-h-0 p-6 overflow-y-auto">
         <router-view></router-view>
       </div>
     </main>
@@ -460,7 +460,10 @@ const isCollapsed = ref(false);
 const isMobileMenuOpen = ref(false);
 const showUserMenu = ref(false);
 const panelName = ref('AxoraCMS');
+const productsListEnabled = ref(true);
 const themeColor = globalThemeColor; // Use global theme color
+const MENU_GROUPS_STORAGE_KEY = 'axora-cms-menu-groups';
+
 const menuGroups = ref({
   content: false,
   callback: false,
@@ -468,7 +471,27 @@ const menuGroups = ref({
   infoblocks: false,
   pages_seo: false,
   integrations: false,
+  settings: false,
 });
+
+const restoreMenuGroups = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MENU_GROUPS_STORAGE_KEY) || '{}');
+    Object.keys(saved).forEach((key) => {
+      menuGroups.value[key] = !!saved[key];
+    });
+  } catch (e) {
+    // ignore malformed / unavailable storage
+  }
+};
+
+const persistMenuGroups = () => {
+  try {
+    localStorage.setItem(MENU_GROUPS_STORAGE_KEY, JSON.stringify(menuGroups.value));
+  } catch (e) {
+    // ignore unavailable storage
+  }
+};
 
 const adminUser = ref({
   name: 'Администратор',
@@ -514,6 +537,7 @@ const toggleSidebar = () => {
 
 const toggleMenuGroup = (group) => {
   menuGroups.value[group] = !menuGroups.value[group];
+  persistMenuGroups();
 };
 
 const toggleTheme = () => {
@@ -588,6 +612,7 @@ const loadSettings = async () => {
     if (response.ok) {
       const settings = await response.json();
       panelName.value = settings.panel_name || 'AxoraCMS';
+      productsListEnabled.value = settings.products_list_enabled !== false;
 
       if (settings.theme_color) {
         const colorMap = {
@@ -682,6 +707,8 @@ onMounted(() => {
 
   const savedSidebar = localStorage.getItem('axora-cms-sidebar');
   isCollapsed.value = savedSidebar === 'collapsed';
+
+  restoreMenuGroups();
 
   loadCurrentUser();
   loadSettings();

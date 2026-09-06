@@ -2,9 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Models\Shop;
 
+use HolartWeb\AxoraCMS\Services\EntityLinkResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class TProduct extends Model
 {
@@ -78,12 +81,46 @@ class TProduct extends Model
     }
 
     /**
+     * Companion-product links owned by this product (сопутствующие товары / наборы).
+     */
+    public function relatedLinks(): HasMany
+    {
+        return $this->hasMany(TProductRelated::class, 'product_id')->orderBy('sort');
+    }
+
+    /**
+     * Companion products for this product, optionally scoped to one variant SKU.
+     * Product-level links (variant_sku = null) always apply.
+     *
+     * @return Collection<int, array{link: TProductRelated, product: TProduct, variant: ?TProductVariant}>
+     */
+    public function companionProducts(?string $variantSku = null)
+    {
+        return $this->relatedLinks()
+            ->where(function ($query) use ($variantSku) {
+                $query->whereNull('variant_sku');
+                if ($variantSku !== null) {
+                    $query->orWhere('variant_sku', $variantSku);
+                }
+            })
+            ->with('relatedProduct')
+            ->get()
+            ->map(fn (TProductRelated $link) => [
+                'link' => $link,
+                'product' => $link->relatedProduct,
+                'variant' => $link->resolveRelatedVariant(),
+            ])
+            ->filter(fn ($row) => $row['product'] !== null)
+            ->values();
+    }
+
+    /**
      * Get property values with their definitions
      */
     public function getPropertiesWithValues()
     {
         $catalog = $this->catalog;
-        if (!$catalog) {
+        if (! $catalog) {
             return collect();
         }
 
@@ -94,8 +131,9 @@ class TProduct extends Model
         $filledValues = $this->propertyValues()->with('property')->get()->keyBy('property_id');
 
         // Combine properties with their values
-        return $availableProperties->map(function($property) use ($filledValues) {
+        return $availableProperties->map(function ($property) use ($filledValues) {
             $value = $filledValues->get($property->id);
+
             return [
                 'property' => $property,
                 'value' => $value ? $value->value : null,
@@ -105,13 +143,18 @@ class TProduct extends Model
     }
 
     /**
-     * Get formatted properties for display
-     * Returns array of properties with name and values
-     * Format: [['name' => 'Property Name', 'values' => ['value1', 'value2']], ...]
+     * Get formatted properties for display.
+     *
+     * Returns array of properties with name, code, type and values. For the
+     * "entity" type the values are resolved into real models; for "table" the
+     * value is the raw 2D array under the "table" key.
+     *
+     * Format: [['name' => ..., 'code' => ..., 'type' => ..., 'values' => [...]], ...]
      */
     public function getFormattedProperties(): array
     {
         $result = [];
+        $resolver = new EntityLinkResolver;
 
         // Get property values with properties loaded
         $propertyValues = $this->propertyValues()->with('property')->get();
@@ -119,15 +162,70 @@ class TProduct extends Model
         foreach ($propertyValues as $pv) {
             $property = $pv->property;
 
-            // Decode JSON if it's an array
+            if (! $property) {
+                continue;
+            }
+
             $value = $pv->value;
             $decoded = json_decode($value, true);
-            $values = $decoded !== null && is_array($decoded) ? $decoded : [$value];
+            $decodedArray = ($decoded !== null && is_array($decoded)) ? $decoded : null;
 
-            $result[] = [
+            $row = [
                 'name' => $property->name,
-                'values' => $values,
+                'code' => $property->code,
+                'type' => $property->type,
             ];
+
+            if ($property->type === 'entity') {
+                $row['values'] = $resolver->resolve($decodedArray ?? $value);
+            } elseif ($property->type === 'table') {
+                $row['values'] = [];
+                $row['table'] = $decodedArray ?? [];
+            } else {
+                $row['values'] = $decodedArray ?? [$value];
+            }
+
+            $result[] = $row;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get this product's characteristic values, keyed by characteristic code,
+     * with "entity" values resolved into real models.
+     *
+     * @return array<string, mixed>
+     */
+    public function getResolvedCharacteristics(): array
+    {
+        $raw = is_array($this->addition_info) ? $this->addition_info : [];
+
+        if (empty($raw)) {
+            return [];
+        }
+
+        $definitionClass = 'HolartWeb\AxoraCMS\Models\Shop\TCharacteristicDefinition';
+
+        if (! class_exists($definitionClass)) {
+            return $raw;
+        }
+
+        $definitions = $definitionClass::whereIn('applies_to', ['product', 'both'])
+            ->get()
+            ->keyBy('code');
+
+        $resolver = new EntityLinkResolver;
+        $result = [];
+
+        foreach ($raw as $code => $value) {
+            $definition = $definitions->get($code);
+
+            if ($definition && $definition->type === 'entity') {
+                $result[$code] = $resolver->resolve($value);
+            } else {
+                $result[$code] = $value;
+            }
         }
 
         return $result;
@@ -149,6 +247,7 @@ class TProduct extends Model
         if (class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
             return $this->hasMany('HolartWeb\AxoraCMS\Models\Callback\TComments', 'product_id');
         }
+
         return $this->hasMany(Model::class, 'product_id');
     }
 
@@ -183,10 +282,10 @@ class TProduct extends Model
         $filters = [];
         foreach ($filterValues as $filterValue) {
             $filterId = $filterValue->filter->id;
-            if (!isset($filters[$filterId])) {
+            if (! isset($filters[$filterId])) {
                 $filters[$filterId] = [
                     'filter' => $filterValue->filter,
-                    'values' => []
+                    'values' => [],
                 ];
             }
             $filters[$filterId]['values'][] = $filterValue;
@@ -221,7 +320,7 @@ class TProduct extends Model
      */
     public function getDiscountPercentageAttribute(): ?int
     {
-        if (!$this->old_price || $this->old_price <= $this->price) {
+        if (! $this->old_price || $this->old_price <= $this->price) {
             return null;
         }
 
@@ -233,12 +332,12 @@ class TProduct extends Model
      */
     public static function generateSlug(string $name): string
     {
-        $slug = \Illuminate\Support\Str::slug($name);
+        $slug = Str::slug($name);
         $count = 1;
         $originalSlug = $slug;
 
         while (static::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count;
+            $slug = $originalSlug.'-'.$count;
             $count++;
         }
 
@@ -250,7 +349,7 @@ class TProduct extends Model
      */
     public function getAverageRating(): ?float
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
             return null;
         }
 
@@ -266,7 +365,7 @@ class TProduct extends Model
      */
     public function getRatingStats(): array
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Callback\TComments')) {
             return [
                 'average' => null,
                 'count' => 0,

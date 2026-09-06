@@ -2,10 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Commerce;
 
+use HolartWeb\AxoraCMS\Models\Commerce\TOrdersData;
+use HolartWeb\AxoraCMS\Models\TModule;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Commerce\TOrdersData;
 
 class OrdersDataController extends Controller
 {
@@ -18,17 +20,21 @@ class OrdersDataController extends Controller
         // Add available payment providers based on installed modules
         $availableProviders = ['transfer'];
 
-        // Check if Yookassa module is installed
-        if (class_exists('\App\Services\YookassaService')) {
+        // YooKassa: available once the module is installed. The package service
+        // class always exists, so it is not a reliable signal — use t_modules.
+        $yookassaInstalled = (Schema::hasTable('t_modules') && TModule::isInstalled('yookassa'))
+            || class_exists('\App\Services\YookassaService'); // legacy app-published install
+
+        if ($yookassaInstalled) {
             $availableProviders[] = 'yookassa';
         }
 
-        // Check if Sberbank module is installed
+        // Sberbank: legacy check (no dedicated module in the current version).
         if (class_exists('\App\Services\SberbankService')) {
             $availableProviders[] = 'sberbank';
         }
 
-        $settings['available_providers'] = $availableProviders;
+        $settings['available_providers'] = array_values(array_unique($availableProviders));
 
         return response()->json($settings);
     }
@@ -39,7 +45,7 @@ class OrdersDataController extends Controller
 
         return response()->json([
             'key' => $key,
-            'value' => $value
+            'value' => $value,
         ]);
     }
 
@@ -56,7 +62,7 @@ class OrdersDataController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -72,7 +78,7 @@ class OrdersDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Настройки сохранены успешно'
+            'message' => 'Настройки сохранены успешно',
         ]);
     }
 
@@ -85,7 +91,7 @@ class OrdersDataController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -94,7 +100,7 @@ class OrdersDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Настройка обновлена успешно'
+            'message' => 'Настройка обновлена успешно',
         ]);
     }
 
@@ -104,7 +110,7 @@ class OrdersDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Настройка удалена успешно'
+            'message' => 'Настройка удалена успешно',
         ]);
     }
 

@@ -2,16 +2,18 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
 class LoggingInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'logging';
 
     protected $signature = 'axoracms:logging-install';
+
     protected $description = 'Install AxoraCMS Logging Module';
 
     public function handle(): int
@@ -23,7 +25,7 @@ class LoggingInstallCommand extends Command
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
@@ -31,30 +33,25 @@ class LoggingInstallCommand extends Command
         $this->info('Step 1: Running database migration...');
 
         try {
+            // Absolute path + --realpath so it also works on Windows.
+            $migrationFile = dirname(__DIR__, 2).'/database/migrations/2026_02_27_125658_create_t_admin_actions_table.php';
             Artisan::call('migrate', [
-                '--path' => 'vendor/holartweb/axora-cms/database/migrations/2026_02_27_125658_create_t_admin_actions_table.php',
-                '--force' => true
+                '--path' => $migrationFile,
+                '--realpath' => true,
+                '--force' => true,
             ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
-            // Try alternative path
-            try {
-                Artisan::call('migrate', [
-                    '--path' => 'packages/holartweb/axora-cms/database/migrations/2026_02_27_125658_create_t_admin_actions_table.php',
-                    '--force' => true
-                ]);
-                $this->info('✓ Migrations completed successfully');
-            } catch (\Exception $e2) {
-                $this->error('❌ Migration failed: ' . $e2->getMessage());
-                return self::FAILURE;
-            }
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
+            return self::FAILURE;
         }
         $this->newLine();
 
         // Step 2: Build Frontend Assets
         $this->info('Step 2: Building frontend assets...');
 
-        if (file_exists($packagePath . '/package.json')) {
+        if (file_exists($packagePath.'/package.json')) {
             $this->info('Installing npm dependencies...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnVar);
 
@@ -107,7 +104,7 @@ class LoggingInstallCommand extends Command
         $this->info('╚══════════════════════════════════════╝');
         $this->newLine();
         $this->info('You can now track all admin actions in your system.');
-        $this->info('Navigate to: ' . url('/admin/logs'));
+        $this->info('Navigate to: '.url('/admin/logs'));
         $this->newLine();
 
         return self::SUCCESS;

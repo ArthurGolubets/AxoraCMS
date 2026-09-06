@@ -2,16 +2,18 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
 class YookassaInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'yookassa';
 
     protected $signature = 'axoracms:yookassa-install';
+
     protected $description = 'Install Yookassa Integration';
 
     public function handle(): int
@@ -23,9 +25,10 @@ class YookassaInstallCommand extends Command
 
         // Check if Commerce module is installed
         $this->info('Checking dependencies...');
-        if (!TModule::isInstalled('commerce')) {
+        if (! TModule::isInstalled('commerce')) {
             $this->error('❌ Commerce module is required for Yookassa integration!');
             $this->error('Please install Commerce module first: php artisan axoracms:commerce-install');
+
             return self::FAILURE;
         }
         $this->info('✓ Commerce module is installed');
@@ -51,31 +54,31 @@ class YookassaInstallCommand extends Command
             $composerCmd = null;
             foreach ($composerPaths as $path) {
                 if (file_exists($path)) {
-                    $composerCmd = PHP_BINARY . ' ' . $path;
+                    $composerCmd = PHP_BINARY.' '.$path;
                     break;
                 }
             }
 
             // If composer not found in common paths, try 'composer' command
-            if (!$composerCmd) {
+            if (! $composerCmd) {
                 exec('which composer 2>/dev/null', $output, $returnVar);
-                if ($returnVar === 0 && !empty($output[0])) {
+                if ($returnVar === 0 && ! empty($output[0])) {
                     $composerCmd = 'composer';
                 }
             }
 
-            if (!$composerCmd) {
+            if (! $composerCmd) {
                 $this->warn('⚠ Composer not found. Please install Yookassa SDK manually:');
                 $this->warn('  composer require yoomoney/yookassa-sdk-php');
                 $this->newLine();
             } else {
                 try {
                     $process = proc_open(
-                        $composerCmd . ' require yoomoney/yookassa-sdk-php --no-interaction',
+                        $composerCmd.' require yoomoney/yookassa-sdk-php --no-interaction',
                         [
                             0 => ['pipe', 'r'],
                             1 => ['pipe', 'w'],
-                            2 => ['pipe', 'w']
+                            2 => ['pipe', 'w'],
                         ],
                         $pipes,
                         base_path()
@@ -102,7 +105,7 @@ class YookassaInstallCommand extends Command
                         $this->newLine();
                     }
                 } catch (\Exception $e) {
-                    $this->warn('⚠ Error installing Yookassa SDK: ' . $e->getMessage());
+                    $this->warn('⚠ Error installing Yookassa SDK: '.$e->getMessage());
                     $this->warn('Please install it manually: composer require yoomoney/yookassa-sdk-php');
                     $this->newLine();
                 }
@@ -115,29 +118,31 @@ class YookassaInstallCommand extends Command
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('plugins/axora');
         }
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
         try {
-            $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/integrations';
+            $migrationsPath = $packagePath.'/database/migrations/integrations';
 
             // Check if migration path exists
-            if (!file_exists(base_path($migrationsPath))) {
-                $this->warn('⚠ Migration path does not exist: ' . base_path($migrationsPath));
+            if (! is_dir($migrationsPath)) {
+                $this->warn('⚠ Migration path does not exist: '.$migrationsPath);
                 $this->warn('⚠ Skipping migrations for Yookassa');
             } else {
                 Artisan::call('migrate', [
                     '--path' => $migrationsPath,
-                    '--force' => true
+                    '--realpath' => true,
+                    '--force' => true,
                 ]);
                 $this->info('✓ Migrations completed successfully');
             }
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
