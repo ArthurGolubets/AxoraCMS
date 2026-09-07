@@ -62,7 +62,7 @@
 
         <div v-if="catalog.content" class="md:col-span-2">
           <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Контент</h3>
-          <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="catalog.content"></div>
+          <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="sanitizeHtml(catalog.content)"></div>
         </div>
       </div>
     </div>
@@ -161,6 +161,7 @@ import { useRoute } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
 import CatalogFiltersBlock from './CatalogFiltersBlock.vue';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 const { error } = useModal();
 const { buttonStyle } = useTheme();

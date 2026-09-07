@@ -24,7 +24,7 @@ class TIntegrationSettings extends Model
             ->where('key', $key)
             ->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
@@ -41,7 +41,7 @@ class TIntegrationSettings extends Model
         static::updateOrCreate(
             [
                 'integration_type' => $integrationType,
-                'key' => $key
+                'key' => $key,
             ],
             ['value' => $stringValue, 'type' => $type]
         );

@@ -878,9 +878,11 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import ThemeButton from './ThemeButton.vue';
+import { useAppConfig } from '../composables/useAppConfig';
 
 const router = useRouter();
 const { success, error } = useModal();
+const appConfig = useAppConfig();
 
 const activeTab = ref('appearance');
 const logoInput = ref(null);
@@ -923,8 +925,7 @@ const menus = ref([]);
 
 const loadSettings = async () => {
   try {
-    const response = await fetch('/admin/api/settings');
-    const data = await response.json();
+    const data = (await appConfig.loadSettings()) || {};
 
     settings.value = {
       logo_path: data.logo_path || '',
@@ -998,6 +999,7 @@ const uploadLogo = async (event) => {
 
     const data = await response.json();
     settings.value.logo_path = data.path;
+    appConfig.refreshSettings();
     await success('Логотип успешно загружен!');
   } catch (err) {
     console.error('Error uploading logo:', err);
@@ -1029,6 +1031,7 @@ const deleteLogo = async () => {
     }
 
     settings.value.logo_path = '';
+    appConfig.refreshSettings();
     await success('Логотип успешно удален!');
   } catch (err) {
     console.error('Error deleting logo:', err);
@@ -1057,6 +1060,7 @@ const saveAppearance = async () => {
       throw new Error('Failed to save settings');
     }
 
+    appConfig.refreshSettings();
     await success('Настройки внешнего вида успешно сохранены!');
   } catch (err) {
     console.error('Error saving settings:', err);

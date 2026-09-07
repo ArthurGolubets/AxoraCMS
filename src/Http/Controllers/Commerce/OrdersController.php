@@ -2,11 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Commerce;
 
+use HolartWeb\AxoraCMS\Models\Commerce\TOrderItems;
+use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
+use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
-use HolartWeb\AxoraCMS\Models\Commerce\TOrderItems;
 
 class OrdersController extends Controller
 {
@@ -16,10 +17,10 @@ class OrdersController extends Controller
 
         // Search
         if ($request->has('search') && $request->search !== '') {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%')
-                  ->orWhere('phone', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('email', 'like', '%'.$request->search.'%')
+                    ->orWhere('phone', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -48,6 +49,7 @@ class OrdersController extends Controller
     public function show($id)
     {
         $order = TOrders::with(['items', 'promocode', 'paymentTransaction'])->findOrFail($id);
+
         return response()->json($order);
     }
 
@@ -70,7 +72,7 @@ class OrdersController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -100,18 +102,18 @@ class OrdersController extends Controller
             ];
 
             // Add variant data if present
-            if (!empty($item['variant_id'])) {
+            if (! empty($item['variant_id'])) {
                 $itemData['variant_id'] = $item['variant_id'];
 
                 // Get variant data from product
-                $product = \HolartWeb\AxoraCMS\Models\Shop\TProduct::with('variants')->find($item['product_id']);
+                $product = TProduct::with('variants')->find($item['product_id']);
                 if ($product) {
                     $variant = $product->variants->firstWhere('id', $item['variant_id']);
                     if ($variant) {
                         $itemData['variant_data'] = [
                             'name' => $variant->name,
                             'price' => $variant->price,
-                            'characteristics' => $variant->characteristics ?? []
+                            'characteristics' => $variant->characteristics ?? [],
                         ];
                     }
                 }
@@ -123,7 +125,7 @@ class OrdersController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Заказ создан успешно',
-            'data' => $order->load('items')
+            'data' => $order->load('items'),
         ], 201);
     }
 
@@ -150,7 +152,7 @@ class OrdersController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -182,18 +184,18 @@ class OrdersController extends Controller
                 ];
 
                 // Add variant data if present
-                if (!empty($item['variant_id'])) {
+                if (! empty($item['variant_id'])) {
                     $itemData['variant_id'] = $item['variant_id'];
 
                     // Get variant data from product
-                    $product = \HolartWeb\AxoraCMS\Models\Shop\TProduct::with('variants')->find($item['product_id']);
+                    $product = TProduct::with('variants')->find($item['product_id']);
                     if ($product) {
                         $variant = $product->variants->firstWhere('id', $item['variant_id']);
                         if ($variant) {
                             $itemData['variant_data'] = [
                                 'name' => $variant->name,
                                 'price' => $variant->price,
-                                'characteristics' => $variant->characteristics ?? []
+                                'characteristics' => $variant->characteristics ?? [],
                             ];
                         }
                     }
@@ -208,7 +210,7 @@ class OrdersController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Заказ обновлен успешно',
-            'data' => $order->fresh()->load('items')
+            'data' => $order->fresh()->load('items'),
         ]);
     }
 
@@ -224,7 +226,7 @@ class OrdersController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Заказ удален успешно'
+            'message' => 'Заказ удален успешно',
         ]);
     }
 
@@ -239,7 +241,7 @@ class OrdersController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -248,7 +250,7 @@ class OrdersController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Статус заказа изменен',
-            'data' => $order->fresh()
+            'data' => $order->fresh(),
         ]);
     }
 }

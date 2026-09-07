@@ -2,8 +2,49 @@
 
 namespace HolartWeb\AxoraCMS;
 
-use Illuminate\Support\ServiceProvider;
+use HolartWeb\AxoraCMS\Console\CallbackInstallCommand;
+use HolartWeb\AxoraCMS\Console\CallbackUninstallCommand;
+use HolartWeb\AxoraCMS\Console\CleanOldPageVisitsCommand;
+use HolartWeb\AxoraCMS\Console\CommerceInstallCommand;
+use HolartWeb\AxoraCMS\Console\CommerceMLInstallCommand;
+use HolartWeb\AxoraCMS\Console\CommerceMLUninstallCommand;
+use HolartWeb\AxoraCMS\Console\CommerceUninstallCommand;
+use HolartWeb\AxoraCMS\Console\InfoBlocksInstallCommand;
+use HolartWeb\AxoraCMS\Console\InfoBlocksUninstallCommand;
+use HolartWeb\AxoraCMS\Console\InstallCommand;
+use HolartWeb\AxoraCMS\Console\LoggingInstallCommand;
+use HolartWeb\AxoraCMS\Console\LoggingUninstallCommand;
+use HolartWeb\AxoraCMS\Console\PageBuilderInstallCommand;
+use HolartWeb\AxoraCMS\Console\PageBuilderUninstallCommand;
+use HolartWeb\AxoraCMS\Console\PagesInstallCommand;
+use HolartWeb\AxoraCMS\Console\PagesUninstallCommand;
+use HolartWeb\AxoraCMS\Console\ScanRoutesCommand;
+use HolartWeb\AxoraCMS\Console\SeoInstallCommand;
+use HolartWeb\AxoraCMS\Console\SeoUninstallCommand;
+use HolartWeb\AxoraCMS\Console\ShopInstallCommand;
+use HolartWeb\AxoraCMS\Console\ShopUninstallCommand;
+use HolartWeb\AxoraCMS\Console\TelegramInstallCommand;
+use HolartWeb\AxoraCMS\Console\TelegramUninstallCommand;
+use HolartWeb\AxoraCMS\Console\UpdateCommand;
+use HolartWeb\AxoraCMS\Console\YKassaCheckPaymentCommand;
+use HolartWeb\AxoraCMS\Console\YookassaInstallCommand;
+use HolartWeb\AxoraCMS\Console\YookassaUninstallCommand;
+use HolartWeb\AxoraCMS\Http\Middleware\CheckAdminRole;
+use HolartWeb\AxoraCMS\Http\Middleware\RedirectIfNotAdmin;
+use HolartWeb\AxoraCMS\Http\Middleware\SharePageData;
+use HolartWeb\AxoraCMS\Models\TAdministrator;
+use HolartWeb\AxoraCMS\Services\CatalogService;
+use HolartWeb\AxoraCMS\Services\CommentsService;
+use HolartWeb\AxoraCMS\Services\Mail\MailSettingsService;
+use HolartWeb\AxoraCMS\Services\PageDataService;
+use HolartWeb\AxoraCMS\Services\PageVisitService;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\ServiceProvider;
 
 class AxoraCMSServiceProvider extends ServiceProvider
 {
@@ -25,7 +66,7 @@ class AxoraCMSServiceProvider extends ServiceProvider
 
         $this->app['config']->set('auth.providers.administrators', [
             'driver' => 'eloquent',
-            'model' => \HolartWeb\AxoraCMS\Models\TAdministrator::class,
+            'model' => TAdministrator::class,
         ]);
     }
 
@@ -42,100 +83,135 @@ class AxoraCMSServiceProvider extends ServiceProvider
             $this->loadViewsFrom(__DIR__.'/../resources/views', 'axora-cms');
 
             // Register services as singletons (lazy loaded)
-            $this->app->singleton(\HolartWeb\AxoraCMS\Services\PageDataService::class, function ($app) {
-                return new \HolartWeb\AxoraCMS\Services\PageDataService();
+            $this->app->singleton(PageDataService::class, function ($app) {
+                return new PageDataService;
             });
 
-            $this->app->singleton(\HolartWeb\AxoraCMS\Services\PageVisitService::class, function ($app) {
-                return new \HolartWeb\AxoraCMS\Services\PageVisitService();
+            $this->app->singleton(PageVisitService::class, function ($app) {
+                return new PageVisitService;
             });
 
-            $this->app->singleton(\HolartWeb\AxoraCMS\Services\CatalogService::class, function ($app) {
-                return new \HolartWeb\AxoraCMS\Services\CatalogService();
+            $this->app->singleton(CatalogService::class, function ($app) {
+                return new CatalogService;
             });
 
-            $this->app->singleton(\HolartWeb\AxoraCMS\Services\CommentsService::class, function ($app) {
-                return new \HolartWeb\AxoraCMS\Services\CommentsService();
+            $this->app->singleton(CommentsService::class, function ($app) {
+                return new CommentsService;
+            });
+
+            $this->app->singleton(MailSettingsService::class, function ($app) {
+                return new MailSettingsService;
             });
 
             // Register middleware aliases only
-            $this->app['router']->aliasMiddleware('admin.auth', \HolartWeb\AxoraCMS\Http\Middleware\RedirectIfNotAdmin::class);
-            $this->app['router']->aliasMiddleware('share.page.data', \HolartWeb\AxoraCMS\Http\Middleware\SharePageData::class);
+            $this->app['router']->aliasMiddleware('admin.auth', RedirectIfNotAdmin::class);
+            $this->app['router']->aliasMiddleware('admin.role', CheckAdminRole::class);
+            $this->app['router']->aliasMiddleware('share.page.data', SharePageData::class);
+
+            // Rate limiter for admin authentication (login / password reset).
+            RateLimiter::for('admin-login', function (Request $request) {
+                $key = mb_strtolower((string) $request->input('email')).'|'.$request->ip();
+
+                return [
+                    Limit::perMinute(5)->by($key),
+                    Limit::perMinute(20)->by($request->ip()),
+                ];
+            });
 
             // SharePageData middleware is NOT registered automatically
             // It will be registered during module installation via InstallCommand
 
             // Register commands (always register so they can be called via Artisan::call() from web)
             $this->commands([
-            \HolartWeb\AxoraCMS\Console\InstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\UpdateCommand::class,
-            \HolartWeb\AxoraCMS\Console\ShopInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\ShopUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\CallbackInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\CallbackUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\CommerceInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\CommerceUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\LoggingInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\LoggingUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\InfoBlocksInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\InfoBlocksUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\PagesInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\PagesUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\SeoInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\SeoUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\PageBuilderInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\PageBuilderUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\CommerceMLInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\CommerceMLUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\ScanRoutesCommand::class,
-            \HolartWeb\AxoraCMS\Console\CleanOldPageVisitsCommand::class,
-            \HolartWeb\AxoraCMS\Console\TelegramInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\TelegramUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\YookassaInstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\YookassaUninstallCommand::class,
-            \HolartWeb\AxoraCMS\Console\YKassaCheckPaymentCommand::class,
-        ]);
+                InstallCommand::class,
+                UpdateCommand::class,
+                ShopInstallCommand::class,
+                ShopUninstallCommand::class,
+                CallbackInstallCommand::class,
+                CallbackUninstallCommand::class,
+                CommerceInstallCommand::class,
+                CommerceUninstallCommand::class,
+                LoggingInstallCommand::class,
+                LoggingUninstallCommand::class,
+                InfoBlocksInstallCommand::class,
+                InfoBlocksUninstallCommand::class,
+                PagesInstallCommand::class,
+                PagesUninstallCommand::class,
+                SeoInstallCommand::class,
+                SeoUninstallCommand::class,
+                PageBuilderInstallCommand::class,
+                PageBuilderUninstallCommand::class,
+                CommerceMLInstallCommand::class,
+                CommerceMLUninstallCommand::class,
+                ScanRoutesCommand::class,
+                CleanOldPageVisitsCommand::class,
+                TelegramInstallCommand::class,
+                TelegramUninstallCommand::class,
+                YookassaInstallCommand::class,
+                YookassaUninstallCommand::class,
+                YKassaCheckPaymentCommand::class,
+            ]);
 
-        // Schedule automatic cleanup of old page visits
-        // Scheduled tasks will check module installation themselves
-        if ($this->app->runningInConsole()) {
-            $this->app->booted(function () {
-                $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
+            // Schedule automatic cleanup of old page visits
+            // Scheduled tasks will check module installation themselves
+            if ($this->app->runningInConsole()) {
+                $this->app->booted(function () {
+                    $schedule = $this->app->make(Schedule::class);
 
-                // These commands handle DB checks internally
-                $schedule->command('axoracms:clean-page-visits')->daily();
-                $schedule->command('axoracms:ykassa-check-payment')->everyMinute();
-            });
-        }
+                    // These commands handle DB checks internally
+                    $schedule->command('axoracms:clean-page-visits')->daily();
+                    $schedule->command('axoracms:ykassa-check-payment')->everyMinute();
+                });
+            }
 
-        // Publish config
-        $this->publishes([
-            __DIR__.'/../config/axora-cms.php' => config_path('axora-cms.php'),
-        ], 'axora-cms-config');
+            // Publish config
+            $this->publishes([
+                __DIR__.'/../config/axora-cms.php' => config_path('axora-cms.php'),
+            ], 'axora-cms-config');
 
-        // Publish migrations
-        $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'axora-cms-migrations');
+            // Publish migrations
+            $this->publishes([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], 'axora-cms-migrations');
 
-        // Publish views
-        $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/axora-cms'),
-        ], 'axora-cms-views');
+            // Publish views
+            $this->publishes([
+                __DIR__.'/../resources/views' => resource_path('views/vendor/axora-cms'),
+            ], 'axora-cms-views');
 
-        // Publish assets
-        $this->publishes([
-            __DIR__.'/../resources/dist' => public_path('vendor/axora-cms'),
-        ], 'axora-cms-assets');
+            // Publish assets
+            $this->publishes([
+                __DIR__.'/../resources/dist' => public_path('vendor/axora-cms'),
+            ], 'axora-cms-assets');
 
             // Register admin routes with prefix
             $this->registerAdminRoutes();
 
             // Register API routes (for 1C integration, etc.)
             $this->registerApiRoutes();
+
+            // Apply runtime SMTP settings stored in the database. Wrapped so a
+            // fresh install / missing table / console migration never breaks boot.
+            $this->applyMailSettings();
         } catch (\Exception $e) {
             // Suppress errors during package discovery when DB is not configured
             // This allows composer require to work without database connection
+        }
+    }
+
+    /**
+     * Apply database-stored SMTP settings to the runtime mail configuration.
+     */
+    protected function applyMailSettings(): void
+    {
+        try {
+            if (! Schema::hasTable('t_integration_settings')) {
+                return;
+            }
+
+            $this->app->make(MailSettingsService::class)->apply();
+        } catch (\Throwable $e) {
+            // Never let mail configuration break application boot.
         }
     }
 

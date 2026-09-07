@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Menus;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\Menus\TMenuItem;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class MenuItemsController extends Controller
 {
@@ -47,7 +47,7 @@ class MenuItemsController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'menu_item', $item->id,
-            'Создан пункт меню "' . $item->title . '"');
+            'Создан пункт меню "'.$item->title.'"');
 
         return response()->json($item, 201);
     }
@@ -75,10 +75,10 @@ class MenuItemsController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'menu_item', $item->id,
-            'Обновлен пункт меню "' . $item->title . '"', [
-            'old' => $oldData,
-            'new' => $item->getAttributes()
-        ]);
+            'Обновлен пункт меню "'.$item->title.'"', [
+                'old' => $oldData,
+                'new' => $item->getAttributes(),
+            ]);
 
         return response()->json($item);
     }
@@ -95,7 +95,7 @@ class MenuItemsController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'menu_item', $id,
-            'Удален пункт меню "' . $itemTitle . '"');
+            'Удален пункт меню "'.$itemTitle.'"');
 
         return response()->json(['message' => 'Пункт меню удален']);
     }
@@ -132,17 +132,17 @@ class MenuItemsController extends Controller
     public function toggleActive($id)
     {
         $item = TMenuItem::findOrFail($id);
-        $item->is_active = !$item->is_active;
+        $item->is_active = ! $item->is_active;
         $item->save();
 
         // Log activity
         $status = $item->is_active ? 'активирован' : 'деактивирован';
         TAdminAction::log('updated', 'menu_item', $item->id,
-            'Пункт меню "' . $item->title . '" ' . $status);
+            'Пункт меню "'.$item->title.'" '.$status);
 
         return response()->json([
             'message' => 'Статус изменен',
-            'is_active' => $item->is_active
+            'is_active' => $item->is_active,
         ]);
     }
 }

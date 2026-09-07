@@ -297,12 +297,16 @@
       <!-- /Системные -->
 
       <!-- Кнопка сохранения -->
-      <div class="flex justify-end">
+      <div v-if="activeTab !== 'custom'" class="flex justify-end">
         <button type="submit" :disabled="loading" :style="buttonStyle" class="px-6 py-3 text-white rounded-lg font-medium transition-opacity hover:opacity-90 disabled:opacity-50">
           {{ loading ? 'Сохранение...' : 'Сохранить изменения' }}
         </button>
       </div>
     </form>
+
+    <div v-show="activeTab === 'custom'">
+      <PanelCustomFields />
+    </div>
   </div>
 </template>
 
@@ -311,9 +315,12 @@ import { ref, onMounted } from 'vue';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
 import ToggleSwitch from './ToggleSwitch.vue';
+import PanelCustomFields from './PanelCustomFields.vue';
+import { useAppConfig } from '../composables/useAppConfig';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
+const appConfig = useAppConfig();
 
 const loading = ref(false);
 const hasSeoModule = ref(false);
@@ -324,6 +331,7 @@ const activeTab = ref('general');
 const tabs = [
   { id: 'general', label: 'Основные' },
   { id: 'system', label: 'Системные настройки' },
+  { id: 'custom', label: 'Пользовательские свойства' },
 ];
 const settings = ref({
   panel_name: '',
@@ -371,11 +379,8 @@ const checkCommerceMl = async () => {
 
 const checkShopModule = async () => {
   try {
-    const response = await fetch('/admin/api/modules/status', { headers: { Accept: 'application/json' } });
-    if (response.ok) {
-      const data = await response.json();
-      hasShopModule.value = !!data.modules?.find((m) => m.id === 'shop')?.installed;
-    }
+    await appConfig.loadModulesStatus();
+    hasShopModule.value = appConfig.isModuleInstalled('shop');
   } catch (err) {
     hasShopModule.value = false;
   }
@@ -383,8 +388,10 @@ const checkShopModule = async () => {
 
 const fetchSettings = async () => {
   try {
-    const response = await fetch('/admin/api/settings');
-    const data = await response.json();
+    const data = await appConfig.loadSettings();
+    if (!data) {
+      return;
+    }
 
     // Преобразование старого формата адресов в новый
     let addresses = data.addresses || [];
@@ -430,6 +437,7 @@ const saveSettings = async () => {
       throw new Error('Failed to save settings');
     }
 
+    appConfig.refreshSettings();
     await success('Настройки успешно сохранены!');
 
     // Reload page to apply theme color changes

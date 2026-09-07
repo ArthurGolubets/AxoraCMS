@@ -2,9 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Collection;
 
 class PageVisitService
 {
@@ -19,14 +20,14 @@ class PageVisitService
         ?string $referer = null
     ): void {
         // Check if tables exist
-        if (!Schema::hasTable('t_pages') || !Schema::hasTable('t_page_visits')) {
+        if (! Schema::hasTable('t_pages') || ! Schema::hasTable('t_page_visits')) {
             return;
         }
 
         $pageModel = $this->getPageModel();
         $pageVisitModel = $this->getPageVisitModel();
 
-        if (!$pageModel || !$pageVisitModel) {
+        if (! $pageModel || ! $pageVisitModel) {
             return;
         }
 
@@ -38,7 +39,7 @@ class PageVisitService
         }
 
         // If no page found by route, try to find by slug from URL
-        if (!$page) {
+        if (! $page) {
             $slug = $this->extractSlugFromUrl($url);
             if ($slug) {
                 $page = $pageModel::where('slug', $slug)->first();
@@ -67,7 +68,7 @@ class PageVisitService
     private function extractSlugFromUrl(string $url): ?string
     {
         $path = parse_url($url, PHP_URL_PATH);
-        if (!$path || $path === '/') {
+        if (! $path || $path === '/') {
             return null;
         }
 
@@ -81,7 +82,7 @@ class PageVisitService
     {
         $pageModel = $this->getPageModel();
 
-        if (!$pageModel) {
+        if (! $pageModel) {
             return collect();
         }
 
@@ -107,7 +108,7 @@ class PageVisitService
     {
         $pageVisitModel = $this->getPageVisitModel();
 
-        if (!$pageVisitModel) {
+        if (! $pageVisitModel) {
             return 0;
         }
 
@@ -128,7 +129,7 @@ class PageVisitService
     {
         $pageVisitModel = $this->getPageVisitModel();
 
-        if (!$pageVisitModel) {
+        if (! $pageVisitModel) {
             return ['labels' => [], 'data' => []];
         }
 
@@ -157,7 +158,7 @@ class PageVisitService
     {
         $pageModel = $this->getPageModel();
 
-        if (!$pageModel) {
+        if (! $pageModel) {
             return [];
         }
 
@@ -179,7 +180,7 @@ class PageVisitService
     {
         $pageVisitModel = $this->getPageVisitModel();
 
-        if (!$pageVisitModel) {
+        if (! $pageVisitModel) {
             return collect();
         }
 
@@ -194,7 +195,7 @@ class PageVisitService
     /**
      * Get period start date
      */
-    private function getPeriodStartDate(string $period): \Carbon\Carbon
+    private function getPeriodStartDate(string $period): Carbon
     {
         return match ($period) {
             'today' => now()->startOfDay(),
@@ -221,8 +222,6 @@ class PageVisitService
 
     /**
      * Get Page model class
-     *
-     * @return string|null
      */
     private function getPageModel(): ?string
     {
@@ -236,8 +235,6 @@ class PageVisitService
 
     /**
      * Get PageVisit model class
-     *
-     * @return string|null
      */
     private function getPageVisitModel(): ?string
     {

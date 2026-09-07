@@ -2,17 +2,18 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
-use HolartWeb\AxoraCMS\Models\TModule;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SeoUninstallCommand extends Command
 {
     const MODULE_NAME = 'seo';
 
     protected $signature = 'axoracms:seo-uninstall {--preserve-db : Preserve database tables}';
+
     protected $description = 'Uninstall AxoraCMS SEO Module';
 
     public function handle(): int
@@ -48,13 +49,13 @@ class SeoUninstallCommand extends Command
         foreach ($filesToRemove as $file) {
             if (file_exists($file)) {
                 unlink($file);
-                $this->info("✓ Removed " . basename($file));
+                $this->info('✓ Removed '.basename($file));
             }
         }
         $this->newLine();
 
         // Step 3: Drop database tables (if not preserving)
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 3: Dropping database tables...');
 
             if (Schema::hasTable('t_page_visits')) {
@@ -92,8 +93,6 @@ class SeoUninstallCommand extends Command
             $this->newLine();
         }
 
-
-
         // Log activity if logging module is installed
         if (Schema::hasTable('t_admin_actions') && class_exists(TAdminAction::class)) {
             TAdminAction::log('uninstalled', 'module', null, 'Удален модуль: Страницы и SEO');
@@ -109,16 +108,18 @@ class SeoUninstallCommand extends Command
     {
         $bootstrapPath = base_path('bootstrap/app.php');
 
-        if (!file_exists($bootstrapPath)) {
+        if (! file_exists($bootstrapPath)) {
             $this->warn('⚠ bootstrap/app.php not found. Please remove middleware manually.');
+
             return;
         }
 
         $content = file_get_contents($bootstrapPath);
 
         // Check if middleware is registered
-        if (!str_contains($content, 'TrackPageVisits')) {
+        if (! str_contains($content, 'TrackPageVisits')) {
             $this->info('   Middleware not found in bootstrap/app.php');
+
             return;
         }
 

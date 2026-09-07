@@ -41,13 +41,13 @@ class TProductVariantPropertyValue extends Model
      */
     public function getTypedValue()
     {
-        if (!$this->property) {
+        if (! $this->property) {
             return $this->value;
         }
 
-        return match($this->property->type) {
-            'number' => is_numeric($this->value) ? (float)$this->value : null,
-            'text', 'string' => (string)$this->value,
+        return match ($this->property->type) {
+            'number' => is_numeric($this->value) ? (float) $this->value : null,
+            'text', 'string' => (string) $this->value,
             default => $this->value,
         };
     }

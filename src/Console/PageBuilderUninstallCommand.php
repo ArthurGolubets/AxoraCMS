@@ -2,16 +2,16 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\File;
 
 class PageBuilderUninstallCommand extends Command
 {
     const MODULE_NAME = 'pagebuilder';
 
     protected $signature = 'axoracms:pagebuilder-uninstall {--preserve-db : Preserve database tables}';
+
     protected $description = 'Uninstall AxoraCMS Page Builder Module';
 
     public function handle(): int
@@ -34,13 +34,13 @@ class PageBuilderUninstallCommand extends Command
         foreach ($filesToRemove as $file) {
             if (file_exists($file)) {
                 unlink($file);
-                $this->info("✓ Removed: " . basename($file));
+                $this->info('✓ Removed: '.basename($file));
             }
         }
         $this->newLine();
 
         // Step 2: Drop tables if not preserving database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 2: Dropping Page Builder tables...');
 
             $tables = ['t_pages'];

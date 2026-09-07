@@ -11,7 +11,7 @@ class TOrdersData extends Model
     protected $fillable = [
         'key',
         'value',
-        'type'
+        'type',
     ];
 
     protected $casts = [
@@ -20,9 +20,13 @@ class TOrdersData extends Model
 
     // Константы для type
     const TYPE_STRING = 'string';
+
     const TYPE_TEXT = 'text';
+
     const TYPE_BOOLEAN = 'boolean';
+
     const TYPE_INTEGER = 'integer';
+
     const TYPE_JSON = 'json';
 
     /**
@@ -61,7 +65,7 @@ class TOrdersData extends Model
             ['key' => $key],
             [
                 'value' => $serializedValue,
-                'type' => $type
+                'type' => $type,
             ]
         );
     }
@@ -73,7 +77,7 @@ class TOrdersData extends Model
     {
         $setting = self::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 

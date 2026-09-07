@@ -19,6 +19,8 @@ class TUsersEmails extends Model
 
     // Possible statuses: active, unsubscribed, bounced
     const STATUS_ACTIVE = 'active';
+
     const STATUS_UNSUBSCRIBED = 'unsubscribed';
+
     const STATUS_BOUNCED = 'bounced';
 }

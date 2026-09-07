@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Commerce;
 
+use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
 
 class PaymentTransactionsController extends Controller
 {
@@ -15,7 +15,7 @@ class PaymentTransactionsController extends Controller
 
         // Search
         if ($request->has('search') && $request->search !== '') {
-            $query->where('transaction_id', 'like', '%' . $request->search . '%');
+            $query->where('transaction_id', 'like', '%'.$request->search.'%');
         }
 
         // Filter by status
@@ -38,6 +38,7 @@ class PaymentTransactionsController extends Controller
     public function show($id)
     {
         $transaction = TPaymentTransaction::with('order')->findOrFail($id);
+
         return response()->json($transaction);
     }
 
@@ -53,7 +54,7 @@ class PaymentTransactionsController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -62,7 +63,7 @@ class PaymentTransactionsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Транзакция создана успешно',
-            'data' => $transaction
+            'data' => $transaction,
         ], 201);
     }
 
@@ -77,7 +78,7 @@ class PaymentTransactionsController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -86,14 +87,14 @@ class PaymentTransactionsController extends Controller
         // Update order payment status if transaction status changed
         if ($request->has('status') && $transaction->order) {
             $transaction->order->update([
-                'payment_status' => $request->status
+                'payment_status' => $request->status,
             ]);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Транзакция обновлена успешно',
-            'data' => $transaction
+            'data' => $transaction,
         ]);
     }
 
@@ -104,7 +105,7 @@ class PaymentTransactionsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Транзакция удалена успешно'
+            'message' => 'Транзакция удалена успешно',
         ]);
     }
 }

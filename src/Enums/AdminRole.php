@@ -21,7 +21,7 @@ enum AdminRole: string
      */
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::SUPER_ADMIN => 'Супер администратор',
             self::ADMINISTRATOR => 'Администратор',
             self::MANAGER => 'Менеджер',
@@ -33,7 +33,7 @@ enum AdminRole: string
      */
     public function permissions(): array
     {
-        return match($this) {
+        return match ($this) {
             self::SUPER_ADMIN => [
                 'view_dashboard',
                 'manage_administrators',
@@ -75,7 +75,7 @@ enum AdminRole: string
      */
     public function canAssignRole(AdminRole $role): bool
     {
-        return match($this) {
+        return match ($this) {
             self::SUPER_ADMIN => true,
             self::ADMINISTRATOR => $role !== self::SUPER_ADMIN,
             self::MANAGER => false,

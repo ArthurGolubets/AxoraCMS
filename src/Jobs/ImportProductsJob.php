@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Jobs;
 
+use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,16 +11,17 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class ImportProductsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $timeout = 3600; // 1 hour timeout
+
     public $tries = 1;
 
     protected $items;
+
     protected $importId;
 
     /**
@@ -36,8 +38,9 @@ class ImportProductsJob implements ShouldQueue
      */
     public function handle()
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             $this->updateProgress(0, 0, count($this->items), ['Product module not available'], 'error');
+
             return;
         }
 
@@ -53,6 +56,7 @@ class ImportProductsJob implements ShouldQueue
                 // Skip items with errors
                 if (isset($item['status']) && $item['status'] === 'error') {
                     $processed++;
+
                     continue;
                 }
 
@@ -63,9 +67,9 @@ class ImportProductsJob implements ShouldQueue
 
                 // Download and save image if URL is provided
                 $imagePath = null;
-                if (!empty($item['image']) && filter_var($item['image'], FILTER_VALIDATE_URL)) {
+                if (! empty($item['image']) && filter_var($item['image'], FILTER_VALIDATE_URL)) {
                     $imagePath = $this->downloadImage($item['image'], 'products');
-                } elseif (!empty($item['image'])) {
+                } elseif (! empty($item['image'])) {
                     $imagePath = $item['image'];
                 }
 
@@ -76,7 +80,7 @@ class ImportProductsJob implements ShouldQueue
                     'description' => $item['description'] ?? null,
                     'price' => $item['price'],
                     'old_price' => $item['old_price'] ?? null,
-                    'catalog_id' => !empty($item['catalog_id']) ? $item['catalog_id'] : null,
+                    'catalog_id' => ! empty($item['catalog_id']) ? $item['catalog_id'] : null,
                     'is_active' => $item['is_active'] ?? true,
                     'is_new' => $item['is_new'] ?? false,
                     'is_hot' => $item['is_hot'] ?? false,
@@ -86,7 +90,7 @@ class ImportProductsJob implements ShouldQueue
 
                 // Find existing product by SKU
                 $existing = null;
-                if (!empty($item['sku'])) {
+                if (! empty($item['sku'])) {
                     $existing = $productClass::where('sku', $item['sku'])->first();
                 }
 
@@ -106,14 +110,14 @@ class ImportProductsJob implements ShouldQueue
                 }
 
             } catch (\Exception $e) {
-                $errors[] = "Ошибка в строке {$item['row']}: " . $e->getMessage();
+                $errors[] = "Ошибка в строке {$item['row']}: ".$e->getMessage();
                 $processed++;
             }
         }
 
         // Log activity
         TAdminAction::log('imported', 'product', null,
-            'Импорт товаров (создано: ' . $created . ', обновлено: ' . $updated . ')');
+            'Импорт товаров (создано: '.$created.', обновлено: '.$updated.')');
 
         // Final update
         $this->updateProgress($created, $updated, $total, $errors, 'completed', $processed);
@@ -158,11 +162,11 @@ class ImportProductsJob implements ShouldQueue
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
@@ -188,15 +192,16 @@ class ImportProductsJob implements ShouldQueue
             }
 
             // Generate unique filename
-            $filename = time() . '_' . Str::random(10) . '.' . $extension;
-            $path = $folder . '/' . $filename;
+            $filename = time().'_'.Str::random(10).'.'.$extension;
+            $path = $folder.'/'.$filename;
 
             // Save to storage
             Storage::disk('public')->put($path, $imageContent);
 
-            return '/storage/' . $path;
+            return '/storage/'.$path;
         } catch (\Exception $e) {
-            \Log::error('Failed to download image: ' . $e->getMessage());
+            \Log::error('Failed to download image: '.$e->getMessage());
+
             return null;
         }
     }

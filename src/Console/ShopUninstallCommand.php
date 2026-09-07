@@ -2,11 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 class ShopUninstallCommand extends Command
@@ -14,6 +14,7 @@ class ShopUninstallCommand extends Command
     const MODULE_NAME = 'shop';
 
     protected $signature = 'axoracms:shop-uninstall {--preserve-db : Preserve database tables and data}';
+
     protected $description = 'Uninstall AxoraCMS Shop Module';
 
     public function handle(): int
@@ -25,12 +26,13 @@ class ShopUninstallCommand extends Command
 
         $preserveDb = $this->option('preserve-db');
 
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->warn('⚠ WARNING: This will delete all shop data from the database!');
             // Only ask for confirmation if running in interactive console
             if ($this->input->isInteractive() && defined('STDIN')) {
-                if (!$this->confirm('Are you sure you want to continue?', false)) {
+                if (! $this->confirm('Are you sure you want to continue?', false)) {
                     $this->info('Uninstallation cancelled.');
+
                     return self::SUCCESS;
                 }
             } else {
@@ -45,7 +47,7 @@ class ShopUninstallCommand extends Command
         $models = ['TCatalog.php', 'TProduct.php', 'TProductVariant.php', 'TFilter.php', 'TFilterValue.php'];
 
         foreach ($models as $model) {
-            $path = $appModelsPath . '/' . $model;
+            $path = $appModelsPath.'/'.$model;
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed {$model}");
@@ -59,7 +61,7 @@ class ShopUninstallCommand extends Command
         $controllers = ['CatalogController.php', 'ProductController.php', 'FilterController.php'];
 
         foreach ($controllers as $controller) {
-            $path = $appControllersPath . '/' . $controller;
+            $path = $appControllersPath.'/'.$controller;
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed {$controller}");
@@ -68,7 +70,7 @@ class ShopUninstallCommand extends Command
         $this->newLine();
 
         // Step 3: Handle Database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 3: Removing database tables...');
 
             try {
@@ -134,7 +136,7 @@ class ShopUninstallCommand extends Command
 
                 Schema::enableForeignKeyConstraints();
             } catch (\Exception $e) {
-                $this->error('❌ Error removing database tables: ' . $e->getMessage());
+                $this->error('❌ Error removing database tables: '.$e->getMessage());
             }
             $this->newLine();
 
@@ -164,19 +166,19 @@ class ShopUninstallCommand extends Command
             ];
 
             try {
-                DB::table('migrations')->whereIn('migration', array_map(function($file) {
+                DB::table('migrations')->whereIn('migration', array_map(function ($file) {
                     return str_replace('.php', '', $file);
                 }, $migrationFiles))->delete();
                 $this->info('✓ Removed migration records from database');
             } catch (\Exception $e) {
-                $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+                $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
             }
             $this->newLine();
 
             // Step 5: Remove Migration Files
             $this->info('Step 5: Removing migration files...');
             foreach ($migrationFiles as $file) {
-                $path = database_path('migrations/' . $file);
+                $path = database_path('migrations/'.$file);
                 if (File::exists($path)) {
                     File::delete($path);
                     $this->info("✓ Removed migration {$file}");

@@ -177,6 +177,7 @@ import WidgetCard from './dashboard/WidgetCard.vue';
 import ChartWidget from './dashboard/ChartWidget.vue';
 import PageVisitsWidget from './dashboard/PageVisitsWidget.vue';
 import ConfirmModal from './ConfirmModal.vue';
+import { useAppConfig } from '../composables/useAppConfig';
 
 const loading = ref(true);
 const loadingMetrics = ref(false);
@@ -519,9 +520,9 @@ async function resetWidgets() {
 
 async function loadUserRole() {
   try {
-    const response = await axios.get('/admin/api/me');
-    if (response.data) {
-      userRole.value = response.data.role;
+    const user = await useAppConfig().loadMe();
+    if (user) {
+      userRole.value = user.role;
     }
   } catch (error) {
     console.error('Ошибка загрузки роли:', error);

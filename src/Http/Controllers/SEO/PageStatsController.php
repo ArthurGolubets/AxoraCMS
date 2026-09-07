@@ -2,9 +2,9 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\SEO;
 
+use HolartWeb\AxoraCMS\Services\PageVisitService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use HolartWeb\AxoraCMS\Services\PageVisitService;
 
 class PageStatsController extends Controller
 {

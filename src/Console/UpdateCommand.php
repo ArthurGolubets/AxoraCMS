@@ -2,9 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use HolartWeb\AxoraCMS\Services\LicenseService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 
 class UpdateCommand extends Command
 {
@@ -45,8 +46,9 @@ class UpdateCommand extends Command
         $this->newLine();
 
         // Check license
-        if (!$this->checkLicense()) {
+        if (! $this->checkLicense()) {
             $this->error('❌ Обновление отменено: недействительный лицензионный ключ');
+
             return self::FAILURE;
         }
 
@@ -60,7 +62,23 @@ class UpdateCommand extends Command
         ]);
         $this->newLine();
 
-        // 2. Build frontend
+        // 2. Run pending core migrations (idempotent — Laravel skips applied ones).
+        //    Absolute path + --realpath so it also works on Windows.
+        $this->info('🗄️  Применение новых базовых миграций...');
+        try {
+            Artisan::call('migrate', [
+                '--path' => dirname(__DIR__, 2).'/database/migrations',
+                '--realpath' => true,
+                '--force' => true,
+            ]);
+            $out = trim(Artisan::output());
+            $this->line($out !== '' ? $out : '✓ Новых миграций нет');
+        } catch (\Exception $e) {
+            $this->warn('⚠ Не удалось применить миграции: '.$e->getMessage());
+        }
+        $this->newLine();
+
+        // 3. Build frontend
         $this->info('🎨 Сборка фронтенда...');
         $this->buildFrontend();
         $this->newLine();
@@ -93,13 +111,14 @@ class UpdateCommand extends Command
         $packagePath = dirname(__DIR__, 2);
 
         // Check if node_modules exists
-        if (!File::exists($packagePath . '/node_modules')) {
+        if (! File::exists($packagePath.'/node_modules')) {
             $this->warn('📥 Установка npm зависимостей...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnCode);
 
             if ($returnCode !== 0) {
                 $this->error('❌ Ошибка при установке npm зависимостей');
                 $this->line(implode("\n", $output));
+
                 return;
             }
 
@@ -113,6 +132,7 @@ class UpdateCommand extends Command
         if ($returnCode !== 0) {
             $this->error('❌ Ошибка при сборке assets');
             $this->line(implode("\n", $output));
+
             return;
         }
 
@@ -127,13 +147,15 @@ class UpdateCommand extends Command
         $this->info('🔑 Проверка лицензии...');
 
         // Check saved license
-        if (!$this->licenseService->hasValidLicense('update')) {
+        if (! $this->licenseService->hasValidLicense('update')) {
             $this->error('❌ Лицензия недействительна или отсутствует');
             $this->line('Пожалуйста, переустановите AxoraCMS с действительной лицензией');
+
             return false;
         }
 
         $this->info('✅ Лицензия действительна');
+
         return true;
     }
 }

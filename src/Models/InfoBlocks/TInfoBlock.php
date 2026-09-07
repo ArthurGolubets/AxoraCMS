@@ -91,7 +91,7 @@ class TInfoBlock extends Model
      */
     public static function generateTableName(string $code): string
     {
-        return 't_ib_' . Str::snake($code);
+        return 't_ib_'.Str::snake($code);
     }
 
     /**
@@ -106,7 +106,7 @@ class TInfoBlock extends Model
         $counter = 1;
 
         while (static::where('code', $code)->exists()) {
-            $code = $originalCode . '_' . $counter;
+            $code = $originalCode.'_'.$counter;
             $counter++;
         }
 
@@ -151,7 +151,7 @@ class TInfoBlock extends Model
     public function createElement(array $data)
     {
         // Generate code if not provided
-        if (empty($data['code']) && !empty($data['name'])) {
+        if (empty($data['code']) && ! empty($data['name'])) {
             $data['code'] = Str::slug($data['name'], '_');
         }
 
@@ -161,7 +161,7 @@ class TInfoBlock extends Model
 
         // Create element
         $element = $this->elements()->create(array_merge($data, [
-            'properties' => $properties
+            'properties' => $properties,
         ]));
 
         return $element;
@@ -174,7 +174,7 @@ class TInfoBlock extends Model
     {
         $element = $this->getElement($id);
 
-        if (!$element) {
+        if (! $element) {
             return null;
         }
 
@@ -186,6 +186,7 @@ class TInfoBlock extends Model
         }
 
         $element->update($data);
+
         return $element->fresh();
     }
 
@@ -196,7 +197,7 @@ class TInfoBlock extends Model
     {
         $element = $this->getElement($id);
 
-        if (!$element) {
+        if (! $element) {
             return false;
         }
 

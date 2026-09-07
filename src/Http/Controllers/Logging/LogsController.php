@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Logging;
 
+use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class LogsController extends Controller
 {
@@ -17,7 +17,7 @@ class LogsController extends Controller
         $user = Auth::guard('admin')->user();
 
         // Only super_admin and administrator can view logs
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -50,7 +50,7 @@ class LogsController extends Controller
 
         // Search in description
         if ($request->has('search') && $request->search) {
-            $query->where('description', 'like', '%' . $request->search . '%');
+            $query->where('description', 'like', '%'.$request->search.'%');
         }
 
         $perPage = $request->get('per_page', 50);
@@ -67,7 +67,7 @@ class LogsController extends Controller
         $user = Auth::guard('admin')->user();
 
         // Only super_admin and administrator can view logs
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -84,7 +84,7 @@ class LogsController extends Controller
         $user = Auth::guard('admin')->user();
 
         // Only super_admin and administrator can view logs
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
@@ -125,7 +125,7 @@ class LogsController extends Controller
         $user = Auth::guard('admin')->user();
 
         // Only super_admin and administrator can view logs
-        if (!in_array($user->role->value, ['super_admin', 'administrator'])) {
+        if (! in_array($user->role->value, ['super_admin', 'administrator'])) {
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 

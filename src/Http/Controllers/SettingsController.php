@@ -38,7 +38,8 @@ class SettingsController extends Controller
             return response()->json(['message' => 'Доступ запрещен'], 403);
         }
 
-        $data = $request->all();
+        // Only known keys may be written — ignore everything else.
+        $data = array_intersect_key($request->all(), array_flip($this->allowedKeys()));
 
         // Get old settings for logging
         $oldSettings = TPanelSettings::all_settings();
@@ -124,6 +125,36 @@ class SettingsController extends Controller
         TAdminAction::log('deleted', 'logo', null, 'Удален логотип');
 
         return response()->json(['message' => 'Логотип удален']);
+    }
+
+    /**
+     * Whitelist of setting keys that may be written through the API.
+     *
+     * @return array<int, string>
+     */
+    protected function allowedKeys(): array
+    {
+        return [
+            // General
+            'panel_name', 'theme_color', 'company_name', 'work_hours',
+            // Contacts
+            'phones', 'emails', 'addresses', 'social_links',
+            // Custom code / templates
+            'header_code', 'footer_code',
+            'header_template_settings', 'footer_template_settings',
+            // Navigation
+            'header_menu_id', 'footer_menu_id',
+            // Logo
+            'logo_path', 'logo_width', 'logo_height',
+            // Default SEO
+            'default_meta_title', 'default_meta_description', 'default_meta_keywords',
+            // Feature flags
+            'can_edit_product_stock', 'products_list_enabled',
+            'product_variants_enabled', 'related_products_enabled',
+            // Integrations
+            'bitrix24_webhook', 'payment_shop_id', 'payment_secret',
+            'telegram_chat_id', 'telegram_token',
+        ];
     }
 
     /**

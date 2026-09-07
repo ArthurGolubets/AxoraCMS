@@ -2,11 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 class LoggingUninstallCommand extends Command
@@ -14,6 +14,7 @@ class LoggingUninstallCommand extends Command
     const MODULE_NAME = 'logging';
 
     protected $signature = 'axoracms:logging-uninstall {--preserve-db : Preserve database tables and data}';
+
     protected $description = 'Uninstall AxoraCMS Logging Module';
 
     public function handle(): int
@@ -25,12 +26,13 @@ class LoggingUninstallCommand extends Command
 
         $preserveDb = $this->option('preserve-db');
 
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->warn('⚠ WARNING: This will delete all logging data from the database!');
             // Only ask for confirmation if running in interactive console
             if ($this->input->isInteractive() && defined('STDIN')) {
-                if (!$this->confirm('Are you sure you want to continue?', false)) {
+                if (! $this->confirm('Are you sure you want to continue?', false)) {
                     $this->info('Uninstallation cancelled.');
+
                     return self::SUCCESS;
                 }
             } else {
@@ -44,7 +46,7 @@ class LoggingUninstallCommand extends Command
         $appControllersPath = app_path('Http/Controllers');
         $controller = 'LogsController.php';
 
-        $path = $appControllersPath . '/' . $controller;
+        $path = $appControllersPath.'/'.$controller;
         if (File::exists($path)) {
             File::delete($path);
             $this->info("✓ Removed {$controller}");
@@ -52,7 +54,7 @@ class LoggingUninstallCommand extends Command
         $this->newLine();
 
         // Step 2: Handle Database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 2: Removing database tables...');
 
             try {
@@ -65,7 +67,7 @@ class LoggingUninstallCommand extends Command
 
                 Schema::enableForeignKeyConstraints();
             } catch (\Exception $e) {
-                $this->error('❌ Error removing database tables: ' . $e->getMessage());
+                $this->error('❌ Error removing database tables: '.$e->getMessage());
             }
             $this->newLine();
 
@@ -77,13 +79,13 @@ class LoggingUninstallCommand extends Command
                 DB::table('migrations')->where('migration', $migrationFile)->delete();
                 $this->info('✓ Removed migration records from database');
             } catch (\Exception $e) {
-                $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+                $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
             }
             $this->newLine();
 
             // Step 4: Remove Migration File
             $this->info('Step 4: Removing migration file...');
-            $path = database_path('migrations/' . $migrationFile . '.php');
+            $path = database_path('migrations/'.$migrationFile.'.php');
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed migration {$migrationFile}.php");

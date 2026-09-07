@@ -13,7 +13,7 @@ class TPaymentTransaction extends Model
         'transaction_id',
         'order_id',
         'link',
-        'status'
+        'status',
     ];
 
     protected $casts = [
@@ -22,7 +22,9 @@ class TPaymentTransaction extends Model
 
     // Константы для status
     const STATUS_PENDING = 'pending';
+
     const STATUS_SUCCESS = 'success';
+
     const STATUS_CANCEL = 'cancel';
 
     /**

@@ -76,7 +76,7 @@ class TInfoBlockSection extends Model
         $counter = 1;
 
         while (static::where('info_block_id', $infoBlockId)->where('code', $code)->exists()) {
-            $code = $originalCode . '_' . $counter;
+            $code = $originalCode.'_'.$counter;
             $counter++;
         }
 

@@ -26,7 +26,7 @@ class TCommerceMLSetting extends Model
     {
         $settings = self::first();
 
-        if (!$settings) {
+        if (! $settings) {
             $settings = self::create([
                 'import_type' => 'separate',
                 'is_enabled' => false,

@@ -29,16 +29,16 @@ class LogsController extends Controller
 
         // Filter by date range
         if ($request->has('date_from') && $request->date_from !== '') {
-            $query->where('created_at', '>=', $request->date_from . ' 00:00:00');
+            $query->where('created_at', '>=', $request->date_from.' 00:00:00');
         }
 
         if ($request->has('date_to') && $request->date_to !== '') {
-            $query->where('created_at', '<=', $request->date_to . ' 23:59:59');
+            $query->where('created_at', '<=', $request->date_to.' 23:59:59');
         }
 
         // Search in description
         if ($request->has('search') && $request->search !== '') {
-            $query->where('description', 'like', '%' . $request->search . '%');
+            $query->where('description', 'like', '%'.$request->search.'%');
         }
 
         $logs = $query->paginate(50);

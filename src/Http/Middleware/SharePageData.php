@@ -3,17 +3,15 @@
 namespace HolartWeb\AxoraCMS\Http\Middleware;
 
 use Closure;
+use HolartWeb\AxoraCMS\Services\PageDataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use HolartWeb\AxoraCMS\Services\PageDataService;
 
 class SharePageData
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @return mixed
      */
     public function handle(Request $request, Closure $next)

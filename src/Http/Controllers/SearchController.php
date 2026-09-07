@@ -2,11 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers;
 
+use HolartWeb\AxoraCMS\Models\TAdministrator;
+use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use HolartWeb\AxoraCMS\Models\TAdministrator;
-use HolartWeb\AxoraCMS\Models\TPanelSettings;
 
 class SearchController extends Controller
 {

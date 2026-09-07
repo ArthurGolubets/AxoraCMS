@@ -2,12 +2,16 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers;
 
+use HolartWeb\AxoraCMS\Jobs\ImportProductsJob;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ProductImportExportController extends Controller
 {
@@ -16,7 +20,7 @@ class ProductImportExportController extends Controller
      */
     public function downloadTemplate()
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set headers
@@ -37,7 +41,7 @@ class ProductImportExportController extends Controller
         // Style header row
         $sheet->getStyle('A1:M1')->getFont()->setBold(true);
         $sheet->getStyle('A1:M1')->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFE0E0E0');
 
         // Add example row
@@ -61,7 +65,7 @@ class ProductImportExportController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'product_import_template_' . date('Y-m-d') . '.xlsx';
+        $fileName = 'product_import_template_'.date('Y-m-d').'.xlsx';
 
         // Write to temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'product_template_');
@@ -75,14 +79,14 @@ class ProductImportExportController extends Controller
      */
     public function export()
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return response()->json(['error' => 'Product module not available'], 404);
         }
 
         $productClass = 'HolartWeb\AxoraCMS\Models\Shop\TProduct';
         $products = $productClass::with('catalog')->orderBy('id')->get();
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set headers
@@ -103,25 +107,25 @@ class ProductImportExportController extends Controller
         // Style header
         $sheet->getStyle('A1:M1')->getFont()->setBold(true);
         $sheet->getStyle('A1:M1')->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFE0E0E0');
 
         // Fill data
         $row = 2;
         foreach ($products as $product) {
-            $sheet->setCellValue('A' . $row, $product->id);
-            $sheet->setCellValue('B' . $row, $product->name);
-            $sheet->setCellValue('C' . $row, $product->slug);
-            $sheet->setCellValue('D' . $row, $product->sku);
-            $sheet->setCellValue('E' . $row, $product->description ?? '');
-            $sheet->setCellValue('F' . $row, $product->price);
-            $sheet->setCellValue('G' . $row, $product->old_price ?? '');
-            $sheet->setCellValue('H' . $row, $product->catalog_id ?? '');
-            $sheet->setCellValue('I' . $row, $product->is_active ? '1' : '0');
-            $sheet->setCellValue('J' . $row, $product->is_new ? '1' : '0');
-            $sheet->setCellValue('K' . $row, $product->is_hot ? '1' : '0');
-            $sheet->setCellValue('L' . $row, $product->is_recommended ? '1' : '0');
-            $sheet->setCellValue('M' . $row, $product->image ?? '');
+            $sheet->setCellValue('A'.$row, $product->id);
+            $sheet->setCellValue('B'.$row, $product->name);
+            $sheet->setCellValue('C'.$row, $product->slug);
+            $sheet->setCellValue('D'.$row, $product->sku);
+            $sheet->setCellValue('E'.$row, $product->description ?? '');
+            $sheet->setCellValue('F'.$row, $product->price);
+            $sheet->setCellValue('G'.$row, $product->old_price ?? '');
+            $sheet->setCellValue('H'.$row, $product->catalog_id ?? '');
+            $sheet->setCellValue('I'.$row, $product->is_active ? '1' : '0');
+            $sheet->setCellValue('J'.$row, $product->is_new ? '1' : '0');
+            $sheet->setCellValue('K'.$row, $product->is_hot ? '1' : '0');
+            $sheet->setCellValue('L'.$row, $product->is_recommended ? '1' : '0');
+            $sheet->setCellValue('M'.$row, $product->image ?? '');
             $row++;
         }
 
@@ -131,7 +135,7 @@ class ProductImportExportController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'products_export_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $fileName = 'products_export_'.date('Y-m-d_H-i-s').'.xlsx';
 
         // Write to temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'product_export_');
@@ -139,7 +143,7 @@ class ProductImportExportController extends Controller
 
         // Log activity
         TAdminAction::log('exported', 'product', null,
-            'Экспорт товаров (количество: ' . count($products) . ')');
+            'Экспорт товаров (количество: '.count($products).')');
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
@@ -150,10 +154,10 @@ class ProductImportExportController extends Controller
     public function previewImport(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv'
+            'file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
 
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return response()->json(['error' => 'Product module not available'], 404);
         }
 
@@ -192,7 +196,7 @@ class ProductImportExportController extends Controller
                 'is_hot' => isset($row[10]) && $row[10] == '1',
                 'is_recommended' => isset($row[11]) && $row[11] == '1',
                 'image' => $row[12] ?? '',
-                'status' => 'pending'
+                'status' => 'pending',
             ];
 
             // Validation
@@ -208,7 +212,7 @@ class ProductImportExportController extends Controller
                 $item['error'] = 'SKU обязателен';
             }
 
-            if (empty($item['price']) || !is_numeric($item['price'])) {
+            if (empty($item['price']) || ! is_numeric($item['price'])) {
                 $errors[] = "Строка {$rowNum}: Цена должна быть числом";
                 $item['status'] = 'error';
                 $item['error'] = 'Цена должна быть числом';
@@ -221,7 +225,7 @@ class ProductImportExportController extends Controller
 
             // Check if update or create - search by SKU only
             $existing = null;
-            if (!empty($item['sku'])) {
+            if (! empty($item['sku'])) {
                 $existing = $productClass::where('sku', $item['sku'])->first();
             }
 
@@ -239,7 +243,7 @@ class ProductImportExportController extends Controller
             'preview' => $preview,
             'total' => count($preview),
             'errors' => $errors,
-            'valid' => empty($errors)
+            'valid' => empty($errors),
         ]);
     }
 
@@ -249,18 +253,18 @@ class ProductImportExportController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'items' => 'required|array'
+            'items' => 'required|array',
         ]);
 
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return response()->json(['error' => 'Product module not available'], 404);
         }
 
         $items = $request->input('items');
-        $importId = \Illuminate\Support\Str::uuid()->toString();
+        $importId = Str::uuid()->toString();
 
         // Initialize progress
-        \Illuminate\Support\Facades\Cache::put("import_progress_{$importId}", [
+        Cache::put("import_progress_{$importId}", [
             'status' => 'queued',
             'created' => 0,
             'updated' => 0,
@@ -271,12 +275,12 @@ class ProductImportExportController extends Controller
         ], 3600);
 
         // Dispatch job
-        \HolartWeb\AxoraCMS\Jobs\ImportProductsJob::dispatch($items, $importId);
+        ImportProductsJob::dispatch($items, $importId);
 
         return response()->json([
             'success' => true,
             'import_id' => $importId,
-            'message' => 'Импорт запущен в фоновом режиме'
+            'message' => 'Импорт запущен в фоновом режиме',
         ]);
     }
 
@@ -285,9 +289,9 @@ class ProductImportExportController extends Controller
      */
     public function checkProgress($importId)
     {
-        $progress = \Illuminate\Support\Facades\Cache::get("import_progress_{$importId}");
+        $progress = Cache::get("import_progress_{$importId}");
 
-        if (!$progress) {
+        if (! $progress) {
             return response()->json(['error' => 'Import not found'], 404);
         }
 
@@ -299,7 +303,7 @@ class ProductImportExportController extends Controller
      */
     private function generateSlug($name, $modelClass, $excludeId = null)
     {
-        $slug = \Illuminate\Support\Str::slug($name);
+        $slug = Str::slug($name);
         $originalSlug = $slug;
         $counter = 1;
 
@@ -309,11 +313,11 @@ class ProductImportExportController extends Controller
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 

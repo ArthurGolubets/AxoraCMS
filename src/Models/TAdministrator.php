@@ -2,9 +2,9 @@
 
 namespace HolartWeb\AxoraCMS\Models;
 
+use HolartWeb\AxoraCMS\Enums\AdminRole;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use HolartWeb\AxoraCMS\Enums\AdminRole;
 
 class TAdministrator extends Authenticatable
 {

@@ -18,7 +18,6 @@ class TCatalogPropertyGroup extends Model
         'sort_order' => 'integer',
     ];
 
-
     public function catalog(): BelongsTo
     {
         return $this->belongsTo(TCatalog::class, 'catalog_id');

@@ -2,12 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
-use HolartWeb\AxoraCMS\Models\Menus\TMenu;
 use HolartWeb\AxoraCMS\Models\Menus\TMenuItem;
+use HolartWeb\AxoraCMS\Models\TPanelCustomField;
+use HolartWeb\AxoraCMS\Models\TPanelSettings;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
-use HolartWeb\AxoraCMS\Models\TPanelSettings;
 
 class PageDataService
 {
@@ -18,6 +18,7 @@ class PageDataService
     {
         try {
             DB::connection()->getPdo();
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -26,8 +27,6 @@ class PageDataService
 
     /**
      * Get default SEO data from settings
-     *
-     * @return array
      */
     private function getDefaultSeoData(): array
     {
@@ -46,9 +45,11 @@ class PageDataService
         }
     }
 
-    private function getPageMenu(?int $id)
+    private function getPageMenu($id)
     {
-        if (is_null($id)) {
+        $id = (int) $id;
+
+        if ($id <= 0 || ! Schema::hasTable('t_menu_items')) {
             return [];
         }
 
@@ -74,7 +75,7 @@ class PageDataService
                     'title' => $item->title,
                     'url' => $item->url,
                     'target' => $item->target,
-                    'children' => $children
+                    'children' => $children,
                 ];
 
                 $branch[] = $menuItem;
@@ -84,8 +85,11 @@ class PageDataService
         return $branch;
     }
 
+    private function getPageSettingsData(): ?array
+    {
+        // Computed up-front so it survives even if something below throws.
+        $customFields = $this->getCustomFieldsData();
 
-    private function getPageSettingsData() :?array{
         try {
             return [
                 'header_scripts' => TPanelSettings::get('header_code', ''),
@@ -95,12 +99,13 @@ class PageDataService
                 'phones' => TPanelSettings::get('phones', []),
                 'address' => TPanelSettings::get('addresses', []),
                 'social_links' => TPanelSettings::get('social_links', []),
+                'custom_fields' => $customFields,
                 'menus' => [
-                    'header' => $this->getPageMenu( TPanelSettings::get('header_menu_id', null)),
-                    'footer' => $this->getPageMenu( TPanelSettings::get('footer_menu_id', null)),
-                ]
+                    'header' => $this->getPageMenu(TPanelSettings::get('header_menu_id', null)),
+                    'footer' => $this->getPageMenu(TPanelSettings::get('footer_menu_id', null)),
+                ],
             ];
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             return [
                 'header_scripts' => '',
                 'footer_scripts' => '',
@@ -109,24 +114,41 @@ class PageDataService
                 'phones' => [],
                 'address' => [],
                 'social_links' => [],
+                'custom_fields' => [],
                 'menus' => [
                     'header' => [],
                     'footer' => [],
-                ]
+                ],
             ];
         }
     }
 
     /**
-     * Get page data by current route
+     * Admin-defined custom project fields as a [code => value] map.
      *
-     * @return array|null
+     * @return array<string, mixed>
+     */
+    private function getCustomFieldsData(): array
+    {
+        try {
+            if (! $this->isDatabaseAvailable() || ! Schema::hasTable('t_panel_custom_fields')) {
+                return [];
+            }
+
+            return TPanelCustomField::asSettingsMap();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get page data by current route
      */
     public function getPageData(): ?array
     {
         $currentRoute = Route::current();
 
-        if (!$currentRoute) {
+        if (! $currentRoute) {
             return null;
         }
 
@@ -173,25 +195,20 @@ class PageDataService
 
     /**
      * Get page data settings
-     *
-     * @return array|null
      */
-    public function getSettingsData() :?array
+    public function getSettingsData(): ?array
     {
         return $this->getPageSettingsData();
     }
 
-
     /**
      * Check if current route has inactive entity
-     *
-     * @return bool
      */
     public function hasInactiveEntity(): bool
     {
         $currentRoute = Route::current();
 
-        if (!$currentRoute) {
+        if (! $currentRoute) {
             return false;
         }
 
@@ -218,19 +235,15 @@ class PageDataService
 
     /**
      * Find page by route name or URL
-     *
-     * @param string|null $routeName
-     * @param string $url
-     * @return array|null
      */
     private function findPageByRoute(?string $routeName, string $url): ?array
     {
-        if (!$this->isDatabaseAvailable()) {
+        if (! $this->isDatabaseAvailable()) {
             return null;
         }
 
         try {
-            if (!Schema::hasTable('t_pages')) {
+            if (! Schema::hasTable('t_pages')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -239,7 +252,7 @@ class PageDataService
 
         $pageModel = $this->getPageModel();
 
-        if (!$pageModel) {
+        if (! $pageModel) {
             return null;
         }
 
@@ -253,14 +266,14 @@ class PageDataService
         }
 
         // If not found by route name, try by slug
-        if (!$page) {
+        if (! $page) {
             $slug = trim($url, '/') ?: 'home';
             $page = $pageModel::where('slug', $slug)
                 ->where('is_active', true)
                 ->first();
         }
 
-        if (!$page) {
+        if (! $page) {
             return null;
         }
 
@@ -281,18 +294,15 @@ class PageDataService
 
     /**
      * Find catalog by URL
-     *
-     * @param string $url
-     * @return array|null
      */
     private function findCatalogByUrl(string $url): ?array
     {
-        if (!$this->isDatabaseAvailable()) {
+        if (! $this->isDatabaseAvailable()) {
             return null;
         }
 
         try {
-            if (!Schema::hasTable('t_catalogs')) {
+            if (! Schema::hasTable('t_catalogs')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -301,12 +311,12 @@ class PageDataService
 
         $catalogModel = $this->getCatalogModel();
 
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return null;
         }
 
         // Extract catalog slug from URL (e.g., /catalog/technika -> technika)
-        if (!preg_match('#^catalog/([^/]+)$#', $url, $matches)) {
+        if (! preg_match('#^catalog/([^/]+)$#', $url, $matches)) {
             return null;
         }
 
@@ -316,7 +326,7 @@ class PageDataService
             ->where('is_active', true)
             ->first();
 
-        if (!$catalog) {
+        if (! $catalog) {
             return null;
         }
 
@@ -337,18 +347,15 @@ class PageDataService
 
     /**
      * Find product by URL
-     *
-     * @param string $url
-     * @return array|null
      */
     private function findProductByUrl(string $url): ?array
     {
-        if (!$this->isDatabaseAvailable()) {
+        if (! $this->isDatabaseAvailable()) {
             return null;
         }
 
         try {
-            if (!Schema::hasTable('t_products')) {
+            if (! Schema::hasTable('t_products')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -357,12 +364,12 @@ class PageDataService
 
         $productModel = $this->getProductModel();
 
-        if (!$productModel) {
+        if (! $productModel) {
             return null;
         }
 
         // Extract product slug from URL (e.g., /product/macbook-air-2pro -> macbook-air-2pro)
-        if (!preg_match('#^product/([^/]+)$#', $url, $matches)) {
+        if (! preg_match('#^product/([^/]+)$#', $url, $matches)) {
             return null;
         }
 
@@ -372,7 +379,7 @@ class PageDataService
             ->where('is_active', true)
             ->first();
 
-        if (!$product) {
+        if (! $product) {
             return null;
         }
 
@@ -393,8 +400,6 @@ class PageDataService
 
     /**
      * Get Page model class
-     *
-     * @return string|null
      */
     private function getPageModel(): ?string
     {
@@ -408,8 +413,6 @@ class PageDataService
 
     /**
      * Get Catalog model class
-     *
-     * @return string|null
      */
     private function getCatalogModel(): ?string
     {
@@ -423,8 +426,6 @@ class PageDataService
 
     /**
      * Get Product model class
-     *
-     * @return string|null
      */
     private function getProductModel(): ?string
     {
@@ -438,19 +439,15 @@ class PageDataService
 
     /**
      * Check if page exists but is inactive
-     *
-     * @param string|null $routeName
-     * @param string $url
-     * @return bool
      */
     private function hasInactivePage(?string $routeName, string $url): bool
     {
-        if (!$this->isDatabaseAvailable()) {
+        if (! $this->isDatabaseAvailable()) {
             return false;
         }
 
         try {
-            if (!Schema::hasTable('t_pages')) {
+            if (! Schema::hasTable('t_pages')) {
                 return false;
             }
         } catch (\Exception $e) {
@@ -459,7 +456,7 @@ class PageDataService
 
         $pageModel = $this->getPageModel();
 
-        if (!$pageModel) {
+        if (! $pageModel) {
             return false;
         }
 
@@ -471,29 +468,26 @@ class PageDataService
         }
 
         // If not found by route name, try by slug
-        if (!$page) {
+        if (! $page) {
             $slug = trim($url, '/') ?: 'home';
             $page = $pageModel::where('slug', $slug)->first();
         }
 
         // Return true if page exists but is inactive
-        return $page && !$page->is_active;
+        return $page && ! $page->is_active;
     }
 
     /**
      * Check if catalog exists but is inactive
-     *
-     * @param string $url
-     * @return bool
      */
     private function hasInactiveCatalog(string $url): bool
     {
-        if (!$this->isDatabaseAvailable()) {
+        if (! $this->isDatabaseAvailable()) {
             return false;
         }
 
         try {
-            if (!Schema::hasTable('t_catalogs')) {
+            if (! Schema::hasTable('t_catalogs')) {
                 return false;
             }
         } catch (\Exception $e) {
@@ -502,12 +496,12 @@ class PageDataService
 
         $catalogModel = $this->getCatalogModel();
 
-        if (!$catalogModel) {
+        if (! $catalogModel) {
             return false;
         }
 
         // Extract catalog slug from URL
-        if (!preg_match('#^catalog/([^/]+)$#', $url, $matches)) {
+        if (! preg_match('#^catalog/([^/]+)$#', $url, $matches)) {
             return false;
         }
 
@@ -516,23 +510,20 @@ class PageDataService
         $catalog = $catalogModel::where('slug', $slug)->first();
 
         // Return true if catalog exists but is inactive
-        return $catalog && !$catalog->is_active;
+        return $catalog && ! $catalog->is_active;
     }
 
     /**
      * Check if product exists but is inactive
-     *
-     * @param string $url
-     * @return bool
      */
     private function hasInactiveProduct(string $url): bool
     {
-        if (!$this->isDatabaseAvailable()) {
+        if (! $this->isDatabaseAvailable()) {
             return false;
         }
 
         try {
-            if (!Schema::hasTable('t_products')) {
+            if (! Schema::hasTable('t_products')) {
                 return false;
             }
         } catch (\Exception $e) {
@@ -541,12 +532,12 @@ class PageDataService
 
         $productModel = $this->getProductModel();
 
-        if (!$productModel) {
+        if (! $productModel) {
             return false;
         }
 
         // Extract product slug from URL
-        if (!preg_match('#^product/([^/]+)$#', $url, $matches)) {
+        if (! preg_match('#^product/([^/]+)$#', $url, $matches)) {
             return false;
         }
 
@@ -555,6 +546,6 @@ class PageDataService
         $product = $productModel::where('slug', $slug)->first();
 
         // Return true if product exists but is inactive
-        return $product && !$product->is_active;
+        return $product && ! $product->is_active;
     }
 }

@@ -65,7 +65,7 @@ class TInfoBlockElement extends Model
     {
         $infoBlock = $this->infoBlock()->with('fields')->first();
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             return [];
         }
 
@@ -103,6 +103,7 @@ class TInfoBlockElement extends Model
         // If it's a model attribute, set it
         if (array_key_exists($key, $this->attributes)) {
             parent::__set($key, $value);
+
             return;
         }
 

@@ -2,12 +2,13 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\SEO;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use HolartWeb\AxoraCMS\Console\ScanRoutesCommand;
 use HolartWeb\AxoraCMS\Models\SEO\TPage;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Validator;
 
 class PagesController extends Controller
 {
@@ -33,7 +34,7 @@ class PagesController extends Controller
         }
 
         // Filter by status
-        if ($request->has('is_active') && !is_null($request->input('is_active'))) {
+        if ($request->has('is_active') && ! is_null($request->input('is_active'))) {
             $query->where('is_active', $request->input('is_active') === 'true');
         }
 
@@ -41,7 +42,7 @@ class PagesController extends Controller
         $query->withCount([
             'visits as today_views' => function ($q) {
                 $q->whereDate('visited_at', today());
-            }
+            },
         ]);
 
         // Sorting
@@ -85,7 +86,7 @@ class PagesController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -101,18 +102,18 @@ class PagesController extends Controller
         // Validate slug uniqueness
         if (TPage::where('slug', $data['slug'])->exists()) {
             return response()->json([
-                'message' => 'Страница с таким slug уже существует'
+                'message' => 'Страница с таким slug уже существует',
             ], 422);
         }
 
         $page = TPage::create($data);
 
         // Log activity
-        TAdminAction::log('created', 'page', $page->id, 'Создана страница: ' . $page->title);
+        TAdminAction::log('created', 'page', $page->id, 'Создана страница: '.$page->title);
 
         return response()->json([
             'message' => 'Страница создана успешно',
-            'page' => $page
+            'page' => $page,
         ], 201);
     }
 
@@ -138,7 +139,7 @@ class PagesController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -151,7 +152,7 @@ class PagesController extends Controller
             // Validate slug uniqueness
             if (TPage::where('slug', $data['slug'])->where('id', '!=', $page->id)->exists()) {
                 return response()->json([
-                    'message' => 'Страница с таким slug уже существует'
+                    'message' => 'Страница с таким slug уже существует',
                 ], 422);
             }
         }
@@ -159,11 +160,11 @@ class PagesController extends Controller
         $page->update($data);
 
         // Log activity
-        TAdminAction::log('updated', 'page', $page->id, 'Обновлена страница: ' . $page->title);
+        TAdminAction::log('updated', 'page', $page->id, 'Обновлена страница: '.$page->title);
 
         return response()->json([
             'message' => 'Страница обновлена успешно',
-            'page' => $page
+            'page' => $page,
         ]);
     }
 
@@ -178,10 +179,10 @@ class PagesController extends Controller
         $page->delete();
 
         // Log activity
-        TAdminAction::log('deleted', 'page', $id, 'Удалена страница: ' . $title);
+        TAdminAction::log('deleted', 'page', $id, 'Удалена страница: '.$title);
 
         return response()->json([
-            'message' => 'Страница удалена успешно'
+            'message' => 'Страница удалена успешно',
         ]);
     }
 
@@ -191,17 +192,17 @@ class PagesController extends Controller
     public function toggleStatus($id)
     {
         $page = TPage::findOrFail($id);
-        $page->is_active = !$page->is_active;
+        $page->is_active = ! $page->is_active;
         $page->save();
 
         $status = $page->is_active ? 'активирована' : 'деактивирована';
 
         // Log activity
-        TAdminAction::log('updated', 'page', $page->id, "Страница {$status}: " . $page->title);
+        TAdminAction::log('updated', 'page', $page->id, "Страница {$status}: ".$page->title);
 
         return response()->json([
             'message' => "Страница {$status} успешно",
-            'is_active' => $page->is_active
+            'is_active' => $page->is_active,
         ]);
     }
 
@@ -215,7 +216,7 @@ class PagesController extends Controller
             Artisan::call('axoracms:scan-routes');
 
             // Get the results from the command
-            $results = \HolartWeb\AxoraCMS\Console\ScanRoutesCommand::getLastResults();
+            $results = ScanRoutesCommand::getLastResults();
 
             if ($results) {
                 return response()->json([
@@ -226,20 +227,20 @@ class PagesController extends Controller
                         'updated' => $results['updated'],
                         'skipped' => $results['skipped'],
                         'routes' => $results['routes'],
-                        'total' => count($results['routes'])
-                    ]
+                        'total' => count($results['routes']),
+                    ],
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Не удалось получить результаты сканирования'
+                    'message' => 'Не удалось получить результаты сканирования',
                 ], 500);
             }
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при сканировании маршрутов',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -254,7 +255,7 @@ class PagesController extends Controller
                 ['value' => 'all', 'label' => 'Все типы'],
                 ['value' => 'static', 'label' => 'Статические'],
                 ['value' => 'dynamic', 'label' => 'Динамические'],
-            ]
+            ],
         ]);
     }
 }

@@ -2,16 +2,18 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
 class InfoBlocksInstallCommand extends Command
 {
     const VERSION = '1.2.0';
+
     const MODULE_NAME = 'infoblocks';
 
     protected $signature = 'axoracms:infoblocks-install';
+
     protected $description = 'Install AxoraCMS InfoBlocks Module';
 
     public function handle(): int
@@ -23,7 +25,7 @@ class InfoBlocksInstallCommand extends Command
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
@@ -32,18 +34,19 @@ class InfoBlocksInstallCommand extends Command
 
         // Determine migration path
         $migrationPath = 'vendor/holartweb/axora-cms/database/migrations/infoblocks';
-        if (!file_exists(base_path($migrationPath))) {
+        if (! file_exists(base_path($migrationPath))) {
             $migrationPath = 'packages/holartweb/axora-cms/database/migrations/infoblocks';
         }
 
         try {
             Artisan::call('migrate', [
                 '--path' => $migrationPath,
-                '--force' => true
+                '--force' => true,
             ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
         $this->newLine();
@@ -51,7 +54,7 @@ class InfoBlocksInstallCommand extends Command
         // Step 2: Build Frontend Assets
         $this->info('Step 2: Building frontend assets...');
 
-        if (file_exists($packagePath . '/package.json')) {
+        if (file_exists($packagePath.'/package.json')) {
             $this->info('Installing npm dependencies...');
             exec("cd {$packagePath} && npm install 2>&1", $output, $returnVar);
 
@@ -104,7 +107,7 @@ class InfoBlocksInstallCommand extends Command
         $this->info('╚════════════════════════════════════════╝');
         $this->newLine();
         $this->info('You can now create custom info blocks in your admin panel.');
-        $this->info('Navigate to: ' . url('/admin/infoblocks'));
+        $this->info('Navigate to: '.url('/admin/infoblocks'));
         $this->newLine();
 
         return self::SUCCESS;

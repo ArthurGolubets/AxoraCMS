@@ -43,6 +43,7 @@ class TModule extends Model
     public static function getInstalledVersion(string $moduleName): ?string
     {
         $module = static::where('module_name', $moduleName)->first();
+
         return $module?->version;
     }
 

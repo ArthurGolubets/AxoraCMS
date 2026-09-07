@@ -18,16 +18,13 @@ class InfoBlockService
      */
     protected function checkInfoBlocksModule(): void
     {
-        if (!Schema::hasTable('t_info_blocks')) {
+        if (! Schema::hasTable('t_info_blocks')) {
             throw new \Exception('InfoBlocks module is not installed');
         }
     }
 
     /**
      * Get info block by code
-     *
-     * @param string $code
-     * @return TInfoBlock|null
      */
     public function getInfoBlockByCode(string $code): ?TInfoBlock
     {
@@ -42,12 +39,13 @@ class InfoBlockService
     /**
      * Get elements of info block with filter and pagination
      *
-     * @param string $code Info block code
-     * @param array $filter Filters to apply ['field' => 'value']
-     * @param array $order Ordering ['field' => 'asc|desc']
-     * @param int|null $perPage Items per page (null for no pagination)
-     * @param int $page Current page
+     * @param  string  $code  Info block code
+     * @param  array  $filter  Filters to apply ['field' => 'value']
+     * @param  array  $order  Ordering ['field' => 'asc|desc']
+     * @param  int|null  $perPage  Items per page (null for no pagination)
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getElements(
@@ -59,7 +57,7 @@ class InfoBlockService
     ) {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -74,22 +72,25 @@ class InfoBlockService
         // Return paginated or all results
         if ($perPage !== null) {
             $result = $query->paginate($perPage, ['*'], 'page', $page);
-            $result->getCollection()->transform(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+            $result->getCollection()->transform(fn ($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+
             return $result;
         }
 
         $elements = $query->get();
-        return $elements->map(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+
+        return $elements->map(fn ($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
     }
 
     /**
      * Get active elements of info block with pagination
      *
-     * @param string $code Info block code
-     * @param array $order Ordering ['field' => 'asc|desc']
-     * @param int|null $perPage Items per page (null for no pagination)
-     * @param int $page Current page
+     * @param  string  $code  Info block code
+     * @param  array  $order  Ordering ['field' => 'asc|desc']
+     * @param  int|null  $perPage  Items per page (null for no pagination)
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getActiveElements(
@@ -104,16 +105,16 @@ class InfoBlockService
     /**
      * Get element by ID
      *
-     * @param string $code Info block code
-     * @param int $id Element ID
-     * @return TInfoBlockElement|null
+     * @param  string  $code  Info block code
+     * @param  int  $id  Element ID
+     *
      * @throws \Exception
      */
     public function getElementById(string $code, int $id): ?TInfoBlockElement
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -123,16 +124,16 @@ class InfoBlockService
     /**
      * Get element by code
      *
-     * @param string $infoBlockCode Info block code
-     * @param string $elementCode Element code
-     * @return TInfoBlockElement|null
+     * @param  string  $infoBlockCode  Info block code
+     * @param  string  $elementCode  Element code
+     *
      * @throws \Exception
      */
     public function getElementByCode(string $infoBlockCode, string $elementCode): ?TInfoBlockElement
     {
         $infoBlock = $this->getInfoBlockByCode($infoBlockCode);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$infoBlockCode}' not found");
         }
 
@@ -145,10 +146,10 @@ class InfoBlockService
     /**
      * Get first element
      *
-     * @param string $code Info block code
-     * @param array $filter Filters to apply
-     * @param array $order Ordering
-     * @return TInfoBlockElement|null
+     * @param  string  $code  Info block code
+     * @param  array  $filter  Filters to apply
+     * @param  array  $order  Ordering
+     *
      * @throws \Exception
      */
     public function getFirstElement(
@@ -158,7 +159,7 @@ class InfoBlockService
     ): ?TInfoBlockElement {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -173,17 +174,17 @@ class InfoBlockService
     /**
      * Get random elements
      *
-     * @param string $code Info block code
-     * @param int $count Number of elements
-     * @param array $filter Filters to apply
-     * @return Collection
+     * @param  string  $code  Info block code
+     * @param  int  $count  Number of elements
+     * @param  array  $filter  Filters to apply
+     *
      * @throws \Exception
      */
     public function getRandomElements(string $code, int $count = 1, array $filter = []): Collection
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -197,16 +198,16 @@ class InfoBlockService
     /**
      * Count elements
      *
-     * @param string $code Info block code
-     * @param array $filter Filters to apply
-     * @return int
+     * @param  string  $code  Info block code
+     * @param  array  $filter  Filters to apply
+     *
      * @throws \Exception
      */
     public function countElements(string $code, array $filter = []): int
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -220,13 +221,14 @@ class InfoBlockService
     /**
      * Get elements with specific property value
      *
-     * @param string $code Info block code
-     * @param string $propertyCode Property code
-     * @param mixed $value Property value
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
+     * @param  string  $code  Info block code
+     * @param  string  $propertyCode  Property code
+     * @param  mixed  $value  Property value
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getElementsByProperty(
@@ -243,10 +245,10 @@ class InfoBlockService
     /**
      * Get elements grouped by property
      *
-     * @param string $code Info block code
-     * @param string $propertyCode Property code to group by
-     * @param array $filter Additional filters
-     * @return array
+     * @param  string  $code  Info block code
+     * @param  string  $propertyCode  Property code to group by
+     * @param  array  $filter  Additional filters
+     *
      * @throws \Exception
      */
     public function getElementsGroupedByProperty(
@@ -261,7 +263,7 @@ class InfoBlockService
         foreach ($elements as $element) {
             $key = $element->getProperty($propertyCode, 'uncategorized');
 
-            if (!isset($grouped[$key])) {
+            if (! isset($grouped[$key])) {
                 $grouped[$key] = [];
             }
 
@@ -274,9 +276,9 @@ class InfoBlockService
     /**
      * Check if element exists
      *
-     * @param string $code Info block code
-     * @param int $id Element ID
-     * @return bool
+     * @param  string  $code  Info block code
+     * @param  int  $id  Element ID
+     *
      * @throws \Exception
      */
     public function elementExists(string $code, int $id): bool
@@ -287,9 +289,9 @@ class InfoBlockService
     /**
      * Check if element exists by code
      *
-     * @param string $infoBlockCode Info block code
-     * @param string $elementCode Element code
-     * @return bool
+     * @param  string  $infoBlockCode  Info block code
+     * @param  string  $elementCode  Element code
+     *
      * @throws \Exception
      */
     public function elementExistsByCode(string $infoBlockCode, string $elementCode): bool
@@ -300,16 +302,16 @@ class InfoBlockService
     /**
      * Get element with properties and fields info
      *
-     * @param string $code Info block code
-     * @param int $id Element ID
-     * @return array|null
+     * @param  string  $code  Info block code
+     * @param  int  $id  Element ID
+     *
      * @throws \Exception
      */
     public function getElementWithFields(string $code, int $id): ?array
     {
         $element = $this->getElementById($code, $id);
 
-        if (!$element) {
+        if (! $element) {
             return null;
         }
 
@@ -322,17 +324,17 @@ class InfoBlockService
     /**
      * Get latest elements
      *
-     * @param string $code Info block code
-     * @param int $count Number of elements
-     * @param array $filter Filters to apply
-     * @return Collection
+     * @param  string  $code  Info block code
+     * @param  int  $count  Number of elements
+     * @param  array  $filter  Filters to apply
+     *
      * @throws \Exception
      */
     public function getLatestElements(string $code, int $count = 10, array $filter = []): Collection
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -346,11 +348,11 @@ class InfoBlockService
     /**
      * Get popular elements (by views or other metric from properties)
      *
-     * @param string $code Info block code
-     * @param string $metricProperty Property code for metric (e.g., 'views', 'rating')
-     * @param int $count Number of elements
-     * @param array $filter Filters to apply
-     * @return Collection
+     * @param  string  $code  Info block code
+     * @param  string  $metricProperty  Property code for metric (e.g., 'views', 'rating')
+     * @param  int  $count  Number of elements
+     * @param  array  $filter  Filters to apply
+     *
      * @throws \Exception
      */
     public function getPopularElements(
@@ -361,7 +363,7 @@ class InfoBlockService
     ): Collection {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -377,12 +379,13 @@ class InfoBlockService
     /**
      * Search elements by name
      *
-     * @param string $code Info block code
-     * @param string $search Search query
-     * @param array $filter Additional filters
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
+     * @param  string  $code  Info block code
+     * @param  string  $search  Search query
+     * @param  array  $filter  Additional filters
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function searchElements(
@@ -394,7 +397,7 @@ class InfoBlockService
     ) {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -413,17 +416,13 @@ class InfoBlockService
 
     /**
      * Apply ordering to query
-     *
-     * @param $query
-     * @param array $order
-     * @return void
      */
     protected function applyOrdering($query, array $order): void
     {
         foreach ($order as $field => $direction) {
             $direction = strtolower($direction);
 
-            if (!in_array($direction, ['asc', 'desc'])) {
+            if (! in_array($direction, ['asc', 'desc'])) {
                 $direction = 'asc';
             }
 
@@ -441,9 +440,9 @@ class InfoBlockService
      * Get breadcrumbs for info block element
      * Returns: Main - InfoBlock Name - Element Name
      *
-     * @param string $infoBlockCode Info block code
-     * @param int|null $elementId Element ID (optional)
-     * @return array
+     * @param  string  $infoBlockCode  Info block code
+     * @param  int|null  $elementId  Element ID (optional)
+     *
      * @throws \Exception
      */
     public function getBreadcrumbs(string $infoBlockCode, ?int $elementId = null): array
@@ -454,11 +453,11 @@ class InfoBlockService
             [
                 'name' => 'Главная',
                 'url' => '/',
-            ]
+            ],
         ];
 
         $infoBlock = $this->getInfoBlockByCode($infoBlockCode);
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             return $breadcrumbs;
         }
 
@@ -467,7 +466,7 @@ class InfoBlockService
             'id' => $infoBlock->id,
             'name' => $infoBlock->name,
             'code' => $infoBlock->code,
-            'url' => '/info/' . $infoBlock->code,
+            'url' => '/info/'.$infoBlock->code,
         ];
 
         // Add element if provided
@@ -478,7 +477,7 @@ class InfoBlockService
                     'id' => $element->id,
                     'name' => $element->name,
                     'code' => $element->code,
-                    'url' => '/info/' . $infoBlock->code . '/' . $element->code,
+                    'url' => '/info/'.$infoBlock->code.'/'.$element->code,
                 ];
             }
         }
@@ -489,15 +488,16 @@ class InfoBlockService
     /**
      * Get enum options for info block fields
      *
-     * @param string $code Info block code
+     * @param  string  $code  Info block code
      * @return array ['field_code' => [['code' => '...', 'title' => '...'], ...], ...]
+     *
      * @throws \Exception
      */
     public function getEnumOptions(string $code): array
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
@@ -506,8 +506,8 @@ class InfoBlockService
         foreach ($infoBlock->fields as $field) {
             if ($field->type === 'enum') {
                 $options = $field->settings['options'] ?? [];
-                $enums[$field->code] = array_map(fn($option) => [
-                    'code'  => $option['code'],
+                $enums[$field->code] = array_map(fn ($option) => [
+                    'code' => $option['code'],
                     'title' => $option['title'],
                 ], $options);
             }
@@ -519,20 +519,20 @@ class InfoBlockService
     /**
      * Get sections list (flat) for catalog type info block
      *
-     * @param string $code Info block code
-     * @param bool $activeOnly Get only active sections
-     * @return Collection
+     * @param  string  $code  Info block code
+     * @param  bool  $activeOnly  Get only active sections
+     *
      * @throws \Exception
      */
     public function getSections(string $code, bool $activeOnly = true): Collection
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$code}' is not a catalog type");
         }
 
@@ -548,20 +548,20 @@ class InfoBlockService
     /**
      * Get sections tree with children for catalog type info block
      *
-     * @param string $code Info block code
-     * @param bool $activeOnly Get only active sections
-     * @return array
+     * @param  string  $code  Info block code
+     * @param  bool  $activeOnly  Get only active sections
+     *
      * @throws \Exception
      */
     public function getSectionsTree(string $code, bool $activeOnly = true): array
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$code}' is not a catalog type");
         }
 
@@ -580,10 +580,6 @@ class InfoBlockService
 
     /**
      * Build section tree recursively
-     *
-     * @param TInfoBlockSection $section
-     * @param bool $activeOnly
-     * @return array
      */
     protected function buildSectionTree(TInfoBlockSection $section, bool $activeOnly = true): array
     {
@@ -611,14 +607,15 @@ class InfoBlockService
     /**
      * Get elements of specific section
      *
-     * @param string $code Info block code
-     * @param int $sectionId Section ID
-     * @param array $filter Additional filters
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
-     * @param bool $activeOnly Get only active elements
+     * @param  string  $code  Info block code
+     * @param  int  $sectionId  Section ID
+     * @param  array  $filter  Additional filters
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
+     * @param  bool  $activeOnly  Get only active elements
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getElementsBySection(
@@ -632,11 +629,11 @@ class InfoBlockService
     ) {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$code}' is not a catalog type");
         }
 
@@ -652,14 +649,15 @@ class InfoBlockService
     /**
      * Get elements of section and all its subsections recursively
      *
-     * @param string $code Info block code
-     * @param int $sectionId Section ID
-     * @param array $filter Additional filters
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
-     * @param bool $activeOnly Get only active elements
+     * @param  string  $code  Info block code
+     * @param  int  $sectionId  Section ID
+     * @param  array  $filter  Additional filters
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
+     * @param  bool  $activeOnly  Get only active elements
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getElementsBySectionRecursive(
@@ -673,17 +671,17 @@ class InfoBlockService
     ) {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$code}' is not a catalog type");
         }
 
         $section = TInfoBlockSection::find($sectionId);
 
-        if (!$section || $section->info_block_id !== $infoBlock->id) {
+        if (! $section || $section->info_block_id !== $infoBlock->id) {
             throw new \Exception("Section with ID '{$sectionId}' not found in this info block");
         }
 
@@ -706,19 +704,18 @@ class InfoBlockService
         // Return paginated or all results
         if ($perPage !== null) {
             $result = $query->paginate($perPage, ['*'], 'page', $page);
-            $result->getCollection()->transform(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+            $result->getCollection()->transform(fn ($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+
             return $result;
         }
 
         $elements = $query->get();
-        return $elements->map(fn($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
+
+        return $elements->map(fn ($el) => $this->enrichEnumProperties($el, $infoBlock->fields));
     }
 
     /**
      * Get all descendant section IDs recursively
-     *
-     * @param TInfoBlockSection $section
-     * @return array
      */
     protected function getDescendantSectionIds(TInfoBlockSection $section): array
     {
@@ -737,13 +734,14 @@ class InfoBlockService
     /**
      * Get all elements from catalog type info block (from all sections)
      *
-     * @param string $code Info block code
-     * @param array $filter Additional filters
-     * @param array $order Ordering
-     * @param int|null $perPage Items per page
-     * @param int $page Current page
-     * @param bool $activeOnly Get only active elements
+     * @param  string  $code  Info block code
+     * @param  array  $filter  Additional filters
+     * @param  array  $order  Ordering
+     * @param  int|null  $perPage  Items per page
+     * @param  int  $page  Current page
+     * @param  bool  $activeOnly  Get only active elements
      * @return Collection|LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getAllCatalogElements(
@@ -756,11 +754,11 @@ class InfoBlockService
     ) {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$code}' is not a catalog type");
         }
 
@@ -774,20 +772,20 @@ class InfoBlockService
     /**
      * Get section by ID
      *
-     * @param string $code Info block code
-     * @param int $sectionId Section ID
-     * @return TInfoBlockSection|null
+     * @param  string  $code  Info block code
+     * @param  int  $sectionId  Section ID
+     *
      * @throws \Exception
      */
     public function getSectionById(string $code, int $sectionId): ?TInfoBlockSection
     {
         $infoBlock = $this->getInfoBlockByCode($code);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$code}' is not a catalog type");
         }
 
@@ -797,20 +795,20 @@ class InfoBlockService
     /**
      * Get section by code
      *
-     * @param string $infoBlockCode Info block code
-     * @param string $sectionCode Section code
-     * @return TInfoBlockSection|null
+     * @param  string  $infoBlockCode  Info block code
+     * @param  string  $sectionCode  Section code
+     *
      * @throws \Exception
      */
     public function getSectionByCode(string $infoBlockCode, string $sectionCode): ?TInfoBlockSection
     {
         $infoBlock = $this->getInfoBlockByCode($infoBlockCode);
 
-        if (!$infoBlock) {
+        if (! $infoBlock) {
             throw new \Exception("Info block with code '{$infoBlockCode}' not found");
         }
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             throw new \Exception("Info block '{$infoBlockCode}' is not a catalog type");
         }
 
@@ -828,10 +826,6 @@ class InfoBlockService
      * - Array: ['field' => ['value1', 'value2']] - IN clause
      * - Operators: ['field' => ['>', 100]] - comparison
      * - Like: ['field' => ['LIKE', '%text%']] - pattern matching
-     *
-     * @param $query
-     * @param array $filter
-     * @return void
      */
     protected function applyFilters($query, array $filter): void
     {
@@ -870,7 +864,7 @@ class InfoBlockService
                         }
                     } else {
                         // Array filter (IN) for properties
-                        $query->where(function($q) use ($key, $value) {
+                        $query->where(function ($q) use ($key, $value) {
                             foreach ($value as $v) {
                                 $q->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.{$key}')) = ?", [$v]);
                             }
@@ -898,10 +892,14 @@ class InfoBlockService
         $properties = $element->properties ?? [];
 
         foreach ($fields as $field) {
-            if ($field->type !== 'enum') continue;
+            if ($field->type !== 'enum') {
+                continue;
+            }
 
             $code = $properties[$field->code] ?? null;
-            if ($code === null) continue;
+            if ($code === null) {
+                continue;
+            }
 
             $options = $field->settings['options'] ?? [];
             $title = null;
@@ -913,12 +911,13 @@ class InfoBlockService
             }
 
             $properties[$field->code] = [
-                'code'  => $code,
+                'code' => $code,
                 'title' => $title,
             ];
         }
 
         $element->properties = $properties;
+
         return $element;
     }
 }

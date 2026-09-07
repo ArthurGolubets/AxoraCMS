@@ -89,7 +89,7 @@
 
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Описание</h3>
-          <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="product.content || '<p class=\'text-gray-500 dark:text-gray-400\'>Нет описания</p>'"></div>
+          <div class="prose prose-sm dark:prose-invert max-w-none text-gray-900 dark:text-gray-100" v-html="sanitizeHtml(product.content) || '<p class=\'text-gray-500 dark:text-gray-400\'>Нет описания</p>'"></div>
         </div>
       </div>
 
@@ -126,6 +126,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 const { error } = useModal();
 const { buttonStyle } = useTheme();

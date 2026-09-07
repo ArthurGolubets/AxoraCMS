@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Models\Shop;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class TFilter extends Model
 {
@@ -72,12 +73,12 @@ class TFilter extends Model
      */
     public function scopeForCatalog($query, $catalogId)
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             return $query->whereNull('catalog_id');
         }
 
         $catalog = TCatalog::find($catalogId);
-        if (!$catalog) {
+        if (! $catalog) {
             return $query->whereNull('catalog_id');
         }
 
@@ -93,9 +94,9 @@ class TFilter extends Model
         static::collectChildrenCatalogIds($catalog, $catalogIds);
 
         // Include global filters and filters from current, parent and children catalogs
-        return $query->where(function($q) use ($catalogIds) {
+        return $query->where(function ($q) use ($catalogIds) {
             $q->whereNull('catalog_id')
-              ->orWhereIn('catalog_id', $catalogIds);
+                ->orWhereIn('catalog_id', $catalogIds);
         });
     }
 
@@ -124,7 +125,7 @@ class TFilter extends Model
      */
     public static function generateCode($name, $excludeId = null)
     {
-        $code = \Illuminate\Support\Str::slug($name, '_');
+        $code = Str::slug($name, '_');
         $originalCode = $code;
         $counter = 1;
 
@@ -134,11 +135,11 @@ class TFilter extends Model
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
-            $code = $originalCode . '_' . $counter;
+            $code = $originalCode.'_'.$counter;
             $counter++;
         }
 

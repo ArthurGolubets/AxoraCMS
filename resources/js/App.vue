@@ -450,10 +450,12 @@ import GlobalSearch from './components/GlobalSearch.vue';
 import { useModal } from './composables/useModal';
 import { useTheme } from './composables/useTheme';
 import { useModuleEvents } from './composables/useModuleEvents';
+import { useAppConfig } from './composables/useAppConfig';
 
 const { modalState, success, error } = useModal();
 const { themeColor: globalThemeColor, setThemeColor } = useTheme();
 const { moduleUpdateCounter } = useModuleEvents();
+const appConfig = useAppConfig();
 
 const isDark = ref(false);
 const isCollapsed = ref(false);
@@ -581,36 +583,17 @@ const logout = async () => {
 };
 
 const loadCurrentUser = async () => {
-  try {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    const response = await fetch('/admin/api/me', {
-      headers: {
-        'X-CSRF-TOKEN': token,
-        'Accept': 'application/json'
-      }
-    });
-
-    if (response.ok) {
-      const user = await response.json();
-      adminUser.value = user;
-    }
-  } catch (error) {
-    console.error('Failed to load current user:', error);
+  const user = await appConfig.loadMe();
+  if (user) {
+    adminUser.value = user;
   }
 };
 
 const loadSettings = async () => {
   try {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    const response = await fetch('/admin/api/settings', {
-      headers: {
-        'X-CSRF-TOKEN': token,
-        'Accept': 'application/json'
-      }
-    });
+    const settings = await appConfig.loadSettings();
 
-    if (response.ok) {
-      const settings = await response.json();
+    if (settings) {
       panelName.value = settings.panel_name || 'AxoraCMS';
       productsListEnabled.value = settings.products_list_enabled !== false;
 
@@ -633,14 +616,13 @@ const loadSettings = async () => {
   }
 };
 
-const loadModulesStatus = async () => {
+const loadModulesStatus = async (force = false) => {
   try {
-    const response = await fetch('/admin/api/modules/status', {
-      headers: { 'Accept': 'application/json' }
-    });
+    const data = force
+      ? await appConfig.refreshModulesStatus()
+      : await appConfig.loadModulesStatus();
 
-    if (response.ok) {
-      const data = await response.json();
+    if (data) {
       showModules.value = data.show_modules_page || false;
 
       const shopModule = data.modules?.find(m => m.id === 'shop');
@@ -683,19 +665,17 @@ const loadModulesStatus = async () => {
   }
 };
 
-const loadFavoriteInfoBlocks = async () => {
-  try {
-    const response = await fetch('/admin/api/infoblocks/favorites', {
-      headers: { 'Accept': 'application/json' }
-    });
+const loadFavoriteInfoBlocks = async ({ force = false } = {}) => {
+  const data = force
+    ? await appConfig.refreshFavoriteInfoBlocks()
+    : await appConfig.loadFavoriteInfoBlocks();
 
-    if (response.ok) {
-      favoriteInfoBlocks.value = await response.json();
-    }
-  } catch (error) {
-    console.error('Failed to load favorite infoblocks:', error);
+  if (Array.isArray(data)) {
+    favoriteInfoBlocks.value = data;
   }
 };
+
+const reloadFavoriteInfoBlocks = () => loadFavoriteInfoBlocks({ force: true });
 
 onMounted(() => {
   const savedTheme = localStorage.getItem('axora-cms-theme');
@@ -715,12 +695,12 @@ onMounted(() => {
   loadModulesStatus();
 
   // Listen for favorites update event
-  window.addEventListener('infoblocks-favorites-updated', loadFavoriteInfoBlocks);
+  window.addEventListener('infoblocks-favorites-updated', reloadFavoriteInfoBlocks);
 });
 
 // Watch for module updates and reload sidebar
 watch(moduleUpdateCounter, () => {
-  loadModulesStatus();
+  loadModulesStatus(true);
 });
 </script>
 

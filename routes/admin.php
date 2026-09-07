@@ -7,12 +7,13 @@ use HolartWeb\AxoraCMS\Http\Controllers\CatalogImportExportController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardMetricsController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardWidgetsController;
-use HolartWeb\AxoraCMS\Http\Controllers\EnvironmentController;
 use HolartWeb\AxoraCMS\Http\Controllers\ImageUploadController;
 use HolartWeb\AxoraCMS\Http\Controllers\LogsController;
+use HolartWeb\AxoraCMS\Http\Controllers\MailSettingsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController;
 use HolartWeb\AxoraCMS\Http\Controllers\ModulesController;
+use HolartWeb\AxoraCMS\Http\Controllers\PanelCustomFieldsController;
 use HolartWeb\AxoraCMS\Http\Controllers\ProductImportExportController;
 use HolartWeb\AxoraCMS\Http\Controllers\SearchController;
 use HolartWeb\AxoraCMS\Http\Controllers\SettingsController;
@@ -31,11 +32,15 @@ use Illuminate\Support\Facades\Schema;
 // Guest routes (not authenticated)
 Route::middleware('guest:admin')->group(function () {
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('axora-cms.login');
-    Route::post('login', [LoginController::class, 'login'])->name('axora-cms.login.post');
+    Route::post('login', [LoginController::class, 'login'])
+        ->middleware(['throttle:admin-login', 'throttle:5,1'])
+        ->name('axora-cms.login.post');
 
     // Password Reset Routes
     Route::get('forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('axora-cms.password.request');
-    Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('axora-cms.password.email');
+    Route::post('forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+        ->middleware('throttle:3,1')
+        ->name('axora-cms.password.email');
 });
 
 // Authenticated admin routes
@@ -65,45 +70,61 @@ Route::middleware(['admin.auth'])->group(function () {
         Route::post('upload/image', [ImageUploadController::class, 'upload']);
         Route::delete('upload/image', [ImageUploadController::class, 'delete']);
 
-        Route::get('administrators', [AdministratorController::class, 'index']);
-        Route::post('administrators', [AdministratorController::class, 'store']);
-        Route::put('administrators/{id}', [AdministratorController::class, 'update']);
-        Route::delete('administrators/{id}', [AdministratorController::class, 'destroy']);
+        // Administrator management — super_admin only.
+        Route::middleware('admin.role:super_admin')->group(function () {
+            Route::get('administrators', [AdministratorController::class, 'index']);
+            Route::post('administrators', [AdministratorController::class, 'store']);
+            Route::put('administrators/{id}', [AdministratorController::class, 'update']);
+            Route::delete('administrators/{id}', [AdministratorController::class, 'destroy']);
+        });
 
         Route::get('settings', [SettingsController::class, 'index']);
-        Route::post('settings', [SettingsController::class, 'update']);
-        Route::post('settings/upload-logo', [SettingsController::class, 'uploadLogo']);
-        Route::delete('settings/logo', [SettingsController::class, 'deleteLogo']);
+        Route::post('settings', [SettingsController::class, 'update'])->middleware('admin.role:super_admin,administrator');
+        Route::post('settings/upload-logo', [SettingsController::class, 'uploadLogo'])->middleware('admin.role:super_admin,administrator');
+        Route::delete('settings/logo', [SettingsController::class, 'deleteLogo'])->middleware('admin.role:super_admin,administrator');
 
-        Route::get('environment', [EnvironmentController::class, 'index']);
-        Route::post('environment', [EnvironmentController::class, 'update']);
-        Route::post('environment/test-smtp', [EnvironmentController::class, 'testSmtp']);
+        // Custom project fields ("Пользовательские свойства")
+        Route::get('settings/custom-fields', [PanelCustomFieldsController::class, 'index']);
+        Route::post('settings/custom-fields', [PanelCustomFieldsController::class, 'save'])->middleware('admin.role:super_admin,administrator');
+
+        // SMTP / mail settings (stored in DB, applied at runtime) — super_admin only.
+        // URLs kept as admin/api/environment* for SPA compatibility.
+        Route::middleware('admin.role:super_admin')->group(function () {
+            Route::get('environment', [MailSettingsController::class, 'index']);
+            Route::post('environment', [MailSettingsController::class, 'update']);
+            Route::post('environment/test-smtp', [MailSettingsController::class, 'testSmtp']);
+        });
 
         // Activity logs (admin actions tracking) - only if logging module is installed
-        if (class_exists('HolartWeb\\AxoraCMS\\Models\\Logging\\TAdminAction')) {
-            $logsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Logging\\LogsController';
-            Route::get('logs/filters', [$logsController, 'filters']);
-            Route::get('logs/statistics', [$logsController, 'statistics']);
-            Route::get('logs/{id}', [$logsController, 'show']);
-            Route::get('logs', [$logsController, 'index']);
-        } else {
-            // Fallback to system logs if logging module not installed
-            Route::get('logs', [LogsController::class, 'index']);
-            Route::get('logs/actions', [LogsController::class, 'actions']);
-            Route::get('logs/entity-types', [LogsController::class, 'entityTypes']);
-        }
+        Route::middleware('admin.role:super_admin,administrator')->group(function () {
+            if (class_exists('HolartWeb\\AxoraCMS\\Models\\Logging\\TAdminAction')) {
+                $logsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Logging\\LogsController';
+                Route::get('logs/filters', [$logsController, 'filters']);
+                Route::get('logs/statistics', [$logsController, 'statistics']);
+                Route::get('logs/{id}', [$logsController, 'show']);
+                Route::get('logs', [$logsController, 'index']);
+            } else {
+                // Fallback to system logs if logging module not installed
+                Route::get('logs', [LogsController::class, 'index']);
+                Route::get('logs/actions', [LogsController::class, 'actions']);
+                Route::get('logs/entity-types', [LogsController::class, 'entityTypes']);
+            }
+        });
 
         Route::get('modules/status', [ModulesController::class, 'status']);
         Route::get('modules', [ModulesController::class, 'index']);
-        Route::post('modules/update', [ModulesController::class, 'update']);
-        Route::post('modules/check-database', [ModulesController::class, 'checkDatabase']);
-        Route::post('modules/install-missing-migrations', [ModulesController::class, 'installMissingMigrations']);
-        Route::post('modules/{moduleId}/install', [ModulesController::class, 'install']);
-        Route::post('modules/{moduleId}/update', [ModulesController::class, 'updateModule']);
-        Route::post('modules/{moduleId}/uninstall', [ModulesController::class, 'uninstall']);
+        // Module install / uninstall / update — super_admin or administrator only.
+        Route::middleware('admin.role:super_admin,administrator')->group(function () {
+            Route::post('modules/update', [ModulesController::class, 'update']);
+            Route::post('modules/check-database', [ModulesController::class, 'checkDatabase']);
+            Route::post('modules/install-missing-migrations', [ModulesController::class, 'installMissingMigrations']);
+            Route::post('modules/{moduleId}/install', [ModulesController::class, 'install']);
+            Route::post('modules/{moduleId}/update', [ModulesController::class, 'updateModule']);
+            Route::post('modules/{moduleId}/uninstall', [ModulesController::class, 'uninstall']);
+        });
 
         // Catalog routes - only if shop module is installed
-        if (class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TCatalog')) {
+        if (Schema::hasTable('t_catalogs')) {
             $catalogController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\CatalogController';
             $productController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\ProductController';
             $characteristicDefinitionsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\CharacteristicDefinitionsController';
@@ -155,7 +176,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Callback routes - only if callback module is installed
-        if (class_exists('HolartWeb\\AxoraCMS\\Models\\Callback\\TUsersEmails')) {
+        if (Schema::hasTable('t_users_emails')) {
             $usersEmailsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Callback\\UsersEmailsController';
             $commentsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Callback\\CommentsController';
             $userRequestsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Callback\\UserRequestsController';
@@ -187,7 +208,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Commerce routes - only if commerce module is installed
-        if (class_exists('HolartWeb\\AxoraCMS\\Models\\Commerce\\TOrders')) {
+        if (Schema::hasTable('t_orders')) {
             $ordersController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\OrdersController';
             $promocodesController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\PromocodesController';
             $transactionsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\PaymentTransactionsController';
@@ -225,7 +246,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // InfoBlocks routes - only if infoblocks module is installed
-        if (class_exists('HolartWeb\\AxoraCMS\\Models\\InfoBlocks\\TInfoBlock')) {
+        if (Schema::hasTable('t_info_blocks')) {
             $infoBlocksController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlocksController';
             $infoBlockFieldsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockFieldsController';
             $infoBlockElementsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockElementsController';
@@ -265,7 +286,8 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::delete('infoblocks/{infoBlockId}/elements/{id}', [$infoBlockElementsController, 'destroy']);
         }
 
-        if (class_exists('\HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController') && class_exists('\HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController')) {
+        // Menus are only available once the menus module tables have been migrated.
+        if (Schema::hasTable('t_menus') && Schema::hasTable('t_menu_items')) {
             $menusController = MenusController::class;
             $menuItemsController = MenuItemsController::class;
 
@@ -290,7 +312,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Filter routes (only if shop module is installed)
-        if (class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TFilter')) {
+        if (Schema::hasTable('t_filters')) {
             $filterController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\FilterController';
 
             // Specific routes MUST come before generic {id} routes

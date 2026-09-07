@@ -2,9 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
+use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
+use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TFilter;
+use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 
 class FilterService
 {
@@ -17,12 +19,12 @@ class FilterService
             return [];
         }
 
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             return [$catalogId];
         }
 
-        $catalog = \HolartWeb\AxoraCMS\Models\Shop\TCatalog::find($catalogId);
-        if (!$catalog) {
+        $catalog = TCatalog::find($catalogId);
+        if (! $catalog) {
             return [$catalogId];
         }
 
@@ -80,10 +82,10 @@ class FilterService
 
             $filterValues = $values;
 
-            if ($filter->type === 'entity' && !empty($filter->settings['entity_id'])) {
+            if ($filter->type === 'entity' && ! empty($filter->settings['entity_id'])) {
                 $infoblockId = $filter->settings['entity_id'];
                 if (class_exists('HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement')) {
-                    $elements = \HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement::where('info_block_id', $infoblockId)
+                    $elements = TInfoBlockElement::where('info_block_id', $infoblockId)
                         ->where('is_active', true)
                         ->orderBy('sort')
                         ->get();
@@ -95,7 +97,7 @@ class FilterService
                             'code' => $element->code,
                             'count' => 0,
                             'is_selected' => isset($selectedFilters[$filter->id]) &&
-                                in_array($element->id, (array)$selectedFilters[$filter->id]),
+                                in_array($element->id, (array) $selectedFilters[$filter->id]),
                         ];
                     });
                 }
@@ -134,11 +136,11 @@ class FilterService
      */
     private function countProductsWithFilter($catalogId, $filterValueId, array $selectedFilters, $currentFilterId): int
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return 0;
         }
 
-        $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
+        $query = TProduct::query();
 
         // Apply catalog filter (including children) only if catalogId is provided
         if ($catalogId !== null) {
@@ -152,7 +154,7 @@ class FilterService
                 continue;
             }
 
-            if (!empty($valueIds)) {
+            if (! empty($valueIds)) {
                 $query->whereHas('filterValues', function ($q) use ($valueIds) {
                     $q->whereIn('t_filter_values.id', $valueIds);
                 });
@@ -173,12 +175,12 @@ class FilterService
      */
     public function filterProducts($catalogId = null, array $selectedFilters = [], $query = null)
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return collect([]);
         }
 
         if ($query === null) {
-            $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
+            $query = TProduct::query();
 
             if ($catalogId !== null) {
                 $catalogIds = $this->getCatalogIdsWithChildren($catalogId);
@@ -198,6 +200,7 @@ class FilterService
                 if (isset($valueIds['max'])) {
                     $query->where('price', '<=', $valueIds['max']);
                 }
+
                 continue;
             }
 
@@ -205,7 +208,8 @@ class FilterService
 
             if ($filter && $filter->type === 'entity') {
                 $entityId = is_array($valueIds) ? $valueIds[0] : $valueIds;
-                $query->whereJsonContains('entity_filter_values->' . $filterId, $entityId);
+                $query->whereJsonContains('entity_filter_values->'.$filterId, $entityId);
+
                 continue;
             }
 
@@ -216,6 +220,7 @@ class FilterService
                 if (isset($valueIds[1]) && $valueIds[1] !== '') {
                     $query->whereRaw("CAST(JSON_EXTRACT(range_filter_values, '$.\"$filterId\"') AS DECIMAL) <= ?", [$valueIds[1]]);
                 }
+
                 continue;
             }
 
@@ -234,6 +239,7 @@ class FilterService
     public function getFilteredProducts(array $selectedFilters = [], $catalogId = null)
     {
         $query = $this->filterProducts($catalogId, $selectedFilters);
+
         return $query->where('is_active', true)->get();
     }
 
@@ -307,7 +313,7 @@ class FilterService
         if (isset($params['min']) && isset($params['max'])) {
             $filters['price'] = [
                 'min' => $params['min'],
-                'max' => $params['max']
+                'max' => $params['max'],
             ];
         }
 
@@ -319,12 +325,12 @@ class FilterService
      */
     public function getProductFilters(int $productId): array
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return [];
         }
 
-        $product = \HolartWeb\AxoraCMS\Models\Shop\TProduct::find($productId);
-        if (!$product) {
+        $product = TProduct::find($productId);
+        if (! $product) {
             return [];
         }
 
@@ -334,13 +340,13 @@ class FilterService
         foreach ($filterValues as $filterValue) {
             $filterId = $filterValue->filter->id;
 
-            if (!isset($filters[$filterId])) {
+            if (! isset($filters[$filterId])) {
                 $filters[$filterId] = [
                     'id' => $filterValue->filter->id,
                     'name' => $filterValue->filter->name,
                     'code' => $filterValue->filter->code,
                     'type' => $filterValue->filter->type,
-                    'values' => []
+                    'values' => [],
                 ];
             }
 
@@ -359,11 +365,11 @@ class FilterService
      */
     private function getPriceFilter($catalogId = null, array $selectedFilters = []): ?array
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             return null;
         }
 
-        $query = \HolartWeb\AxoraCMS\Models\Shop\TProduct::query();
+        $query = TProduct::query();
 
         // Apply catalog filter (including children) only if catalogId is provided
         if ($catalogId !== null) {
@@ -372,17 +378,17 @@ class FilterService
         }
 
         // Apply other selected filters (excluding price)
-//        foreach ($selectedFilters as $filterId => $valueIds) {
-//            if ($filterId === 'price') {
-//                continue;
-//            }
-//
-//            if (!empty($valueIds)) {
-//                $query->whereHas('filterValues', function ($q) use ($valueIds) {
-//                    $q->whereIn('t_filter_values.id', $valueIds);
-//                });
-//            }
-//        }
+        //        foreach ($selectedFilters as $filterId => $valueIds) {
+        //            if ($filterId === 'price') {
+        //                continue;
+        //            }
+        //
+        //            if (!empty($valueIds)) {
+        //                $query->whereHas('filterValues', function ($q) use ($valueIds) {
+        //                    $q->whereIn('t_filter_values.id', $valueIds);
+        //                });
+        //            }
+        //        }
 
         // Get min and max prices
         $minPrice = $query->min('price');

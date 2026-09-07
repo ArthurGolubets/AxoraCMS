@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Commerce;
 
+use HolartWeb\AxoraCMS\Models\Commerce\TPromocodes;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Commerce\TPromocodes;
 
 class PromocodesController extends Controller
 {
@@ -15,9 +15,9 @@ class PromocodesController extends Controller
 
         // Search
         if ($request->has('search') && $request->search !== '') {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('code', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('code', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -41,6 +41,7 @@ class PromocodesController extends Controller
     public function show($id)
     {
         $promocode = TPromocodes::with('orders')->findOrFail($id);
+
         return response()->json($promocode);
     }
 
@@ -59,7 +60,7 @@ class PromocodesController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -68,7 +69,7 @@ class PromocodesController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Промокод создан успешно',
-            'data' => $promocode
+            'data' => $promocode,
         ], 201);
     }
 
@@ -78,7 +79,7 @@ class PromocodesController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:255|unique:t_promocodes,code,' . $id,
+            'code' => 'required|string|max:255|unique:t_promocodes,code,'.$id,
             'value' => 'required|numeric|min:0',
             'type' => 'required|in:fiat,percent',
             'max_usage' => 'required|integer|min:0',
@@ -89,7 +90,7 @@ class PromocodesController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -98,7 +99,7 @@ class PromocodesController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Промокод обновлен успешно',
-            'data' => $promocode
+            'data' => $promocode,
         ]);
     }
 
@@ -109,7 +110,7 @@ class PromocodesController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Промокод удален успешно'
+            'message' => 'Промокод удален успешно',
         ]);
     }
 
@@ -122,29 +123,29 @@ class PromocodesController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $promocode = TPromocodes::where('code', $request->code)->first();
 
-        if (!$promocode) {
+        if (! $promocode) {
             return response()->json([
                 'success' => false,
-                'message' => 'Промокод не найден'
+                'message' => 'Промокод не найден',
             ], 404);
         }
 
-        if (!$promocode->isActive()) {
+        if (! $promocode->isActive()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Промокод неактивен или исчерпан'
+                'message' => 'Промокод неактивен или исчерпан',
             ], 400);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $promocode
+            'data' => $promocode,
         ]);
     }
 }

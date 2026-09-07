@@ -3,7 +3,8 @@
 namespace HolartWeb\AxoraCMS\Helpers;
 
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock as TInfoBlockModel;
-use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Helper class for Bitrix-like syntax: TInfoBlock('banners')->getList()
@@ -16,7 +17,7 @@ class TInfoBlock
     {
         $this->infoBlock = TInfoBlockModel::getByCode($code);
 
-        if (!$this->infoBlock) {
+        if (! $this->infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
         }
     }
@@ -24,13 +25,13 @@ class TInfoBlock
     /**
      * Get list of elements
      *
-     * @param array $filter Filters to apply
-     * @param array $order Ordering ['field' => 'asc|desc']
-     * @param int|null $limit Limit results
-     * @param int|null $offset Offset results
-     * @param int|null $perPage Items per page for pagination (if set, returns LengthAwarePaginator)
-     * @param int $page Current page for pagination (default: 1)
-     * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @param  array  $filter  Filters to apply
+     * @param  array  $order  Ordering ['field' => 'asc|desc']
+     * @param  int|null  $limit  Limit results
+     * @param  int|null  $offset  Offset results
+     * @param  int|null  $perPage  Items per page for pagination (if set, returns LengthAwarePaginator)
+     * @param  int  $page  Current page for pagination (default: 1)
+     * @return Collection|LengthAwarePaginator
      */
     public function getList(array $filter = [], array $order = ['sort' => 'asc'], ?int $limit = null, ?int $offset = null, ?int $perPage = null, int $page = 1)
     {

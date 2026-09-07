@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Pages;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\Pages\TPageBlockType;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class PageBlockTypesController extends Controller
 {
@@ -37,6 +37,7 @@ class PageBlockTypesController extends Controller
     public function show($id)
     {
         $blockType = TPageBlockType::findOrFail($id);
+
         return response()->json($blockType);
     }
 
@@ -61,7 +62,7 @@ class PageBlockTypesController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'page_block_type', $blockType->id,
-            'Создан тип блока "' . $blockType->name . '"');
+            'Создан тип блока "'.$blockType->name.'"');
 
         return response()->json($blockType, 201);
     }
@@ -75,12 +76,12 @@ class PageBlockTypesController extends Controller
 
         if ($blockType->is_system) {
             return response()->json([
-                'message' => 'Системные блоки нельзя редактировать'
+                'message' => 'Системные блоки нельзя редактировать',
             ], 422);
         }
 
         $validated = $request->validate([
-            'code' => 'required|string|unique:t_page_block_types,code,' . $id,
+            'code' => 'required|string|unique:t_page_block_types,code,'.$id,
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'icon' => 'nullable|string',
@@ -96,10 +97,10 @@ class PageBlockTypesController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'page_block_type', $blockType->id,
-            'Обновлен тип блока "' . $blockType->name . '"', [
-            'old' => $oldData,
-            'new' => $blockType->getAttributes()
-        ]);
+            'Обновлен тип блока "'.$blockType->name.'"', [
+                'old' => $oldData,
+                'new' => $blockType->getAttributes(),
+            ]);
 
         return response()->json($blockType);
     }
@@ -113,13 +114,13 @@ class PageBlockTypesController extends Controller
 
         if ($blockType->is_system) {
             return response()->json([
-                'message' => 'Системные блоки нельзя удалить'
+                'message' => 'Системные блоки нельзя удалить',
             ], 422);
         }
 
-        if (!$blockType->canDelete()) {
+        if (! $blockType->canDelete()) {
             return response()->json([
-                'message' => 'Нельзя удалить тип блока, который используется на страницах'
+                'message' => 'Нельзя удалить тип блока, который используется на страницах',
             ], 422);
         }
 
@@ -128,7 +129,7 @@ class PageBlockTypesController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'page_block_type', $id,
-            'Удален тип блока "' . $blockTypeName . '"');
+            'Удален тип блока "'.$blockTypeName.'"');
 
         return response()->json(['message' => 'Тип блока удален']);
     }
@@ -140,7 +141,7 @@ class PageBlockTypesController extends Controller
     {
         $validated = $request->validate([
             'code' => 'required|string',
-            'fields_schema' => 'array'
+            'fields_schema' => 'array',
         ]);
 
         $code = $validated['code'];
@@ -153,13 +154,13 @@ class PageBlockTypesController extends Controller
         if (file_exists($templatePath)) {
             return response()->json([
                 'message' => 'Шаблон уже существует',
-                'path' => $templatePath
+                'path' => $templatePath,
             ], 422);
         }
 
         // Create directory if it doesn't exist
         $directory = dirname($templatePath);
-        if (!is_dir($directory)) {
+        if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
         }
 
@@ -175,7 +176,7 @@ class PageBlockTypesController extends Controller
 
         return response()->json([
             'message' => 'Шаблон успешно создан',
-            'path' => $templatePath
+            'path' => $templatePath,
         ]);
     }
 
@@ -187,9 +188,9 @@ class PageBlockTypesController extends Controller
         $blockType = TPageBlockType::findOrFail($id);
         $templatePath = resource_path("views/components/blocks/{$blockType->code}.blade.php");
 
-        if (!file_exists($templatePath)) {
+        if (! file_exists($templatePath)) {
             return response()->json([
-                'message' => 'Шаблон не найден'
+                'message' => 'Шаблон не найден',
             ], 404);
         }
 

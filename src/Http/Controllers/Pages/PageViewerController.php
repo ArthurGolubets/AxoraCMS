@@ -2,8 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Pages;
 
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\Pages\TPage;
+use Illuminate\Routing\Controller;
 
 class PageViewerController extends Controller
 {

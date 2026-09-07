@@ -11,13 +11,13 @@ class CheckAdminPermission
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next, string ...$permissions): Response
     {
         $admin = $request->user('admin');
 
-        if (!$admin) {
+        if (! $admin) {
             abort(403, 'Unauthorized');
         }
 

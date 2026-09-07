@@ -13,7 +13,7 @@ class PageBlockFieldsController extends Controller
     public function getCatalogs(Request $request)
     {
         // Check if Shop module is installed
-        if (!class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TCatalog')) {
+        if (! class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TCatalog')) {
             return response()->json([]);
         }
 
@@ -41,7 +41,7 @@ class PageBlockFieldsController extends Controller
     public function getInfoBlocks(Request $request)
     {
         // Check if InfoBlocks module is installed
-        if (!class_exists('HolartWeb\\AxoraCMS\\Models\\InfoBlocks\\TInfoBlock')) {
+        if (! class_exists('HolartWeb\\AxoraCMS\\Models\\InfoBlocks\\TInfoBlock')) {
             return response()->json([]);
         }
 
@@ -64,7 +64,7 @@ class PageBlockFieldsController extends Controller
     public function getProducts(Request $request)
     {
         // Check if Shop module is installed
-        if (!class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TProduct')) {
+        if (! class_exists('HolartWeb\\AxoraCMS\\Models\\Shop\\TProduct')) {
             return response()->json([]);
         }
 
@@ -111,7 +111,7 @@ class PageBlockFieldsController extends Controller
     public function getInfoBlockElements(Request $request, $infoBlockId)
     {
         // Check if InfoBlocks module is installed
-        if (!class_exists('HolartWeb\\AxoraCMS\\Models\\InfoBlocks\\TInfoBlockElement')) {
+        if (! class_exists('HolartWeb\\AxoraCMS\\Models\\InfoBlocks\\TInfoBlockElement')) {
             return response()->json([]);
         }
 

@@ -2,9 +2,9 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Integrations;
 
+use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
 
 class YookassaSettingsController extends Controller
 {
@@ -36,7 +36,7 @@ class YookassaSettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Настройки ЮКassa успешно сохранены'
+            'message' => 'Настройки ЮКassa успешно сохранены',
         ]);
     }
 }

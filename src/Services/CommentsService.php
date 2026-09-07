@@ -3,8 +3,9 @@
 namespace HolartWeb\AxoraCMS\Services;
 
 use HolartWeb\AxoraCMS\Models\Callback\TComments;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class CommentsService
 {
@@ -15,7 +16,7 @@ class CommentsService
      */
     protected function checkCallbackModule(): void
     {
-        if (!Schema::hasTable('t_comments')) {
+        if (! Schema::hasTable('t_comments')) {
             throw new \Exception('Callback module is not installed');
         }
     }
@@ -23,9 +24,6 @@ class CommentsService
     /**
      * Get comments for a product
      *
-     * @param int $productId
-     * @param bool $moderatedOnly
-     * @return Collection
      * @throws \Exception
      */
     public function getProductComments(int $productId, bool $moderatedOnly = true): Collection
@@ -45,10 +43,8 @@ class CommentsService
     /**
      * Get paginated comments for a product
      *
-     * @param int $productId
-     * @param bool $moderatedOnly
-     * @param int $perPage
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return LengthAwarePaginator
+     *
      * @throws \Exception
      */
     public function getProductCommentsPaginated(int $productId, bool $moderatedOnly = true, int $perPage = 10)
@@ -68,8 +64,6 @@ class CommentsService
     /**
      * Create a new comment
      *
-     * @param array $data
-     * @return TComments
      * @throws \Exception
      */
     public function createComment(array $data): TComments
@@ -90,9 +84,6 @@ class CommentsService
     /**
      * Update comment
      *
-     * @param int $commentId
-     * @param array $data
-     * @return TComments
      * @throws \Exception
      */
     public function updateComment(int $commentId, array $data): TComments
@@ -108,8 +99,6 @@ class CommentsService
     /**
      * Delete comment
      *
-     * @param int $commentId
-     * @return bool
      * @throws \Exception
      */
     public function deleteComment(int $commentId): bool
@@ -117,15 +106,13 @@ class CommentsService
         $this->checkCallbackModule();
 
         $comment = TComments::findOrFail($commentId);
+
         return $comment->delete();
     }
 
     /**
      * Moderate comment (approve/reject)
      *
-     * @param int $commentId
-     * @param bool $approve
-     * @return TComments
      * @throws \Exception
      */
     public function moderateComment(int $commentId, bool $approve = true): TComments
@@ -141,8 +128,6 @@ class CommentsService
     /**
      * Get average rating for a product
      *
-     * @param int $productId
-     * @return float|null
      * @throws \Exception
      */
     public function getProductAverageRating(int $productId): ?float
@@ -160,8 +145,6 @@ class CommentsService
     /**
      * Get rating statistics for a product
      *
-     * @param int $productId
-     * @return array
      * @throws \Exception
      */
     public function getProductRatingStats(int $productId): array
@@ -198,9 +181,6 @@ class CommentsService
     /**
      * Get recent comments
      *
-     * @param int $limit
-     * @param bool $moderatedOnly
-     * @return Collection
      * @throws \Exception
      */
     public function getRecentComments(int $limit = 10, bool $moderatedOnly = true): Collection
@@ -220,9 +200,6 @@ class CommentsService
     /**
      * Get comments count for a product
      *
-     * @param int $productId
-     * @param bool $moderatedOnly
-     * @return int
      * @throws \Exception
      */
     public function getProductCommentsCount(int $productId, bool $moderatedOnly = true): int
@@ -240,8 +217,6 @@ class CommentsService
 
     /**
      * Check if module is available (without throwing exception)
-     *
-     * @return bool
      */
     public function isModuleAvailable(): bool
     {

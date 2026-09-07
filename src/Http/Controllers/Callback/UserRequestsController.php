@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Callback;
 
+use HolartWeb\AxoraCMS\Models\Callback\TUserRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Callback\TUserRequests;
 
 class UserRequestsController extends Controller
 {
@@ -18,11 +18,11 @@ class UserRequestsController extends Controller
 
         // Search
         if ($request->has('search') && $request->search !== '') {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%')
-                  ->orWhere('phone', 'like', '%' . $request->search . '%')
-                  ->orWhere('comment', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('email', 'like', '%'.$request->search.'%')
+                    ->orWhere('phone', 'like', '%'.$request->search.'%')
+                    ->orWhere('comment', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -49,6 +49,7 @@ class UserRequestsController extends Controller
     public function show($id)
     {
         $userRequest = TUserRequests::findOrFail($id);
+
         return response()->json($userRequest);
     }
 
@@ -62,13 +63,13 @@ class UserRequestsController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:255',
             'comment' => 'required|string',
-            'user_id' => 'nullable|integer|exists:t_users,id'
+            'user_id' => 'nullable|integer|exists:t_users,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -77,7 +78,7 @@ class UserRequestsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Обращение успешно добавлено',
-            'data' => $userRequest
+            'data' => $userRequest,
         ], 201);
     }
 
@@ -93,13 +94,13 @@ class UserRequestsController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:255',
             'comment' => 'required|string',
-            'user_id' => 'nullable|integer|exists:t_users,id'
+            'user_id' => 'nullable|integer|exists:t_users,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -108,7 +109,7 @@ class UserRequestsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Обращение успешно обновлено',
-            'data' => $userRequest
+            'data' => $userRequest,
         ]);
     }
 
@@ -122,7 +123,7 @@ class UserRequestsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Обращение успешно удалено'
+            'message' => 'Обращение успешно удалено',
         ]);
     }
 
@@ -133,13 +134,13 @@ class UserRequestsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
-            'ids.*' => 'exists:t_user_requests,id'
+            'ids.*' => 'exists:t_user_requests,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -147,7 +148,7 @@ class UserRequestsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Обращения успешно удалены'
+            'message' => 'Обращения успешно удалены',
         ]);
     }
 }

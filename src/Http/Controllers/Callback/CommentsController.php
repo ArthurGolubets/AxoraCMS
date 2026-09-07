@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Callback;
 
+use HolartWeb\AxoraCMS\Models\Callback\TComments;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Callback\TComments;
 
 class CommentsController extends Controller
 {
@@ -18,10 +18,10 @@ class CommentsController extends Controller
 
         // Search
         if ($request->has('search') && $request->search !== '') {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%')
-                  ->orWhere('comment', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('email', 'like', '%'.$request->search.'%')
+                    ->orWhere('comment', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -63,6 +63,7 @@ class CommentsController extends Controller
     public function show($id)
     {
         $comment = TComments::with('product')->findOrFail($id);
+
         return response()->json($comment);
     }
 
@@ -78,13 +79,13 @@ class CommentsController extends Controller
             'comment' => 'required|string',
             'rating' => 'required|integer|min:0|max:5',
             'product_id' => 'nullable|integer|exists:t_products,id',
-            'is_moderated' => 'boolean'
+            'is_moderated' => 'boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -93,7 +94,7 @@ class CommentsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Комментарий успешно добавлен',
-            'data' => $comment
+            'data' => $comment,
         ], 201);
     }
 
@@ -111,13 +112,13 @@ class CommentsController extends Controller
             'comment' => 'required|string',
             'rating' => 'required|integer|min:0|max:5',
             'product_id' => 'nullable|integer|exists:t_products,id',
-            'is_moderated' => 'boolean'
+            'is_moderated' => 'boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -126,7 +127,7 @@ class CommentsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Комментарий успешно обновлен',
-            'data' => $comment
+            'data' => $comment,
         ]);
     }
 
@@ -140,7 +141,7 @@ class CommentsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Комментарий успешно удален'
+            'message' => 'Комментарий успешно удален',
         ]);
     }
 
@@ -151,13 +152,13 @@ class CommentsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
-            'ids.*' => 'exists:t_comments,id'
+            'ids.*' => 'exists:t_comments,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -165,7 +166,7 @@ class CommentsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Комментарии успешно удалены'
+            'message' => 'Комментарии успешно удалены',
         ]);
     }
 
@@ -175,13 +176,13 @@ class CommentsController extends Controller
     public function toggleModeration($id)
     {
         $comment = TComments::findOrFail($id);
-        $comment->is_moderated = !$comment->is_moderated;
+        $comment->is_moderated = ! $comment->is_moderated;
         $comment->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Статус модерации изменен',
-            'data' => $comment
+            'data' => $comment,
         ]);
     }
 }

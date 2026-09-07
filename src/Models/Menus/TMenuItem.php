@@ -26,6 +26,7 @@ class TMenuItem extends Model
     ];
 
     const TARGET_SELF = '_self';
+
     const TARGET_BLANK = '_blank';
 
     /**

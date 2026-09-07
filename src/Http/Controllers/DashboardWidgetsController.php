@@ -24,7 +24,7 @@ class DashboardWidgetsController extends Controller
             ->get();
 
         // If dashboard not initialized yet, create default widgets
-        if (!$admin->dashboard_initialized) {
+        if (! $admin->dashboard_initialized) {
             $defaultWidgets = TDashboardWidget::getDefaultWidgets();
             foreach ($defaultWidgets as $widget) {
                 TDashboardWidget::create([
@@ -116,7 +116,7 @@ class DashboardWidgetsController extends Controller
             ->where('admin_id', $admin->id)
             ->first();
 
-        if (!$widget) {
+        if (! $widget) {
             return response()->json([
                 'success' => false,
                 'message' => 'Виджет не найден',
@@ -158,7 +158,7 @@ class DashboardWidgetsController extends Controller
             ->where('admin_id', $admin->id)
             ->first();
 
-        if (!$widget) {
+        if (! $widget) {
             return response()->json([
                 'success' => false,
                 'message' => 'Виджет не найден',

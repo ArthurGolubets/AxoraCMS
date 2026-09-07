@@ -94,31 +94,42 @@
                     <div class="relative">
                       <input
                         v-model="item.searchQuery"
-                        @input="filterProducts(index)"
+                        @input="searchProducts(index)"
                         @focus="item.showDropdown = true"
                         type="text"
-                        placeholder="Начните вводить название товара..."
+                        placeholder="Начните вводить название или артикул..."
                         class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                       >
                       <div
-                        v-if="item.showDropdown && item.filteredProducts.length > 0"
+                        v-if="item.showDropdown && (item.filteredProducts.length > 0 || item.searchLoading)"
                         class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                       >
+                        <div v-if="item.searchLoading" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">Поиск...</div>
                         <button
                           v-for="product in item.filteredProducts"
                           :key="product.id"
                           type="button"
                           @click="selectProduct(index, product)"
-                          class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 last:border-0"
+                          class="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 last:border-0"
                         >
-                          <div class="font-medium">{{ product.name }}</div>
-                          <div class="text-sm text-gray-500 dark:text-gray-400">{{ formatPrice(product.price) }} ₽</div>
+                          <img
+                            v-if="product.main_image"
+                            :src="productImageUrl(product.main_image)"
+                            alt=""
+                            class="w-10 h-10 rounded object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-800"
+                          >
+                          <div class="min-w-0">
+                            <div class="font-medium truncate">{{ product.name }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                              <span v-if="product.sku">Артикул: {{ product.sku }} · </span>{{ formatPrice(product.price) }} ₽
+                            </div>
+                          </div>
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  <div v-if="item.product_id && getProductVariants(item.product_id).length > 0" class="md:col-span-2">
+                  <div v-if="item.product_id && getProductVariants(item).length > 0" class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Вариация</label>
                     <select
                       v-model="item.variant_id"
@@ -126,7 +137,7 @@
                       class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                     >
                       <option value="">Выберите вариацию</option>
-                      <option v-for="variant in getProductVariants(item.product_id)" :key="variant.id" :value="variant.id">
+                      <option v-for="variant in getProductVariants(item)" :key="variant.id" :value="variant.id">
                         {{ variant.name }} - {{ formatPrice(variant.price) }} ₽
                       </option>
                     </select>
@@ -355,8 +366,10 @@ const { buttonStyle } = useTheme();
 const orderId = route.params.id;
 const loading = ref(true);
 const saving = ref(false);
-const products = ref([]);
 const customFields = ref([]);
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MIN_CHARS = 2;
+const SEARCH_LIMIT = 20;
 
 const form = ref({
   name: '',
@@ -406,12 +419,20 @@ const loadOrder = async () => {
           product_id: item.product_id,
           variant_id: item.variant_id || '',
           price: parseFloat(item.total_price) / item.amount,
+          productPrice: null,
           amount: item.amount,
           searchQuery: item.product_name,
           showDropdown: false,
-          filteredProducts: []
+          filteredProducts: [],
+          variants: [],
+          searchLoading: false,
+          searchTimer: null
         }))
       };
+
+      // Hydrate variant lists for existing line items so the "Вариация"
+      // dropdown keeps working without preloading the whole catalog.
+      hydrateItemVariants();
 
       // Load custom fields
       if (order.addition_data) {
@@ -433,70 +454,88 @@ const loadOrder = async () => {
   }
 };
 
-const loadProducts = async () => {
-  try {
-    let allProducts = [];
-    let page = 1;
-    let hasMore = true;
+const productImageUrl = (image) => {
+  if (!image) return '';
+  if (image.startsWith('data:') || image.startsWith('http') || image.startsWith('/')) return image;
+  return `/storage/${image}`;
+};
 
-    while (hasMore) {
-      const response = await fetch(`/admin/api/products?page=${page}&per_page=100`, {
+// Fetch variants (and current catalog price) for the products already on the
+// order, in a single request instead of preloading the whole catalog.
+const hydrateItemVariants = async () => {
+  const ids = [...new Set(form.value.items.map(i => i.product_id).filter(Boolean))];
+  if (ids.length === 0) return;
+
+  try {
+    const response = await fetch(`/admin/api/products/search?ids=${encodeURIComponent(ids.join(','))}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const byId = new Map((data.products || []).map(p => [p.id, p]));
+
+    form.value.items.forEach(item => {
+      const product = byId.get(item.product_id);
+      if (product) {
+        item.variants = Array.isArray(product.variants) ? product.variants : [];
+        item.productPrice = parseFloat(product.price);
+      }
+    });
+  } catch (err) {
+    console.error('Failed to hydrate order item variants:', err);
+  }
+};
+
+const getProductVariants = (item) => item?.variants || [];
+
+const onVariantSelect = (index) => {
+  const item = form.value.items[index];
+  const variants = item.variants || [];
+
+  if (item.variant_id) {
+    const variant = variants.find(v => v.id === item.variant_id);
+    if (variant) {
+      item.price = parseFloat(variant.price);
+    }
+  } else if (item.productPrice != null) {
+    item.price = parseFloat(item.productPrice);
+  }
+};
+
+// Debounced server-side product search (replaces the previous full-catalog preload).
+const searchProducts = (index) => {
+  const item = form.value.items[index];
+  clearTimeout(item.searchTimer);
+
+  const query = item.searchQuery.trim();
+  if (query.length < SEARCH_MIN_CHARS) {
+    item.filteredProducts = [];
+    item.searchLoading = false;
+    return;
+  }
+
+  item.searchLoading = true;
+  item.searchTimer = setTimeout(async () => {
+    try {
+      const response = await fetch(`/admin/api/products/search?q=${encodeURIComponent(query)}`, {
         headers: { 'Accept': 'application/json' }
       });
 
       if (response.ok) {
         const data = await response.json();
-        allProducts = [...allProducts, ...(data.data || [])];
-
-        // Check if there are more pages
-        hasMore = data.current_page < data.last_page;
-        page++;
+        item.filteredProducts = (data.products || []).slice(0, SEARCH_LIMIT);
       } else {
-        hasMore = false;
+        item.filteredProducts = [];
       }
+    } catch (err) {
+      console.error('Failed to search products:', err);
+      item.filteredProducts = [];
+    } finally {
+      item.searchLoading = false;
     }
-
-    products.value = allProducts;
-  } catch (err) {
-    console.error('Failed to load products:', err);
-  }
-};
-
-const getProductVariants = (productId) => {
-  const product = products.value.find(p => p.id === productId);
-  return product?.variants || [];
-};
-
-const onVariantSelect = (index) => {
-  const item = form.value.items[index];
-  const product = products.value.find(p => p.id === item.product_id);
-
-  if (product) {
-    if (item.variant_id) {
-      // If variant selected, use variant price
-      const variant = product.variants.find(v => v.id === item.variant_id);
-      if (variant) {
-        item.price = parseFloat(variant.price);
-      }
-    } else {
-      // If no variant selected, use product price
-      item.price = parseFloat(product.price);
-    }
-  }
-};
-
-const filterProducts = (index) => {
-  const item = form.value.items[index];
-  const query = item.searchQuery.toLowerCase();
-
-  if (!query) {
-    item.filteredProducts = products.value.slice(0, 10);
-  } else {
-    item.filteredProducts = products.value.filter(p =>
-      p.name.toLowerCase().includes(query) ||
-      p.sku?.toLowerCase().includes(query)
-    ).slice(0, 10);
-  }
+  }, SEARCH_DEBOUNCE_MS);
 };
 
 const selectProduct = (index, product) => {
@@ -504,8 +543,11 @@ const selectProduct = (index, product) => {
   item.product_id = product.id;
   item.searchQuery = product.name;
   item.showDropdown = false;
+  item.filteredProducts = [];
+  item.productPrice = parseFloat(product.price);
   item.price = parseFloat(product.price);
   item.variant_id = '';
+  item.variants = Array.isArray(product.variants) ? product.variants : [];
 };
 
 const addItem = () => {
@@ -516,7 +558,11 @@ const addItem = () => {
     amount: 1,
     searchQuery: '',
     showDropdown: false,
-    filteredProducts: []
+    filteredProducts: [],
+    variants: [],
+    productPrice: null,
+    searchLoading: false,
+    searchTimer: null
   });
 };
 
@@ -609,7 +655,6 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
   loadOrder();
-  loadProducts();
   document.addEventListener('click', handleClickOutside);
 });
 

@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Services\Integration;
 
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
+use HolartWeb\AxoraCMS\Support\HtmlSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -27,21 +28,21 @@ class CommerceMLSyncService
 
         try {
             // 1. Синхронизируем группы/категории
-            if (!empty($data['groups'])) {
+            if (! empty($data['groups'])) {
                 $groupStats = $this->syncGroups($data['groups']);
                 $stats['groups_created'] = $groupStats['created'];
                 $stats['groups_updated'] = $groupStats['updated'];
             }
 
             // 2. Синхронизируем товары
-            if (!empty($data['products'])) {
+            if (! empty($data['products'])) {
                 $productStats = $this->syncProducts($data['products']);
                 $stats['products_created'] = $productStats['created'];
                 $stats['products_updated'] = $productStats['updated'];
             }
 
             // 3. Обновляем цены и остатки из предложений
-            if (!empty($data['offers'])) {
+            if (! empty($data['offers'])) {
                 $this->syncOffers($data['offers']);
             }
 
@@ -123,7 +124,7 @@ class CommerceMLSyncService
             $sku = $productData['article'] ?? $productData['code'] ?? null;
 
             // Проверяем артикул из свойств (он приоритетнее)
-            if (!empty($productData['properties']['Артикул'])) {
+            if (! empty($productData['properties']['Артикул'])) {
                 $sku = $productData['properties']['Артикул'];
             }
 
@@ -139,7 +140,7 @@ class CommerceMLSyncService
 
             // Определяем категорию по группе
             $catalogId = null;
-            if (!empty($productData['groups'])) {
+            if (! empty($productData['groups'])) {
                 $firstGroupId = $productData['groups'][0];
                 $catalog = TCatalog::where('1c_id', $firstGroupId)->first();
                 if ($catalog) {
@@ -148,10 +149,10 @@ class CommerceMLSyncService
             }
 
             // Если категория не найдена, создаем/получаем дефолтную
-            if (!$catalogId) {
+            if (! $catalogId) {
                 $defaultCatalog = TCatalog::where('1c_id', 'default-catalog')->first();
 
-                if (!$defaultCatalog) {
+                if (! $defaultCatalog) {
                     // Создаем дефолтную категорию через DB::table
                     DB::table('t_catalogs')->insert([
                         '1c_id' => 'default-catalog',
@@ -177,13 +178,13 @@ class CommerceMLSyncService
                 'catalog_id' => $catalogId,
             ];
 
-            // Описание товара
-            if (!empty($productData['description'])) {
-                $data['content'] = $productData['description'];
+            // Описание товара (недоверенный HTML из выгрузки 1С — санитизируем)
+            if (! empty($productData['description'])) {
+                $data['content'] = HtmlSanitizer::clean($productData['description']);
             }
 
             // Дополнительная информация из свойств
-            if (!empty($productData['properties'])) {
+            if (! empty($productData['properties'])) {
                 $additionInfo = [];
 
                 // Штрихкод
@@ -203,7 +204,7 @@ class CommerceMLSyncService
             }
 
             // Картинки
-            if (!empty($productData['images'])) {
+            if (! empty($productData['images'])) {
                 $images = [];
                 foreach ($productData['images'] as $index => $imagePath) {
                     // Первое изображение - главное, остальные - галерея
@@ -214,7 +215,7 @@ class CommerceMLSyncService
                     }
                 }
 
-                if (!empty($images)) {
+                if (! empty($images)) {
                     $data['main_image'] = $images[0];
                     $data['gallery'] = array_slice($images, 1);
                 }
@@ -276,14 +277,14 @@ class CommerceMLSyncService
             foreach ($chunk as $offerData) {
                 $product = $products->get($offerData['product_id']);
 
-                if (!$product) {
+                if (! $product) {
                     continue;
                 }
 
                 $updateData = [];
 
                 // Обновляем цену
-                if (!empty($offerData['prices'])) {
+                if (! empty($offerData['prices'])) {
                     foreach ($offerData['prices'] as $price) {
                         $updateData['price'] = $price['value'];
                         break;
@@ -295,7 +296,7 @@ class CommerceMLSyncService
                     $updateData['quantity'] = (int) $offerData['quantity'];
                 }
 
-                if (!empty($updateData)) {
+                if (! empty($updateData)) {
                     // Используем DB::table для обновления чтобы обойти fillable
                     DB::table('t_products')
                         ->where('id', $product->id)
@@ -316,8 +317,8 @@ class CommerceMLSyncService
     /**
      * Конвертация пути изображения из 1С в Laravel
      *
-     * @param string $path1c Путь из 1С
-     * @param bool $isMainImage true - главное изображение, false - галерея
+     * @param  string  $path1c  Путь из 1С
+     * @param  bool  $isMainImage  true - главное изображение, false - галерея
      */
     private function convertImagePath(string $path1c, bool $isMainImage = true): ?string
     {
@@ -328,11 +329,12 @@ class CommerceMLSyncService
         $sourcePath = "exchange/images/{$filename}";
 
         // Проверяем существование файла
-        if (!Storage::disk('public')->exists($sourcePath)) {
+        if (! Storage::disk('public')->exists($sourcePath)) {
             Log::warning('[CommerceML Sync] Изображение не найдено', [
                 'source' => $sourcePath,
                 '1c_path' => $path1c,
             ]);
+
             return null;
         }
 
@@ -347,7 +349,7 @@ class CommerceMLSyncService
 
         try {
             // Копируем файл в нужную папку (если его там еще нет)
-            if (!Storage::disk('public')->exists($destinationPath)) {
+            if (! Storage::disk('public')->exists($destinationPath)) {
                 $content = Storage::disk('public')->get($sourcePath);
                 Storage::disk('public')->put($destinationPath, $content);
 
@@ -367,6 +369,7 @@ class CommerceMLSyncService
                 'destination' => $destinationPath,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -389,12 +392,12 @@ class CommerceMLSyncService
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
             // Если slug занят, добавляем счетчик
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
@@ -419,12 +422,12 @@ class CommerceMLSyncService
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
             // Если slug занят, добавляем счетчик
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 

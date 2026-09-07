@@ -2,29 +2,32 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
 use HolartWeb\AxoraCMS\Services\Integrations\YookassaService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class YKassaCheckPaymentCommand extends Command
 {
     protected $signature = 'axoracms:ykassa-check-payment';
+
     protected $description = 'Check YooKassa payment statuses';
 
     public function handle(): int
     {
-        $yookassaService = new YookassaService();
+        $yookassaService = new YookassaService;
 
         // Проверяем, установлена ли интеграция ЮКасса
-        if (!$yookassaService->isConfigured()) {
+        if (! $yookassaService->isConfigured()) {
             $this->info('YooKassa is not configured.');
+
             return self::SUCCESS;
         }
 
         // Проверяем, установлен ли SDK ЮКассы
-        if (!class_exists('\YooKassa\Client')) {
+        if (! class_exists('\YooKassa\Client')) {
             $this->error('YooKassa SDK not installed. Please install yoomoney/yookassa-sdk-php');
+
             return self::FAILURE;
         }
 
@@ -36,6 +39,7 @@ class YKassaCheckPaymentCommand extends Command
 
             if ($pendingTransactions->isEmpty()) {
                 $this->info('No pending YooKassa payments found.');
+
                 return self::SUCCESS;
             }
 
@@ -55,8 +59,8 @@ class YKassaCheckPaymentCommand extends Command
                         $this->info("Transaction #{$transaction->id}: {$oldStatus} -> {$transaction->fresh()->status} (YooKassa: {$paymentStatus})");
                     }
                 } catch (\Exception $e) {
-                    Log::error("YKassa check payment error for transaction #{$transaction->id}: " . $e->getMessage());
-                    $this->error("Error checking transaction #{$transaction->id}: " . $e->getMessage());
+                    Log::error("YKassa check payment error for transaction #{$transaction->id}: ".$e->getMessage());
+                    $this->error("Error checking transaction #{$transaction->id}: ".$e->getMessage());
                 }
             }
 
@@ -64,8 +68,9 @@ class YKassaCheckPaymentCommand extends Command
 
             return self::SUCCESS;
         } catch (\Exception $e) {
-            Log::error('YKassa check payment command error: ' . $e->getMessage());
-            $this->error('Error: ' . $e->getMessage());
+            Log::error('YKassa check payment command error: '.$e->getMessage());
+            $this->error('Error: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }

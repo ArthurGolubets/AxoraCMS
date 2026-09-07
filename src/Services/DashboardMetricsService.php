@@ -2,8 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
-use HolartWeb\AxoraCMS\Models\TAdministrator;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Models\TAdministrator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -21,13 +21,12 @@ class DashboardMetricsService
         ];
     }
 
-
     /**
      * Get recent admin actions (logs)
      */
     public function getRecentLogs(int $limit = 6): array
     {
-        if (!Schema::hasTable('t_admin_actions')) {
+        if (! Schema::hasTable('t_admin_actions')) {
             return [];
         }
 
@@ -54,7 +53,7 @@ class DashboardMetricsService
      */
     public function getOrdersStats(): array
     {
-        if (!Schema::hasTable('t_orders')) {
+        if (! Schema::hasTable('t_orders')) {
             return [];
         }
 
@@ -75,7 +74,7 @@ class DashboardMetricsService
      */
     public function getRecentOrders(int $limit = 5): array
     {
-        if (!Schema::hasTable('t_orders')) {
+        if (! Schema::hasTable('t_orders')) {
             return [];
         }
 
@@ -107,7 +106,7 @@ class DashboardMetricsService
      */
     public function getPromocodesUsage(int $limit = 10): array
     {
-        if (!Schema::hasTable('t_promocodes')) {
+        if (! Schema::hasTable('t_promocodes')) {
             return [];
         }
 
@@ -138,7 +137,7 @@ class DashboardMetricsService
      */
     public function getSubscriptionsCount(): array
     {
-        if (!Schema::hasTable('t_users_emails')) {
+        if (! Schema::hasTable('t_users_emails')) {
             return [];
         }
 
@@ -158,7 +157,7 @@ class DashboardMetricsService
      */
     public function getPageVisitsStats(): array
     {
-        if (!Schema::hasTable('t_page_visits')) {
+        if (! Schema::hasTable('t_page_visits')) {
             return [];
         }
 
@@ -271,7 +270,7 @@ class DashboardMetricsService
      */
     public function getSubscriptionsChart(int $days = 30): array
     {
-        if (!Schema::hasTable('t_users_emails')) {
+        if (! Schema::hasTable('t_users_emails')) {
             return [];
         }
 
@@ -302,7 +301,7 @@ class DashboardMetricsService
      */
     public function getReviewsCount(): array
     {
-        if (!Schema::hasTable('t_comments')) {
+        if (! Schema::hasTable('t_comments')) {
             return [];
         }
 
@@ -322,7 +321,7 @@ class DashboardMetricsService
      */
     public function getRequestsCount(): array
     {
-        if (!Schema::hasTable('t_user_requests')) {
+        if (! Schema::hasTable('t_user_requests')) {
             return [];
         }
 
@@ -342,7 +341,7 @@ class DashboardMetricsService
      */
     public function getRecentRequests(int $limit = 5): array
     {
-        if (!Schema::hasTable('t_user_requests')) {
+        if (! Schema::hasTable('t_user_requests')) {
             return [];
         }
 
@@ -372,7 +371,7 @@ class DashboardMetricsService
      */
     public function getOrdersChart(int $days = 30): array
     {
-        if (!Schema::hasTable('t_orders')) {
+        if (! Schema::hasTable('t_orders')) {
             return [];
         }
 
@@ -403,7 +402,7 @@ class DashboardMetricsService
      */
     public function getRevenueChart(int $days = 30): array
     {
-        if (!Schema::hasTable('t_orders')) {
+        if (! Schema::hasTable('t_orders')) {
             return [];
         }
 
@@ -428,7 +427,6 @@ class DashboardMetricsService
             return [];
         }
     }
-
 
     /**
      * Get all metrics for dashboard

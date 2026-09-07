@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class TDashboardWidget extends Model
 {
@@ -27,22 +28,39 @@ class TDashboardWidget extends Model
 
     // Widget types
     const TYPE_USERS_STATS = 'users_stats';
+
     const TYPE_POPULAR_PAGES = 'popular_pages';
+
     const TYPE_RECENT_LOGS = 'recent_logs';
+
     const TYPE_ORDERS_STATS = 'orders_stats';
+
     const TYPE_ORDERS_NEW = 'orders_new';
+
     const TYPE_ORDERS_REVENUE = 'orders_revenue';
+
     const TYPE_ORDERS_PENDING_PAYMENT = 'orders_pending_payment';
+
     const TYPE_RECENT_ORDERS = 'recent_orders';
+
     const TYPE_PROMOCODES_USAGE = 'promocodes_usage';
+
     const TYPE_SUBSCRIPTIONS_COUNT = 'subscriptions_count';
+
     const TYPE_SUBSCRIPTIONS_CHART = 'subscriptions_chart';
+
     const TYPE_REVIEWS_COUNT = 'reviews_count';
+
     const TYPE_REQUESTS_COUNT = 'requests_count';
+
     const TYPE_RECENT_REQUESTS = 'recent_requests';
+
     const TYPE_ORDERS_CHART = 'orders_chart';
+
     const TYPE_REVENUE_CHART = 'revenue_chart';
+
     const TYPE_PAGES_VIEWS_CHART = 'pages_views_chart';
+
     const TYPE_PAGE_VISITS_STATS = 'page_visits_stats';
 
     /**
@@ -86,7 +104,7 @@ class TDashboardWidget extends Model
         ];
 
         // Commerce module widgets
-        if (\Illuminate\Support\Facades\Schema::hasTable('t_orders')) {
+        if (Schema::hasTable('t_orders')) {
             $types[self::TYPE_ORDERS_STATS] = [
                 'title' => 'Общая статистика заказов',
                 'description' => 'Количество всех заказов',
@@ -138,7 +156,7 @@ class TDashboardWidget extends Model
         }
 
         // Callback module widgets
-        if (\Illuminate\Support\Facades\Schema::hasTable('t_users_emails')) {
+        if (Schema::hasTable('t_users_emails')) {
             $types[self::TYPE_SUBSCRIPTIONS_COUNT] = [
                 'title' => 'Количество подписок',
                 'description' => 'Всего активных подписок',
@@ -172,7 +190,7 @@ class TDashboardWidget extends Model
         }
 
         // SEO module widgets
-        if (\Illuminate\Support\Facades\Schema::hasTable('t_pages') && \Illuminate\Support\Facades\Schema::hasTable('t_page_visits')) {
+        if (Schema::hasTable('t_pages') && Schema::hasTable('t_page_visits')) {
             $types[self::TYPE_PAGE_VISITS_STATS] = [
                 'title' => 'Посещения страниц',
                 'description' => 'Топ-5 страниц по посещениям за 30 дней',
@@ -195,7 +213,7 @@ class TDashboardWidget extends Model
             ['widget_type' => self::TYPE_RECENT_LOGS, 'position' => 3, 'width' => 12],
         ];
 
-        if (\Illuminate\Support\Facades\Schema::hasTable('t_orders')) {
+        if (Schema::hasTable('t_orders')) {
             $defaults[] = ['widget_type' => self::TYPE_ORDERS_STATS, 'position' => 4, 'width' => 3];
             $defaults[] = ['widget_type' => self::TYPE_ORDERS_NEW, 'position' => 5, 'width' => 3];
             $defaults[] = ['widget_type' => self::TYPE_ORDERS_REVENUE, 'position' => 6, 'width' => 3];
@@ -204,7 +222,7 @@ class TDashboardWidget extends Model
             $defaults[] = ['widget_type' => self::TYPE_PROMOCODES_USAGE, 'position' => 9, 'width' => 6];
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasTable('t_users_emails')) {
+        if (Schema::hasTable('t_users_emails')) {
             $defaults[] = ['widget_type' => self::TYPE_SUBSCRIPTIONS_COUNT, 'position' => 10, 'width' => 3];
             $defaults[] = ['widget_type' => self::TYPE_REVIEWS_COUNT, 'position' => 11, 'width' => 3];
             $defaults[] = ['widget_type' => self::TYPE_REQUESTS_COUNT, 'position' => 12, 'width' => 3];

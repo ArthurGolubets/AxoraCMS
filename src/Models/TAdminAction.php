@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class TAdminAction extends Model
 {
@@ -39,7 +40,7 @@ class TAdminAction extends Model
     {
         // Check if table exists and logs module is installed
         try {
-            if (!\Illuminate\Support\Facades\Schema::hasTable('t_admin_actions')) {
+            if (! Schema::hasTable('t_admin_actions')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -48,7 +49,7 @@ class TAdminAction extends Model
 
         $admin = auth()->guard('admin')->user();
 
-        if (!$admin) {
+        if (! $admin) {
             return null;
         }
 

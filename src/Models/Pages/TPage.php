@@ -28,6 +28,7 @@ class TPage extends Model
     ];
 
     const TYPE_STATIC = 'static';
+
     const TYPE_DYNAMIC = 'dynamic';
 
     /**
@@ -56,7 +57,7 @@ class TPage extends Model
         }
 
         while ($query->exists()) {
-            $slug = $originalSlug . '_' . $counter;
+            $slug = $originalSlug.'_'.$counter;
             $counter++;
             $query = static::where('slug', $slug);
             if ($excludeId) {
@@ -72,8 +73,8 @@ class TPage extends Model
      */
     protected static function transliterate(string $text): string
     {
-        $ru = ['а','б','в','г','д','е','ё','ж','з','и','й','к','л','м','н','о','п','р','с','т','у','ф','х','ц','ч','ш','щ','ъ','ы','ь','э','ю','я'];
-        $en = ['a','b','v','g','d','e','yo','zh','z','i','y','k','l','m','n','o','p','r','s','t','u','f','h','ts','ch','sh','sch','','y','','e','yu','ya'];
+        $ru = ['а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я'];
+        $en = ['a', 'b', 'v', 'g', 'd', 'e', 'yo', 'zh', 'z', 'i', 'y', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'f', 'h', 'ts', 'ch', 'sh', 'sch', '', 'y', '', 'e', 'yu', 'ya'];
 
         return str_replace($ru, $en, mb_strtolower($text));
     }
@@ -92,7 +93,7 @@ class TPage extends Model
     public function duplicate(): self
     {
         $newPage = $this->replicate();
-        $newPage->title = $this->title . ' (копия)';
+        $newPage->title = $this->title.' (копия)';
         $newPage->slug = self::generateSlug($newPage->title);
         $newPage->save();
 

@@ -2,18 +2,22 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
+use HolartWeb\AxoraCMS\Models\SEO\TPage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Route;
-use HolartWeb\AxoraCMS\Models\SEO\TPage;
 
 class ScanRoutesCommand extends Command
 {
     protected $signature = 'axoracms:scan-routes';
+
     protected $description = 'Scan application routes and create/update static pages';
 
     private $created = 0;
+
     private $updated = 0;
+
     private $skipped = 0;
+
     private $foundRoutes = [];
 
     public static $lastResults = null;
@@ -27,7 +31,7 @@ class ScanRoutesCommand extends Command
 
         $routes = $this->getWebRoutes();
 
-        $this->info('Found ' . count($routes) . ' web routes');
+        $this->info('Found '.count($routes).' web routes');
         $this->newLine();
 
         $progressBar = $this->output->createProgressBar(count($routes));
@@ -44,9 +48,10 @@ class ScanRoutesCommand extends Command
                     'uri' => $uri,
                     'name' => $routeName,
                     'status' => 'skipped',
-                    'reason' => 'Содержит параметры'
+                    'reason' => 'Содержит параметры',
                 ];
                 $progressBar->advance();
+
                 continue;
             }
 
@@ -60,7 +65,7 @@ class ScanRoutesCommand extends Command
 
             // Check if page already exists by slug or route_name
             $existingPage = TPage::where('slug', $slug)
-                ->orWhere(function($q) use ($routeName) {
+                ->orWhere(function ($q) use ($routeName) {
                     if ($routeName) {
                         $q->where('route_name', $routeName);
                     }
@@ -78,7 +83,7 @@ class ScanRoutesCommand extends Command
                     'uri' => $uri,
                     'name' => $routeName,
                     'status' => 'updated',
-                    'page_id' => $existingPage->id
+                    'page_id' => $existingPage->id,
                 ];
             } else {
                 // Create new static page (scanned routes are static with route_name)
@@ -94,7 +99,7 @@ class ScanRoutesCommand extends Command
                     'uri' => $uri,
                     'name' => $routeName,
                     'status' => 'created',
-                    'page_id' => $page->id
+                    'page_id' => $page->id,
                 ];
             }
 
@@ -158,7 +163,7 @@ class ScanRoutesCommand extends Command
         $routes = [];
         $allRoutes = Route::getRoutes();
 
-        $this->info('Total routes found: ' . count($allRoutes));
+        $this->info('Total routes found: '.count($allRoutes));
 
         foreach ($allRoutes as $route) {
             $middleware = $route->gatherMiddleware();
@@ -168,15 +173,15 @@ class ScanRoutesCommand extends Command
 
             // Debug: show all web routes
             if (in_array('web', $middleware)) {
-                $this->line("  - [{$methods[0]}] {$uri} (name: {$name}, middleware: " . implode(',', $middleware) . ")");
+                $this->line("  - [{$methods[0]}] {$uri} (name: {$name}, middleware: ".implode(',', $middleware).')');
             }
 
             // Only GET routes from web middleware, excluding admin routes
             if (
                 in_array('GET', $methods) &&
                 in_array('web', $middleware) &&
-                !str_starts_with($uri, 'admin') &&
-                !str_starts_with($uri, 'admin/')
+                ! str_starts_with($uri, 'admin') &&
+                ! str_starts_with($uri, 'admin/')
             ) {
                 $routes[] = [
                     'name' => $name,
@@ -196,6 +201,7 @@ class ScanRoutesCommand extends Command
     {
         // Convert 'home.index' to 'Home Index'
         $title = str_replace(['.', '-', '_'], ' ', $routeName);
+
         return ucwords($title);
     }
 }

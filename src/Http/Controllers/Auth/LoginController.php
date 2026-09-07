@@ -42,7 +42,7 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             // Check if user is active
-            if (!Auth::guard('admin')->user()->is_active) {
+            if (! Auth::guard('admin')->user()->is_active) {
                 Auth::guard('admin')->logout();
                 throw ValidationException::withMessages([
                     'email' => ['Your account has been deactivated.'],

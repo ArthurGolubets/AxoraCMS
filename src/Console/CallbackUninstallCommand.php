@@ -2,18 +2,19 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 class CallbackUninstallCommand extends Command
 {
     const MODULE_NAME = 'callback';
 
     protected $signature = 'axoracms:callback-user-uninstall {--preserve-db : Preserve database tables and data}';
+
     protected $description = 'Uninstall AxoraCMS Callback Module';
 
     public function handle(): int
@@ -36,7 +37,7 @@ class CallbackUninstallCommand extends Command
         $this->info('Step 1: Removing callback models...');
         $models = ['TUsersEmails.php', 'TComments.php', 'TUserRequests.php'];
         foreach ($models as $model) {
-            $path = app_path('Models/' . $model);
+            $path = app_path('Models/'.$model);
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed {$model}");
@@ -48,7 +49,7 @@ class CallbackUninstallCommand extends Command
         $this->info('Step 2: Removing callback controllers...');
         $controllers = ['UsersEmailsController.php', 'CommentsController.php', 'UserRequestsController.php'];
         foreach ($controllers as $controller) {
-            $path = app_path('Http/Controllers/' . $controller);
+            $path = app_path('Http/Controllers/'.$controller);
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed {$controller}");
@@ -57,7 +58,7 @@ class CallbackUninstallCommand extends Command
         $this->newLine();
 
         // Step 3: Drop Tables or Keep Database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 3: Dropping database tables...');
             $tables = ['t_users_emails', 't_comments', 't_user_requests'];
             foreach ($tables as $table) {
@@ -72,7 +73,7 @@ class CallbackUninstallCommand extends Command
         $this->newLine();
 
         // Step 4: Remove Migration Records from Database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 4: Removing migration records from database...');
             $migrationFiles = [
                 '2024_01_01_000020_create_t_users_emails_table.php',
@@ -81,19 +82,19 @@ class CallbackUninstallCommand extends Command
             ];
 
             try {
-                DB::table('migrations')->whereIn('migration', array_map(function($file) {
+                DB::table('migrations')->whereIn('migration', array_map(function ($file) {
                     return str_replace('.php', '', $file);
                 }, $migrationFiles))->delete();
                 $this->info('✓ Removed migration records from database');
             } catch (\Exception $e) {
-                $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+                $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
             }
             $this->newLine();
 
             // Step 5: Remove Migration Files
             $this->info('Step 5: Removing migration files...');
             foreach ($migrationFiles as $file) {
-                $path = database_path('migrations/' . $file);
+                $path = database_path('migrations/'.$file);
                 if (File::exists($path)) {
                     File::delete($path);
                     $this->info("✓ Removed migration {$file}");

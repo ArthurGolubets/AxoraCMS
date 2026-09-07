@@ -3,6 +3,8 @@
 namespace HolartWeb\AxoraCMS\Models\Shop;
 
 use HolartWeb\AxoraCMS\Services\EntityLinkResolver;
+use HolartWeb\AxoraCMS\Support\HtmlSanitizer;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -55,6 +57,18 @@ class TProduct extends Model
         'entity_filter_values' => 'array',
         'string_filter_values' => 'array',
     ];
+
+    /**
+     * Rich-text content comes from the admin editor, the API and 1C imports.
+     * Sanitize it on write so untrusted markup can never reach the database,
+     * regardless of the code path that stores the model.
+     */
+    protected function content(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => $value === null ? null : HtmlSanitizer::clean($value),
+        );
+    }
 
     /**
      * Get the category that owns the product

@@ -2,18 +2,20 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
+use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class SeoInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'seo';
 
     protected $signature = 'axoracms:seo-install';
+
     protected $description = 'Install AxoraCMS SEO Module';
 
     public function handle(): int
@@ -25,7 +27,7 @@ class SeoInstallCommand extends Command
 
         // Determine package path
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/holart-cms');
         }
 
@@ -34,26 +36,26 @@ class SeoInstallCommand extends Command
 
         // Determine SEO migration path
         $seoMigrationPath = 'vendor/holartweb/axora-cms/database/migrations/seo';
-        if (!file_exists(base_path($seoMigrationPath))) {
+        if (! file_exists(base_path($seoMigrationPath))) {
             $seoMigrationPath = 'packages/holartweb/holart-cms/database/migrations/seo';
         }
 
         Artisan::call('migrate', [
             '--path' => $seoMigrationPath,
-            '--force' => true
+            '--force' => true,
         ]);
         $this->info('✓ SEO migrations completed');
 
         // Run menus migrations
         $this->info('Running menus migrations...');
         $menusMigrationPath = 'vendor/holartweb/axora-cms/database/migrations/menus';
-        if (!file_exists(base_path($menusMigrationPath))) {
+        if (! file_exists(base_path($menusMigrationPath))) {
             $menusMigrationPath = 'packages/holartweb/holart-cms/database/migrations/menus';
         }
 
         Artisan::call('migrate', [
             '--path' => $menusMigrationPath,
-            '--force' => true
+            '--force' => true,
         ]);
         $this->info('✓ Menus migrations completed');
         $this->newLine();
@@ -89,8 +91,9 @@ class SeoInstallCommand extends Command
     {
         $bootstrapPath = base_path('bootstrap/app.php');
 
-        if (!file_exists($bootstrapPath)) {
+        if (! file_exists($bootstrapPath)) {
             $this->warn('⚠ bootstrap/app.php not found. Please register middleware manually.');
+
             return;
         }
 
@@ -101,6 +104,7 @@ class SeoInstallCommand extends Command
         // Check if already registered
         if (str_contains($content, 'TrackPageVisits') && str_contains($content, 'SharePageData')) {
             $this->info('   Middleware already registered');
+
             return;
         }
 
@@ -124,6 +128,7 @@ class SeoInstallCommand extends Command
                     $content = substr_replace($content, $middlewareCode, $insertPosition, 0);
                     file_put_contents($bootstrapPath, $content);
                     $this->info('   Middleware registered successfully');
+
                     return;
                 }
             }
@@ -132,8 +137,8 @@ class SeoInstallCommand extends Command
         // Fallback: couldn't auto-register
         $this->warn('⚠ Could not auto-register middleware. Please add manually to bootstrap/app.php:');
         $this->warn('   $middleware->web(append: [');
-        $this->warn('       ' . $sharePageDataMiddleware . ',');
-        $this->warn('       ' . $trackPageVisitsMiddleware . ',');
+        $this->warn('       '.$sharePageDataMiddleware.',');
+        $this->warn('       '.$trackPageVisitsMiddleware.',');
         $this->warn('   ]);');
     }
 }

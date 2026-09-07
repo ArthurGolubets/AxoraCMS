@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\Schema;
 class CleanOldPageVisitsCommand extends Command
 {
     protected $signature = 'axoracms:clean-page-visits {--days=30 : Number of days to keep}';
+
     protected $description = 'Clean page visits older than specified days';
 
     public function handle(): int
     {
         try {
-            if (!Schema::hasTable('t_page_visits')) {
+            if (! Schema::hasTable('t_page_visits')) {
                 return Command::SUCCESS;
             }
         } catch (\Exception $e) {
@@ -29,8 +30,9 @@ class CleanOldPageVisitsCommand extends Command
         // Get model class
         $pageVisitModel = $this->getPageVisitModel();
 
-        if (!$pageVisitModel) {
+        if (! $pageVisitModel) {
             $this->error('TPageVisit model not found.');
+
             return Command::FAILURE;
         }
 
@@ -39,6 +41,7 @@ class CleanOldPageVisitsCommand extends Command
 
         if ($count === 0) {
             $this->info('No old records to clean.');
+
             return Command::SUCCESS;
         }
 

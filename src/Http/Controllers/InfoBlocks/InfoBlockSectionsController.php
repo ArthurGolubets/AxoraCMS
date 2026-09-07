@@ -2,11 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\InfoBlocks;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockSection;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class InfoBlockSectionsController extends Controller
 {
@@ -17,7 +17,7 @@ class InfoBlockSectionsController extends Controller
     {
         $infoBlock = TInfoBlock::findOrFail($infoBlockId);
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             return response()->json(['message' => 'Инфоблок не является каталогом'], 400);
         }
 
@@ -32,7 +32,7 @@ class InfoBlockSectionsController extends Controller
 
         return response()->json([
             'sections' => $tree,
-            'elementsWithoutSection' => $elementsWithoutSection
+            'elementsWithoutSection' => $elementsWithoutSection,
         ]);
     }
 
@@ -43,7 +43,7 @@ class InfoBlockSectionsController extends Controller
     {
         $infoBlock = TInfoBlock::findOrFail($infoBlockId);
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             return response()->json(['message' => 'Инфоблок не является каталогом'], 400);
         }
 
@@ -74,7 +74,7 @@ class InfoBlockSectionsController extends Controller
     {
         $infoBlock = TInfoBlock::findOrFail($infoBlockId);
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             return response()->json(['message' => 'Инфоблок не является каталогом'], 400);
         }
 
@@ -89,7 +89,7 @@ class InfoBlockSectionsController extends Controller
         ]);
 
         // Validate parent belongs to same info block
-        if (!empty($validated['parent_id'])) {
+        if (! empty($validated['parent_id'])) {
             $parent = TInfoBlockSection::find($validated['parent_id']);
             if ($parent->info_block_id !== (int) $infoBlockId) {
                 return response()->json(['message' => 'Родительский раздел принадлежит другому инфоблоку'], 422);
@@ -107,7 +107,7 @@ class InfoBlockSectionsController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'info_block_section', $section->id,
-            'Создан раздел "' . $section->name . '" в инфоблоке: ' . $infoBlock->name);
+            'Создан раздел "'.$section->name.'" в инфоблоке: '.$infoBlock->name);
 
         return response()->json($section->load(['parent', 'children']), 201);
     }
@@ -120,7 +120,7 @@ class InfoBlockSectionsController extends Controller
         $infoBlock = TInfoBlock::findOrFail($infoBlockId);
         $section = TInfoBlockSection::where('info_block_id', $infoBlockId)->findOrFail($id);
 
-        if (!$infoBlock->isCatalog()) {
+        if (! $infoBlock->isCatalog()) {
             return response()->json(['message' => 'Инфоблок не является каталогом'], 400);
         }
 
@@ -135,7 +135,7 @@ class InfoBlockSectionsController extends Controller
         ]);
 
         // Validate parent belongs to same info block
-        if (!empty($validated['parent_id'])) {
+        if (! empty($validated['parent_id'])) {
             $parent = TInfoBlockSection::find($validated['parent_id']);
             if ($parent->info_block_id !== (int) $infoBlockId) {
                 return response()->json(['message' => 'Родительский раздел принадлежит другому инфоблоку'], 422);
@@ -156,10 +156,10 @@ class InfoBlockSectionsController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'info_block_section', $section->id,
-            'Обновлен раздел "' . $section->name . '" в инфоблоке: ' . $infoBlock->name, [
-            'old' => $oldData,
-            'new' => $section->getAttributes()
-        ]);
+            'Обновлен раздел "'.$section->name.'" в инфоблоке: '.$infoBlock->name, [
+                'old' => $oldData,
+                'new' => $section->getAttributes(),
+            ]);
 
         return response()->json($section->load(['parent', 'children']));
     }
@@ -178,7 +178,7 @@ class InfoBlockSectionsController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'info_block_section', $id,
-            'Удален раздел "' . $sectionName . '" из инфоблока: ' . $infoBlock->name);
+            'Удален раздел "'.$sectionName.'" из инфоблока: '.$infoBlock->name);
 
         return response()->json(['message' => 'Раздел удален']);
     }

@@ -51,7 +51,7 @@ class TProductVariant extends Model
      */
     public function getDiscountPercentageAttribute(): ?int
     {
-        if (!$this->old_price || $this->old_price <= $this->price) {
+        if (! $this->old_price || $this->old_price <= $this->price) {
             return null;
         }
 

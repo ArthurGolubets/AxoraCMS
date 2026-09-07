@@ -2,9 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class YookassaUninstallCommand extends Command
@@ -12,6 +11,7 @@ class YookassaUninstallCommand extends Command
     const MODULE_NAME = 'yookassa';
 
     protected $signature = 'axoracms:yookassa-uninstall {--preserve-db : Preserve database tables}';
+
     protected $description = 'Uninstall Yookassa Integration';
 
     public function handle(): int
@@ -23,7 +23,7 @@ class YookassaUninstallCommand extends Command
 
         $preserveDb = $this->option('preserve-db');
 
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Removing Yookassa settings from database...');
 
             try {
@@ -33,7 +33,8 @@ class YookassaUninstallCommand extends Command
 
                 $this->info('✓ Yookassa settings removed');
             } catch (\Exception $e) {
-                $this->error('❌ Failed to remove settings: ' . $e->getMessage());
+                $this->error('❌ Failed to remove settings: '.$e->getMessage());
+
                 return self::FAILURE;
             }
         } else {
@@ -51,7 +52,7 @@ class YookassaUninstallCommand extends Command
                 [
                     0 => ['pipe', 'r'],
                     1 => ['pipe', 'w'],
-                    2 => ['pipe', 'w']
+                    2 => ['pipe', 'w'],
                 ],
                 $pipes,
                 base_path()
@@ -75,7 +76,7 @@ class YookassaUninstallCommand extends Command
                 $this->warn('⚠ Failed to run composer');
             }
         } catch (\Exception $e) {
-            $this->warn('⚠ Error removing Yookassa SDK: ' . $e->getMessage());
+            $this->warn('⚠ Error removing Yookassa SDK: '.$e->getMessage());
         }
 
         // Remove module record

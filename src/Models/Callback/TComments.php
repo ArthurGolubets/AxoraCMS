@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Models\Callback;
 
+use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -31,8 +32,9 @@ class TComments extends Model
     public function product(): BelongsTo
     {
         if (class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
-            return $this->belongsTo(\HolartWeb\AxoraCMS\Models\Shop\TProduct::class, 'product_id');
+            return $this->belongsTo(TProduct::class, 'product_id');
         }
+
         return $this->belongsTo(Model::class, 'product_id');
     }
 }

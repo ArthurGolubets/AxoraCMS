@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
+import { useAppConfig } from './composables/useAppConfig';
 import Dashboard from './components/Dashboard.vue';
 import Administrators from './components/Administrators.vue';
 import Settings from './components/Settings.vue';
@@ -321,124 +322,54 @@ const router = createRouter({
     ]
 });
 
-// Global navigation guard
-router.beforeEach(async (to, from, next) => {
-    // Get current user data
-    try {
-        const response = await fetch('/admin/api/me', {
-            headers: { 'Accept': 'application/json' }
-        });
+// Route -> required module id. A route missing from here has no module gate.
+const MODULE_GATED_ROUTES = {
+    shop: ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit'],
+    callback: ['users-emails', 'users-email-view', 'comments', 'comment-view', 'user-requests', 'user-request-view'],
+    commerce: ['orders', 'order-create', 'order-edit', 'order-view', 'transactions', 'promocodes', 'orders-settings'],
+    infoblocks: ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'],
+};
 
-        if (!response.ok) {
+const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', ...MODULE_GATED_ROUTES.commerce];
+
+// Global navigation guard.
+// `me` and `modules/status` come from useAppConfig(), which fetches each once
+// per SPA session and dedups concurrent callers, so a single navigation no
+// longer fires up to 5x /admin/api/modules/status.
+router.beforeEach(async (to, from, next) => {
+    try {
+        const { loadMe, loadModulesStatus } = useAppConfig();
+        const userData = await loadMe();
+
+        if (!userData) {
             next();
             return;
         }
 
-        const userData = await response.json();
+        const isPrivileged = userData.role === 'super_admin' || userData.role === 'administrator';
 
-        // Check access to settings pages (only for super_admin and administrator)
-        const settingsRoutes = ['settings', 'environment', 'logs', 'modules', 'administrators'];
-        if (settingsRoutes.includes(to.name)) {
-            if (userData.role !== 'super_admin' && userData.role !== 'administrator') {
-                next({ name: 'error-403' });
-                return;
-            }
+        if (PRIVILEGED_ONLY_ROUTES.includes(to.name) && !isPrivileged) {
+            next({ name: 'error-403' });
+            return;
         }
 
-        // Check if accessing modules page
-        if (to.name === 'modules') {
-            // Check if modules page is enabled
-            const modulesResponse = await fetch('/admin/api/modules/status', {
-                headers: { 'Accept': 'application/json' }
-            });
+        const gatedModuleId = Object.keys(MODULE_GATED_ROUTES).find(id => MODULE_GATED_ROUTES[id].includes(to.name));
 
-            if (modulesResponse.ok) {
-                const statusData = await modulesResponse.json();
-                if (!statusData.show_modules_page) {
+        if (to.name === 'modules' || gatedModuleId) {
+            const statusData = await loadModulesStatus();
+
+            if (statusData) {
+                if (to.name === 'modules' && !statusData.show_modules_page) {
                     next({ name: 'error-404' });
                     return;
                 }
-            }
-        }
 
-        // Check if accessing shop module routes
-        const shopRoutes = ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit'];
-        if (shopRoutes.includes(to.name)) {
-            // Check if shop module is installed
-            const modulesResponse = await fetch('/admin/api/modules/status', {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (modulesResponse.ok) {
-                const modulesData = await modulesResponse.json();
-                const shopModule = modulesData.modules?.find(m => m.id === 'shop');
-
-                if (!shopModule?.installed) {
-                    next({ name: 'error-404' });
-                    return;
-                }
-            }
-        }
-
-        // Check if accessing callback module routes
-        const callbackRoutes = ['users-emails', 'users-email-view', 'comments', 'comment-view', 'user-requests', 'user-request-view'];
-        if (callbackRoutes.includes(to.name)) {
-            // Check if callback module is installed
-            const modulesResponse = await fetch('/admin/api/modules/status', {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (modulesResponse.ok) {
-                const modulesData = await modulesResponse.json();
-                const callbackModule = modulesData.modules?.find(m => m.id === 'callback');
-
-                if (!callbackModule?.installed) {
-                    next({ name: 'error-404' });
-                    return;
-                }
-            }
-        }
-
-        // Check if accessing commerce module routes (only for super_admin and administrator)
-        const commerceRoutes = ['orders', 'order-create', 'order-edit', 'order-view', 'transactions', 'promocodes', 'orders-settings'];
-        if (commerceRoutes.includes(to.name)) {
-            // Check role first
-            if (userData.role !== 'super_admin' && userData.role !== 'administrator') {
-                next({ name: 'error-403' });
-                return;
-            }
-
-            // Check if commerce module is installed
-            const modulesResponse = await fetch('/admin/api/modules/status', {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (modulesResponse.ok) {
-                const modulesData = await modulesResponse.json();
-                const commerceModule = modulesData.modules?.find(m => m.id === 'commerce');
-
-                if (!commerceModule?.installed) {
-                    next({ name: 'error-404' });
-                    return;
-                }
-            }
-        }
-
-        // Check if accessing infoblocks module routes
-        const infoblocksRoutes = ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'];
-        if (infoblocksRoutes.includes(to.name)) {
-            // Check if infoblocks module is installed
-            const modulesResponse = await fetch('/admin/api/modules/status', {
-                headers: { 'Accept': 'application/json' }
-            });
-
-            if (modulesResponse.ok) {
-                const modulesData = await modulesResponse.json();
-                const infoblocksModule = modulesData.modules?.find(m => m.id === 'infoblocks');
-
-                if (!infoblocksModule?.installed) {
-                    next({ name: 'error-404' });
-                    return;
+                if (gatedModuleId) {
+                    const module = statusData.modules?.find(m => m.id === gatedModuleId);
+                    if (!module?.installed) {
+                        next({ name: 'error-404' });
+                        return;
+                    }
                 }
             }
         }

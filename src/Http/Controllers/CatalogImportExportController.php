@@ -2,12 +2,16 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers;
 
+use HolartWeb\AxoraCMS\Jobs\ImportCatalogsJob;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CatalogImportExportController extends Controller
 {
@@ -16,7 +20,7 @@ class CatalogImportExportController extends Controller
      */
     public function downloadTemplate()
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set headers
@@ -31,7 +35,7 @@ class CatalogImportExportController extends Controller
         // Style header row
         $sheet->getStyle('A1:G1')->getFont()->setBold(true);
         $sheet->getStyle('A1:G1')->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFE0E0E0');
 
         // Add example row
@@ -49,7 +53,7 @@ class CatalogImportExportController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'catalog_import_template_' . date('Y-m-d') . '.xlsx';
+        $fileName = 'catalog_import_template_'.date('Y-m-d').'.xlsx';
 
         // Write to temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'catalog_template_');
@@ -63,14 +67,14 @@ class CatalogImportExportController extends Controller
      */
     public function export()
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 
         $catalogClass = 'HolartWeb\AxoraCMS\Models\Shop\TCatalog';
         $catalogs = $catalogClass::with('parent')->orderBy('id')->get();
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set headers
@@ -85,19 +89,19 @@ class CatalogImportExportController extends Controller
         // Style header
         $sheet->getStyle('A1:G1')->getFont()->setBold(true);
         $sheet->getStyle('A1:G1')->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFE0E0E0');
 
         // Fill data
         $row = 2;
         foreach ($catalogs as $catalog) {
-            $sheet->setCellValue('A' . $row, $catalog->id);
-            $sheet->setCellValue('B' . $row, $catalog->name);
-            $sheet->setCellValue('C' . $row, $catalog->slug);
-            $sheet->setCellValue('D' . $row, $catalog->description ?? '');
-            $sheet->setCellValue('E' . $row, $catalog->parent_id ?? '');
-            $sheet->setCellValue('F' . $row, $catalog->is_active ? '1' : '0');
-            $sheet->setCellValue('G' . $row, $catalog->image ?? '');
+            $sheet->setCellValue('A'.$row, $catalog->id);
+            $sheet->setCellValue('B'.$row, $catalog->name);
+            $sheet->setCellValue('C'.$row, $catalog->slug);
+            $sheet->setCellValue('D'.$row, $catalog->description ?? '');
+            $sheet->setCellValue('E'.$row, $catalog->parent_id ?? '');
+            $sheet->setCellValue('F'.$row, $catalog->is_active ? '1' : '0');
+            $sheet->setCellValue('G'.$row, $catalog->image ?? '');
             $row++;
         }
 
@@ -107,7 +111,7 @@ class CatalogImportExportController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'catalogs_export_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $fileName = 'catalogs_export_'.date('Y-m-d_H-i-s').'.xlsx';
 
         // Write to temporary file
         $tempFile = tempnam(sys_get_temp_dir(), 'catalog_export_');
@@ -115,7 +119,7 @@ class CatalogImportExportController extends Controller
 
         // Log activity
         TAdminAction::log('exported', 'catalog', null,
-            'Экспорт категорий (количество: ' . count($catalogs) . ')');
+            'Экспорт категорий (количество: '.count($catalogs).')');
 
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
@@ -126,10 +130,10 @@ class CatalogImportExportController extends Controller
     public function previewImport(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv'
+            'file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
 
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 
@@ -162,7 +166,7 @@ class CatalogImportExportController extends Controller
                 'parent_id' => $row[4] ?? null,
                 'is_active' => isset($row[5]) && $row[5] == '1',
                 'image' => $row[6] ?? '',
-                'status' => 'pending'
+                'status' => 'pending',
             ];
 
             // Validation
@@ -179,11 +183,11 @@ class CatalogImportExportController extends Controller
 
             // Check if update or create - search by ID or by name
             $existing = null;
-            if (!empty($item['id'])) {
+            if (! empty($item['id'])) {
                 $existing = $catalogClass::find($item['id']);
             }
 
-            if (!$existing && !empty($item['name'])) {
+            if (! $existing && ! empty($item['name'])) {
                 $existing = $catalogClass::where('name', $item['name'])->first();
             }
 
@@ -201,7 +205,7 @@ class CatalogImportExportController extends Controller
             'preview' => $preview,
             'total' => count($preview),
             'errors' => $errors,
-            'valid' => empty($errors)
+            'valid' => empty($errors),
         ]);
     }
 
@@ -211,18 +215,18 @@ class CatalogImportExportController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'items' => 'required|array'
+            'items' => 'required|array',
         ]);
 
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             return response()->json(['error' => 'Catalog module not available'], 404);
         }
 
         $items = $request->input('items');
-        $importId = \Illuminate\Support\Str::uuid()->toString();
+        $importId = Str::uuid()->toString();
 
         // Initialize progress
-        \Illuminate\Support\Facades\Cache::put("import_progress_{$importId}", [
+        Cache::put("import_progress_{$importId}", [
             'status' => 'queued',
             'created' => 0,
             'updated' => 0,
@@ -233,12 +237,12 @@ class CatalogImportExportController extends Controller
         ], 3600);
 
         // Dispatch job
-        \HolartWeb\AxoraCMS\Jobs\ImportCatalogsJob::dispatch($items, $importId);
+        ImportCatalogsJob::dispatch($items, $importId);
 
         return response()->json([
             'success' => true,
             'import_id' => $importId,
-            'message' => 'Импорт запущен в фоновом режиме'
+            'message' => 'Импорт запущен в фоновом режиме',
         ]);
     }
 
@@ -247,9 +251,9 @@ class CatalogImportExportController extends Controller
      */
     public function checkProgress($importId)
     {
-        $progress = \Illuminate\Support\Facades\Cache::get("import_progress_{$importId}");
+        $progress = Cache::get("import_progress_{$importId}");
 
-        if (!$progress) {
+        if (! $progress) {
             return response()->json(['error' => 'Import not found'], 404);
         }
 
@@ -261,7 +265,7 @@ class CatalogImportExportController extends Controller
      */
     private function generateSlug($name, $modelClass, $excludeId = null)
     {
-        $slug = \Illuminate\Support\Str::slug($name);
+        $slug = Str::slug($name);
         $originalSlug = $slug;
         $counter = 1;
 
@@ -271,11 +275,11 @@ class CatalogImportExportController extends Controller
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 

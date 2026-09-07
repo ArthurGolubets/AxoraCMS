@@ -2,8 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +13,7 @@ class CommerceMLUninstallCommand extends Command
     const MODULE_NAME = 'commerceml';
 
     protected $signature = 'axoracms:commerceml-uninstall {--preserve-db : Preserve database tables and data}';
+
     protected $description = 'Uninstall AxoraCMS CommerceML Integration Module';
 
     public function handle(): int
@@ -24,11 +25,12 @@ class CommerceMLUninstallCommand extends Command
 
         $preserveDb = $this->option('preserve-db');
 
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->warn('⚠ WARNING: This will remove CommerceML fields from products and catalogs!');
             if ($this->input->isInteractive() && defined('STDIN')) {
-                if (!$this->confirm('Are you sure you want to continue?', false)) {
+                if (! $this->confirm('Are you sure you want to continue?', false)) {
                     $this->info('Uninstallation cancelled.');
+
                     return self::SUCCESS;
                 }
             } else {
@@ -37,7 +39,7 @@ class CommerceMLUninstallCommand extends Command
         }
 
         // Step 1: Handle Database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 1: Removing database tables and columns...');
 
             try {
@@ -77,7 +79,7 @@ class CommerceMLUninstallCommand extends Command
 
                 Schema::enableForeignKeyConstraints();
             } catch (\Exception $e) {
-                $this->error('❌ Error removing database tables: ' . $e->getMessage());
+                $this->error('❌ Error removing database tables: '.$e->getMessage());
             }
             $this->newLine();
 
@@ -93,7 +95,7 @@ class CommerceMLUninstallCommand extends Command
                 DB::table('migrations')->whereIn('migration', $migrationFiles)->delete();
                 $this->info('✓ Removed migration records from database');
             } catch (\Exception $e) {
-                $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+                $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
             }
             $this->newLine();
         } else {

@@ -5,6 +5,7 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalogPropertyGroup;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Support\HtmlSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -79,12 +80,18 @@ class CatalogController extends Controller
                 })
                 ->with(['children', 'products' => function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('sku', 'like', "%{$search}%");
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->limit(50);
                 }])
+                ->withCount(['children', 'products'])
+                ->limit(100)
                 ->get();
         } else {
-            $catalogs = TCatalog::with(['children', 'products'])
-                ->whereNull('parent_id')
+            // Category tree only: counts, no nested product payloads.
+            // Products for a category are loaded lazily on the frontend
+            // via catalogs/{id} / catalogs/{id}/children.
+            $catalogs = TCatalog::whereNull('parent_id')
+                ->withCount(['children', 'products'])
                 ->get();
         }
 
@@ -188,6 +195,10 @@ class CatalogController extends Controller
         $propertyGroups = $validated['property_groups'] ?? [];
         unset($validated['properties'], $validated['property_groups']);
 
+        if (array_key_exists('content', $validated)) {
+            $validated['content'] = HtmlSanitizer::clean($validated['content']);
+        }
+
         $catalog = TCatalog::create($validated);
 
         // Create property groups
@@ -241,8 +252,8 @@ class CatalogController extends Controller
 
         $validated = $request->validate([
             'parent_id' => 'nullable|exists:t_catalogs,id',
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:t_catalogs,slug,'.$id,
+            'name' => 'sometimes|required|string|max:255',
+            'slug' => 'sometimes|required|string|max:255|unique:t_catalogs,slug,'.$id,
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
@@ -261,6 +272,10 @@ class CatalogController extends Controller
         $properties = $validated['properties'] ?? null;
         $propertyGroups = $validated['property_groups'] ?? null;
         unset($validated['properties'], $validated['property_groups']);
+
+        if (array_key_exists('content', $validated)) {
+            $validated['content'] = HtmlSanitizer::clean($validated['content']);
+        }
 
         $oldData = $catalog->getOriginal();
         $catalog->update($validated);

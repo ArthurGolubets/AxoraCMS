@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Jobs;
 
+use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,16 +11,17 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class ImportCatalogsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $timeout = 3600; // 1 hour timeout
+
     public $tries = 1;
 
     protected $items;
+
     protected $importId;
 
     /**
@@ -36,8 +38,9 @@ class ImportCatalogsJob implements ShouldQueue
      */
     public function handle()
     {
-        if (!class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
+        if (! class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             $this->updateProgress(0, 0, count($this->items), ['Catalog module not available'], 'error');
+
             return;
         }
 
@@ -53,6 +56,7 @@ class ImportCatalogsJob implements ShouldQueue
                 // Skip items with errors
                 if (isset($item['status']) && $item['status'] === 'error') {
                     $processed++;
+
                     continue;
                 }
 
@@ -63,9 +67,9 @@ class ImportCatalogsJob implements ShouldQueue
 
                 // Download and save image if URL is provided
                 $imagePath = null;
-                if (!empty($item['image']) && filter_var($item['image'], FILTER_VALIDATE_URL)) {
+                if (! empty($item['image']) && filter_var($item['image'], FILTER_VALIDATE_URL)) {
                     $imagePath = $this->downloadImage($item['image'], 'catalogs');
-                } elseif (!empty($item['image'])) {
+                } elseif (! empty($item['image'])) {
                     $imagePath = $item['image'];
                 }
 
@@ -73,12 +77,12 @@ class ImportCatalogsJob implements ShouldQueue
                     'name' => $item['name'],
                     'slug' => $item['slug'],
                     'description' => $item['description'] ?? null,
-                    'parent_id' => !empty($item['parent_id']) ? $item['parent_id'] : null,
+                    'parent_id' => ! empty($item['parent_id']) ? $item['parent_id'] : null,
                     'is_active' => $item['is_active'] ?? true,
                     'image' => $imagePath,
                 ];
 
-                if ($item['action'] === 'update' && !empty($item['id'])) {
+                if ($item['action'] === 'update' && ! empty($item['id'])) {
                     $catalog = $catalogClass::find($item['id']);
                     if ($catalog) {
                         $catalog->update($data);
@@ -97,14 +101,14 @@ class ImportCatalogsJob implements ShouldQueue
                 }
 
             } catch (\Exception $e) {
-                $errors[] = "Ошибка в строке {$item['row']}: " . $e->getMessage();
+                $errors[] = "Ошибка в строке {$item['row']}: ".$e->getMessage();
                 $processed++;
             }
         }
 
         // Log activity
         TAdminAction::log('imported', 'catalog', null,
-            'Импорт категорий (создано: ' . $created . ', обновлено: ' . $updated . ')');
+            'Импорт категорий (создано: '.$created.', обновлено: '.$updated.')');
 
         // Final update
         $this->updateProgress($created, $updated, $total, $errors, 'completed', $processed);
@@ -149,11 +153,11 @@ class ImportCatalogsJob implements ShouldQueue
                 $query->where('id', '!=', $excludeId);
             }
 
-            if (!$query->exists()) {
+            if (! $query->exists()) {
                 break;
             }
 
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
@@ -179,15 +183,16 @@ class ImportCatalogsJob implements ShouldQueue
             }
 
             // Generate unique filename
-            $filename = time() . '_' . Str::random(10) . '.' . $extension;
-            $path = $folder . '/' . $filename;
+            $filename = time().'_'.Str::random(10).'.'.$extension;
+            $path = $folder.'/'.$filename;
 
             // Save to storage
             Storage::disk('public')->put($path, $imageContent);
 
-            return '/storage/' . $path;
+            return '/storage/'.$path;
         } catch (\Exception $e) {
-            \Log::error('Failed to download image: ' . $e->getMessage());
+            \Log::error('Failed to download image: '.$e->getMessage());
+
             return null;
         }
     }

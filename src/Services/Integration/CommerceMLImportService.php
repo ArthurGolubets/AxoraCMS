@@ -16,7 +16,7 @@ class CommerceMLImportService
         Log::info('[CommerceML] Импорт из папки', ['folder' => $folderPath]);
 
         $files = Storage::disk('public')->files($folderPath);
-        $xmlFiles = array_filter($files, function($file) {
+        $xmlFiles = array_filter($files, function ($file) {
             return pathinfo($file, PATHINFO_EXTENSION) === 'xml';
         });
 
@@ -32,6 +32,7 @@ class CommerceMLImportService
 
         if ($completeXml) {
             Log::info('[CommerceML] XML собран из частей', ['parts' => count($xmlFiles)]);
+
             return $this->parseXmlContent($completeXml);
         }
 
@@ -90,13 +91,13 @@ class CommerceMLImportService
         // Если нашли начало и конец, склеиваем все части
         if ($hasStart && $hasEnd) {
             Log::info('[CommerceML] Объединение частей XML', [
-                'parts' => array_map(function($p) {
+                'parts' => array_map(function ($p) {
                     return [
                         'file' => $p['file'],
                         'has_header' => $p['has_xml_header'],
                         'has_end' => $p['has_end_tag'],
                     ];
-                }, $parts)
+                }, $parts),
             ]);
 
             // Склеиваем содержимое, но из средних частей удаляем BOM и возможные артефакты
@@ -125,12 +126,13 @@ class CommerceMLImportService
     {
         Log::info('[CommerceML] Начало импорта', ['file' => $filePath]);
 
-        if (!Storage::disk('public')->exists($filePath)) {
+        if (! Storage::disk('public')->exists($filePath)) {
             Log::error('[CommerceML] Файл не найден', ['file' => $filePath]);
             throw new \Exception("Файл не найден: {$filePath}");
         }
 
         $xmlContent = Storage::disk('public')->get($filePath);
+
         return $this->parseXmlContent($xmlContent);
     }
 
@@ -143,14 +145,30 @@ class CommerceMLImportService
             // Удаляем BOM если есть
             $xmlContent = preg_replace('/^\xEF\xBB\xBF/', '', $xmlContent);
 
-            // Загружаем XML с опциями для больших файлов
+            // Ограничение размера входного XML (защита от DoS).
+            $maxBytes = 50 * 1024 * 1024;
+            if (strlen($xmlContent) > $maxBytes) {
+                throw new \Exception('XML файл превышает допустимый размер (50 МБ)');
+            }
+
+            // Ранняя проверка на объявления сущностей ("billion laughs" / XXE).
+            if (preg_match('/<!ENTITY/i', $xmlContent) || preg_match('/<!DOCTYPE/i', $xmlContent)) {
+                throw new \Exception('XML содержит запрещённые объявления DOCTYPE/ENTITY');
+            }
+
+            // Отключаем загрузку внешних сущностей.
+            if (function_exists('libxml_set_external_entity_loader')) {
+                libxml_set_external_entity_loader(static fn () => null);
+            }
+
+            // Загружаем XML с опциями для больших файлов, без доступа к сети.
             libxml_use_internal_errors(true);
-            $xml = simplexml_load_string($xmlContent, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_COMPACT);
+            $xml = simplexml_load_string($xmlContent, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_COMPACT | LIBXML_NONET);
 
             if ($xml === false) {
                 $errors = libxml_get_errors();
                 libxml_clear_errors();
-                $errorMsg = !empty($errors) ? $errors[0]->message : 'Unknown XML error';
+                $errorMsg = ! empty($errors) ? $errors[0]->message : 'Unknown XML error';
                 throw new \Exception("XML parsing error: {$errorMsg}");
             }
 
@@ -202,7 +220,7 @@ class CommerceMLImportService
     {
         $groups = [];
 
-        if (!isset($classifier->Группы)) {
+        if (! isset($classifier->Группы)) {
             return $groups;
         }
 
@@ -255,7 +273,7 @@ class CommerceMLImportService
     {
         $products = [];
 
-        if (!isset($catalog->Товары)) {
+        if (! isset($catalog->Товары)) {
             return $products;
         }
 
@@ -330,7 +348,7 @@ class CommerceMLImportService
     {
         $offers = [];
 
-        if (!isset($offersPackage->Предложения)) {
+        if (! isset($offersPackage->Предложения)) {
             return $offers;
         }
 

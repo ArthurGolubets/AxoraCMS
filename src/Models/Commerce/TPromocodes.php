@@ -17,7 +17,7 @@ class TPromocodes extends Model
         'max_usage',
         'current_usage',
         'date_active_from',
-        'date_active_to'
+        'date_active_to',
     ];
 
     protected $casts = [
@@ -30,6 +30,7 @@ class TPromocodes extends Model
 
     // Константы для type
     const TYPE_FIAT = 'fiat';
+
     const TYPE_PERCENT = 'percent';
 
     /**

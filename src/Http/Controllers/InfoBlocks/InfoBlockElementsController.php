@@ -2,12 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\InfoBlocks;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockSection;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class InfoBlockElementsController extends Controller
 {
@@ -22,9 +22,9 @@ class InfoBlockElementsController extends Controller
 
         // Search
         if ($search = $request->get('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -77,7 +77,7 @@ class InfoBlockElementsController extends Controller
         ]);
 
         // Validate section belongs to same info block (if provided)
-        if (!empty($validated['section_id'])) {
+        if (! empty($validated['section_id'])) {
             $section = TInfoBlockSection::find($validated['section_id']);
             if ($section->info_block_id !== (int) $infoBlockId) {
                 return response()->json(['message' => 'Раздел принадлежит другому инфоблоку'], 422);
@@ -88,18 +88,18 @@ class InfoBlockElementsController extends Controller
         $properties = $validated['properties'] ?? [];
         foreach ($infoBlock->fields as $field) {
             if ($field->is_required && (
-                    !isset($properties[$field->code]) ||
-                    $properties[$field->code] === '' ||
-                    $properties[$field->code] === null
-                )) {
+                ! isset($properties[$field->code]) ||
+                $properties[$field->code] === '' ||
+                $properties[$field->code] === null
+            )) {
                 return response()->json([
-                    'message' => 'Поле "' . $field->name . '" обязательно для заполнения'
+                    'message' => 'Поле "'.$field->name.'" обязательно для заполнения',
                 ], 422);
             }
 
-            if (isset($properties[$field->code]) && !$field->validateValue($properties[$field->code])) {
+            if (isset($properties[$field->code]) && ! $field->validateValue($properties[$field->code])) {
                 return response()->json([
-                    'message' => 'Неверное значение для поля "' . $field->name . '"'
+                    'message' => 'Неверное значение для поля "'.$field->name.'"',
                 ], 422);
             }
         }
@@ -108,7 +108,7 @@ class InfoBlockElementsController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'info_block_element', $element->id,
-            'Создан элемент "' . $element->name . '" в инфоблоке: ' . $infoBlock->name);
+            'Создан элемент "'.$element->name.'" в инфоблоке: '.$infoBlock->name);
 
         return response()->json($element->load('infoBlock.fields'), 201);
     }
@@ -132,7 +132,7 @@ class InfoBlockElementsController extends Controller
         ]);
 
         // Validate section belongs to same info block (if provided)
-        if (!empty($validated['section_id'])) {
+        if (! empty($validated['section_id'])) {
             $section = TInfoBlockSection::find($validated['section_id']);
             if ($section->info_block_id !== (int) $infoBlockId) {
                 return response()->json(['message' => 'Раздел принадлежит другому инфоблоку'], 422);
@@ -143,18 +143,18 @@ class InfoBlockElementsController extends Controller
         $properties = $validated['properties'] ?? [];
         foreach ($infoBlock->fields as $field) {
             if ($field->is_required && (
-                    !isset($properties[$field->code]) ||
-                    $properties[$field->code] === '' ||
-                    $properties[$field->code] === null
-                )) {
+                ! isset($properties[$field->code]) ||
+                $properties[$field->code] === '' ||
+                $properties[$field->code] === null
+            )) {
                 return response()->json([
-                    'message' => 'Поле "' . $field->name . '" обязательно для заполнения'
+                    'message' => 'Поле "'.$field->name.'" обязательно для заполнения',
                 ], 422);
             }
 
-            if (isset($properties[$field->code]) && !$field->validateValue($properties[$field->code])) {
+            if (isset($properties[$field->code]) && ! $field->validateValue($properties[$field->code])) {
                 return response()->json([
-                    'message' => 'Неверное значение для поля "' . $field->name . '"'
+                    'message' => 'Неверное значение для поля "'.$field->name.'"',
                 ], 422);
             }
         }
@@ -164,10 +164,10 @@ class InfoBlockElementsController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'info_block_element', $element->id,
-            'Обновлен элемент "' . $element->name . '" в инфоблоке: ' . $infoBlock->name, [
-            'old' => $oldData,
-            'new' => $element->getAttributes()
-        ]);
+            'Обновлен элемент "'.$element->name.'" в инфоблоке: '.$infoBlock->name, [
+                'old' => $oldData,
+                'new' => $element->getAttributes(),
+            ]);
 
         return response()->json($element->load('infoBlock.fields'));
     }
@@ -185,7 +185,7 @@ class InfoBlockElementsController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'info_block_element', $id,
-            'Удален элемент "' . $elementName . '" из инфоблока: ' . $infoBlock->name);
+            'Удален элемент "'.$elementName.'" из инфоблока: '.$infoBlock->name);
 
         return response()->json(['message' => 'Элемент удален']);
     }

@@ -68,6 +68,6 @@ class TPageBlockType extends Model
      */
     public function canDelete(): bool
     {
-        return !$this->is_system && $this->blocks()->count() === 0;
+        return ! $this->is_system && $this->blocks()->count() === 0;
     }
 }

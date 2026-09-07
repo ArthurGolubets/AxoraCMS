@@ -31,7 +31,7 @@ class DashboardMetricsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка получения метрик: ' . $e->getMessage(),
+                'message' => 'Ошибка получения метрик: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -58,7 +58,7 @@ class DashboardMetricsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка получения метрики: ' . $e->getMessage(),
+                'message' => 'Ошибка получения метрики: '.$e->getMessage(),
             ], 500);
         }
     }

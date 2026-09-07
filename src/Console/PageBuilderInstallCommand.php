@@ -2,18 +2,20 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
+use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class PageBuilderInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'pagebuilder';
 
     protected $signature = 'axoracms:pagebuilder-install';
+
     protected $description = 'Install AxoraCMS Page Builder Module';
 
     public function handle(): int
@@ -25,7 +27,7 @@ class PageBuilderInstallCommand extends Command
 
         // Determine package path (works for both local development and composer installation)
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
@@ -34,13 +36,13 @@ class PageBuilderInstallCommand extends Command
 
         // Determine migration path
         $migrationPath = 'vendor/holartweb/axora-cms/database/migrations/pages';
-        if (!file_exists(base_path($migrationPath))) {
+        if (! file_exists(base_path($migrationPath))) {
             $migrationPath = 'packages/holartweb/axora-cms/database/migrations/pages';
         }
 
         Artisan::call('migrate', [
             '--path' => $migrationPath,
-            '--force' => true
+            '--force' => true,
         ]);
         $this->info('✓ Migrations completed');
         $this->newLine();

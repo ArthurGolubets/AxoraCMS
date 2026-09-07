@@ -2,9 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Models\Commerce;
 
+use App\Models\TUser;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TOrders extends Model
 {
@@ -27,7 +28,7 @@ class TOrders extends Model
         'promocode_id',
         'promocode_discount',
         'comments',
-        'user_id'
+        'user_id',
     ];
 
     protected $casts = [
@@ -43,25 +44,36 @@ class TOrders extends Model
 
     // Константы для delivery_type
     const DELIVERY_PICKUP = 'pickup';
+
     const DELIVERY_COURIER = 'courier';
+
     const DELIVERY_POST = 'post';
 
     // Константы для payment_type
     const PAYMENT_ONLINE = 'online';
+
     const PAYMENT_CASH = 'cash';
+
     const PAYMENT_CARD = 'card';
 
     // Константы для payment_status
     const STATUS_PENDING = 'pending';
+
     const STATUS_PAID = 'paid';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_REFUNDED = 'refunded';
 
     // Константы для delivery_status
     const DELIVERY_PENDING = 'pending';
+
     const DELIVERY_PROCESSING = 'processing';
+
     const DELIVERY_SHIPPED = 'shipped';
+
     const DELIVERY_DELIVERED = 'delivered';
+
     const DELIVERY_CANCELLED = 'cancelled';
 
     /**
@@ -94,8 +106,9 @@ class TOrders extends Model
     public function user(): ?BelongsTo
     {
         if (class_exists('App\Models\TUser')) {
-            return $this->belongsTo(\App\Models\TUser::class, 'user_id');
+            return $this->belongsTo(TUser::class, 'user_id');
         }
+
         return null;
     }
 }

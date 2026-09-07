@@ -2,11 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Pages;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use HolartWeb\AxoraCMS\Models\Pages\TPage;
 use HolartWeb\AxoraCMS\Models\Pages\TPageBlock;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class PageBlocksController extends Controller
 {
@@ -80,7 +80,7 @@ class PageBlocksController extends Controller
 
         if ($page->type !== TPage::TYPE_DYNAMIC) {
             return response()->json([
-                'message' => 'Блоки можно добавлять только к динамическим страницам'
+                'message' => 'Блоки можно добавлять только к динамическим страницам',
             ], 422);
         }
 
@@ -99,7 +99,7 @@ class PageBlocksController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'page_block', $block->id,
-            'Добавлен блок на страницу "' . $page->title . '"');
+            'Добавлен блок на страницу "'.$page->title.'"');
 
         return response()->json($block->load('blockType'), 201);
     }
@@ -126,10 +126,10 @@ class PageBlocksController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'page_block', $block->id,
-            'Обновлен блок на странице "' . $page->title . '"', [
-            'old' => $oldData,
-            'new' => $block->getAttributes()
-        ]);
+            'Обновлен блок на странице "'.$page->title.'"', [
+                'old' => $oldData,
+                'new' => $block->getAttributes(),
+            ]);
 
         return response()->json($block->load('blockType'));
     }
@@ -146,7 +146,7 @@ class PageBlocksController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'page_block', $id,
-            'Удален блок со страницы "' . $page->title . '"');
+            'Удален блок со страницы "'.$page->title.'"');
 
         return response()->json(['message' => 'Блок удален']);
     }
@@ -172,7 +172,7 @@ class PageBlocksController extends Controller
 
         // Log activity
         TAdminAction::log('reordered', 'page_blocks', $pageId,
-            'Изменен порядок блоков на странице "' . $page->title . '"');
+            'Изменен порядок блоков на странице "'.$page->title.'"');
 
         return response()->json(['message' => 'Порядок блоков обновлен']);
     }

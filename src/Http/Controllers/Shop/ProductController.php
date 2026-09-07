@@ -4,9 +4,11 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use HolartWeb\AxoraCMS\Models\Shop\TProductRelated;
+use HolartWeb\AxoraCMS\Models\Shop\TProductVariant;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Models\TPanelSettings;
+use HolartWeb\AxoraCMS\Support\HtmlSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -49,6 +51,34 @@ class ProductController extends Controller
             'onec_id' => $installed ? $product->getAttribute('1c_id') : null,
             'quantity' => $installed ? (int) $product->getAttribute('quantity') : null,
         ];
+    }
+
+    /**
+     * Return a SKU that is unique within the given product.
+     *
+     * A variant SKU only needs to be unique per product, so the same SKU can be
+     * reused across different products. On a real collision within one product
+     * the SKU gets a "_n" suffix (n = repetitions + 1).
+     *
+     * @param  array<string, bool>  $taken  SKUs already assigned during this save
+     */
+    protected function uniqueVariantSku(int $productId, string $sku, array &$taken): string
+    {
+        $base = trim($sku);
+        $candidate = $base;
+        $n = 1;
+
+        while (
+            isset($taken[$candidate])
+            || TProductVariant::where('product_id', $productId)->where('sku', $candidate)->exists()
+        ) {
+            $n++;
+            $candidate = $base.'_'.$n;
+        }
+
+        $taken[$candidate] = true;
+
+        return $candidate;
     }
 
     /**
@@ -194,7 +224,10 @@ class ProductController extends Controller
             $query->where('price', '<=', $maxPrice);
         }
 
-        $products = $query->orderBy('created_at', 'desc')->paginate(20);
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 20;
+
+        $products = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json($products);
     }
@@ -300,7 +333,7 @@ class ProductController extends Controller
             'gallery' => 'nullable|array',
             'variants' => 'nullable|array',
             'variants.*.name' => 'required|string',
-            'variants.*.sku' => 'required|string|unique:t_product_variants,sku',
+            'variants.*.sku' => 'required|string',
             'variants.*.price' => 'required|numeric|min:0',
             'variants.*.old_price' => 'nullable|numeric|min:0',
             'variants.*.attributes' => 'nullable|array',
@@ -333,6 +366,11 @@ class ProductController extends Controller
             $validated['slug'] = TProduct::generateSlug($validated['name']);
         }
 
+        // Rich-text content is untrusted (rich editor, API, 1C import) — sanitize.
+        if (array_key_exists('content', $validated)) {
+            $validated['content'] = HtmlSanitizer::clean($validated['content']);
+        }
+
         // Extract variants data
         $variants = $validated['variants'] ?? [];
         unset($validated['variants']);
@@ -356,6 +394,7 @@ class ProductController extends Controller
         $product = TProduct::create($validated);
 
         // Create variants if provided
+        $variantSkus = [];
         foreach ($variants as $variantData) {
             // Extract property values for variant
             $variantPropertyValues = $variantData['property_values'] ?? [];
@@ -364,6 +403,9 @@ class ProductController extends Controller
             // Extract companion products for this variant
             $variantRelated = $variantData['related_products'] ?? null;
             unset($variantData['related_products']);
+
+            // SKU only has to be unique within this product
+            $variantData['sku'] = $this->uniqueVariantSku($product->id, $variantData['sku'] ?? '', $variantSkus);
 
             // Create variant
             $variant = $product->variants()->create($variantData);
@@ -477,15 +519,15 @@ class ProductController extends Controller
         $product = TProduct::findOrFail($id);
 
         $validated = $request->validate([
-            'catalog_id' => 'required|exists:t_catalogs,id',
-            'name' => 'required|string|max:255',
+            'catalog_id' => 'sometimes|required|exists:t_catalogs,id',
+            'name' => 'sometimes|required|string|max:255',
             'slug' => 'nullable|string|unique:t_products,slug,'.$id,
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
+            'price' => 'sometimes|required|numeric|min:0',
             'old_price' => 'nullable|numeric|min:0',
-            'sku' => 'required|string|unique:t_products,sku,'.$id,
+            'sku' => 'sometimes|required|string|unique:t_products,sku,'.$id,
             'main_image' => 'nullable|string',
             'tags' => 'nullable|array',
             'is_new' => 'boolean',
@@ -524,6 +566,11 @@ class ProductController extends Controller
             'variants.*.related_products.*.sort' => 'nullable|integer',
         ]);
 
+        // Rich-text content is untrusted (rich editor, API, 1C import) — sanitize.
+        if (array_key_exists('content', $validated)) {
+            $validated['content'] = HtmlSanitizer::clean($validated['content']);
+        }
+
         // Stock (quantity) is only writable when the CommerceML integration is
         // installed and the "Можно редактировать остаток" site setting is on.
         // The 1C identifier is never writable here — it is owned by the 1C sync.
@@ -555,6 +602,7 @@ class ProductController extends Controller
             $product->variants()->delete();
 
             // Create new variants
+            $variantSkus = [];
             foreach ($variants as $variantData) {
                 // Extract property values for variant
                 $variantPropertyValues = $variantData['property_values'] ?? [];
@@ -563,6 +611,9 @@ class ProductController extends Controller
                 // Extract companion products for this variant
                 $variantRelated = $variantData['related_products'] ?? null;
                 unset($variantData['related_products']);
+
+                // SKU only has to be unique within this product
+                $variantData['sku'] = $this->uniqueVariantSku($product->id, $variantData['sku'] ?? '', $variantSkus);
 
                 // Create variant
                 $variant = $product->variants()->create($variantData);
@@ -720,18 +771,24 @@ class ProductController extends Controller
         $query = $request->get('q', '');
         $excludeId = $request->get('exclude_id');
 
-        if (strlen($query) < 2) {
+        // Explicit id lookup: used to re-hydrate line items already on an order
+        // (e.g. the order edit form) without preloading the whole catalog.
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->get('ids', ''))));
+
+        if (empty($ids) && strlen($query) < 2) {
             return response()->json(['products' => []]);
         }
 
-        $products = TProduct::where(function ($q) use ($query) {
-            $q->where('name', 'like', "%{$query}%")
-                ->orWhere('sku', 'like', "%{$query}%");
-        })
-            ->where('is_active', true)
+        $products = TProduct::when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
+            ->when(empty($ids), function ($q) use ($query) {
+                $q->where(function ($inner) use ($query) {
+                    $inner->where('name', 'like', "%{$query}%")
+                        ->orWhere('sku', 'like', "%{$query}%");
+                })->where('is_active', true);
+            })
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->with(['catalog', 'variants:id,product_id,name,sku,price'])
-            ->limit(20)
+            ->limit(! empty($ids) ? 50 : 20)
             ->get()
             ->map(function ($product) {
                 return [
@@ -787,6 +844,10 @@ class ProductController extends Controller
                 'created' => false,
             ]);
         }
+
+        // SKU only has to be unique within the target product
+        $taken = [];
+        $variantSku = $this->uniqueVariantSku($target->id, $variantSku, $taken);
 
         $variant = $target->variants()->create([
             'name' => $source->name,

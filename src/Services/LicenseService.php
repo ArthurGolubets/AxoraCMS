@@ -19,7 +19,7 @@ class LicenseService
                 'action' => $action,
             ]);
 
-            if (!$response->successful()) {      
+            if (! $response->successful()) {
                 return false;
             }
 
@@ -47,7 +47,7 @@ class LicenseService
     {
         $licensePath = storage_path('axora-cms-license.key');
 
-        if (!file_exists($licensePath)) {
+        if (! file_exists($licensePath)) {
             return null;
         }
 
@@ -61,7 +61,7 @@ class LicenseService
     {
         $key = $this->getSavedLicense();
 
-        if (!$key) {
+        if (! $key) {
             return false;
         }
 

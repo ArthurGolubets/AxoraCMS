@@ -2,8 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Services\Integrations;
 
-use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
 use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
+use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
 use HolartWeb\AxoraCMS\Models\TModule;
 use YooKassa\Client;
 use YooKassa\Model\Payment\ConfirmationType;
@@ -12,10 +12,9 @@ use YooKassa\Request\Payments\CreatePaymentRequest;
 class YookassaService
 {
     private $vatCodeData = 2; // https://yookassa.ru/developers/payment-acceptance/receipts/54fz/other-services/parameters-values
+
     /**
      * Get shop ID
-     *
-     * @return string|null
      */
     public function getShopId(): ?string
     {
@@ -24,8 +23,6 @@ class YookassaService
 
     /**
      * Get secret key
-     *
-     * @return string|null
      */
     public function getSecretKey(): ?string
     {
@@ -34,55 +31,53 @@ class YookassaService
 
     /**
      * Check if Yookassa is configured
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->getShopId()) && !empty($this->getSecretKey());
+        return ! empty($this->getShopId()) && ! empty($this->getSecretKey());
     }
 
     /**
      * Create payment for order
      *
-     * @param array $params Payment parameters (order_id, amount, currency, description, email, phone, items)
-     * @param string $routeName Route name for return URL
+     * @param  array  $params  Payment parameters (order_id, amount, currency, description, email, phone, items)
+     * @param  string  $routeName  Route name for return URL
      * @return string|null Confirmation URL or null on error
      */
     public function createOrderPayment(array $params, string $routeName = 'order.success'): ?string
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return null;
         }
 
-        $client = new Client();
+        $client = new Client;
         $client->setAuth($this->getShopId(), $this->getSecretKey());
 
         $builder = CreatePaymentRequest::builder();
         $builder->setAmount($params['amount'])
-                ->setCurrency($params['currency'])
-                ->setCapture(true)
-                ->setDescription($params['description'] ?? $this->getDefaultDescription())
-                ->setMetadata([
-                    'order_id' => $params['order_id'],
-                    'language' => 'ru',
-                ]);
+            ->setCurrency($params['currency'])
+            ->setCapture(true)
+            ->setDescription($params['description'] ?? $this->getDefaultDescription())
+            ->setMetadata([
+                'order_id' => $params['order_id'],
+                'language' => 'ru',
+            ]);
 
         $builder->setConfirmation([
             'type' => ConfirmationType::REDIRECT,
             'returnUrl' => $this->renderReturnUrl($params['order_id'], $routeName),
         ]);
 
-        if (!empty($params['email'])) {
+        if (! empty($params['email'])) {
             $builder->setReceiptEmail($params['email']);
         }
 
-        if (!empty($params['phone'])) {
+        if (! empty($params['phone'])) {
             $phone = str_replace(['+', ' ', '(', ')', '-', ' '], '', $params['phone']);
             $builder->setReceiptPhone($phone);
         }
 
-        if (!empty($params['items']) && count($params['items']) > 0) {
+        if (! empty($params['items']) && count($params['items']) > 0) {
             foreach ($params['items'] as $item) {
                 $builder->addReceiptItem(
                     $item['name'],
@@ -114,7 +109,8 @@ class YookassaService
             return $confirmationUrl;
         } catch (\Exception $e) {
             // Log error instead of dd()
-            \Log::error('Yookassa payment creation error: ' . $e->getMessage());
+            \Log::error('Yookassa payment creation error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -122,16 +118,16 @@ class YookassaService
     /**
      * Check payment status and update transaction
      *
-     * @param TPaymentTransaction $transaction Payment transaction
+     * @param  TPaymentTransaction  $transaction  Payment transaction
      * @return string|null Payment status or null on error
      */
     public function checkPayment(TPaymentTransaction $transaction): ?string
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return null;
         }
 
-        $client = new Client();
+        $client = new Client;
         $client->setAuth($this->getShopId(), $this->getSecretKey());
 
         try {
@@ -154,7 +150,7 @@ class YookassaService
                     $message .= "Телефон: {$order->phone}\n";
                     $message .= "Email: {$order->email}";
 
-                    (new TelegramService())->sendMessage($message);
+                    (new TelegramService)->sendMessage($message);
                 }
             }
 
@@ -174,13 +170,14 @@ class YookassaService
                     $message .= "Телефон: {$order->phone}\n";
                     $message .= "Email: {$order->email}";
 
-                    (new TelegramService())->sendMessage($message);
+                    (new TelegramService)->sendMessage($message);
                 }
             }
 
             return $status;
         } catch (\Exception $e) {
-            \Log::error('Yookassa payment check error: ' . $e->getMessage());
+            \Log::error('Yookassa payment check error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -188,14 +185,10 @@ class YookassaService
     /**
      * Capture payment
      * TODO: Implement payment capture logic
-     *
-     * @param string $paymentId
-     * @param array $data
-     * @return array|null
      */
     public function capturePayment(string $paymentId, array $data = []): ?array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return null;
         }
 
@@ -207,14 +200,10 @@ class YookassaService
     /**
      * Refund payment
      * TODO: Implement refund logic
-     *
-     * @param string $paymentId
-     * @param array $data
-     * @return array|null
      */
     public function refundPayment(string $paymentId, array $data): ?array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return null;
         }
 
@@ -225,20 +214,17 @@ class YookassaService
 
     /**
      * Get default payment description
-     *
-     * @return string
      */
     private function getDefaultDescription(): string
     {
-        return "Оплата заказа на сайте " . config('app.url');
+        return 'Оплата заказа на сайте '.config('app.url');
     }
 
     /**
      * Render return URL for payment
      *
-     * @param int $orderId Order ID
-     * @param string $routeName Route name
-     * @return string
+     * @param  int  $orderId  Order ID
+     * @param  string  $routeName  Route name
      */
     private function renderReturnUrl(int $orderId, string $routeName = 'order.success'): string
     {

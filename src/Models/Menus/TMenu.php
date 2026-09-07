@@ -23,7 +23,9 @@ class TMenu extends Model
     ];
 
     const LOCATION_HEADER = 'header';
+
     const LOCATION_FOOTER = 'footer';
+
     const LOCATION_CUSTOM = 'custom';
 
     /**
@@ -60,7 +62,7 @@ class TMenu extends Model
         }
 
         while ($query->exists()) {
-            $code = $originalCode . '_' . $counter;
+            $code = $originalCode.'_'.$counter;
             $counter++;
             $query = static::where('code', $code);
             if ($excludeId) {

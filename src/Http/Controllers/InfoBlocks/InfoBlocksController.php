@@ -2,11 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\InfoBlocks;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class InfoBlocksController extends Controller
 {
@@ -19,9 +18,9 @@ class InfoBlocksController extends Controller
 
         // Search
         if ($search = $request->get('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -37,10 +36,11 @@ class InfoBlocksController extends Controller
         $infoBlocks = $query->paginate($perPage);
 
         // Add counts to each info block
-        $infoBlocks->getCollection()->transform(function($infoBlock) {
+        $infoBlocks->getCollection()->transform(function ($infoBlock) {
             $infoBlock->elements_count = $infoBlock->elements()->count();
             $infoBlock->fields_count = $infoBlock->fields()->count();
             $infoBlock->sections_count = $infoBlock->sections()->count();
+
             return $infoBlock;
         });
 
@@ -52,7 +52,7 @@ class InfoBlocksController extends Controller
      */
     public function show($id)
     {
-        $infoBlock = TInfoBlock::with(['fields' => function($query) {
+        $infoBlock = TInfoBlock::with(['fields' => function ($query) {
             $query->orderBy('sort');
         }])->findOrFail($id);
 
@@ -88,7 +88,7 @@ class InfoBlocksController extends Controller
         $infoBlock = TInfoBlock::create($validated);
 
         // Log activity
-        TAdminAction::log('created', 'info_block', $infoBlock->id, 'Создан инфоблок: ' . $infoBlock->name);
+        TAdminAction::log('created', 'info_block', $infoBlock->id, 'Создан инфоблок: '.$infoBlock->name);
 
         return response()->json($infoBlock, 201);
     }
@@ -103,7 +103,7 @@ class InfoBlocksController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:list,catalog',
-            'code' => 'nullable|string|unique:t_info_blocks,code,' . $id . '|regex:/^[a-z0-9_]+$/',
+            'code' => 'nullable|string|unique:t_info_blocks,code,'.$id.'|regex:/^[a-z0-9_]+$/',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'settings' => 'nullable|array',
@@ -113,9 +113,9 @@ class InfoBlocksController extends Controller
         $infoBlock->update($validated);
 
         // Log activity
-        TAdminAction::log('updated', 'info_block', $infoBlock->id, 'Обновлен инфоблок: ' . $infoBlock->name, [
+        TAdminAction::log('updated', 'info_block', $infoBlock->id, 'Обновлен инфоблок: '.$infoBlock->name, [
             'old' => $oldData,
-            'new' => $infoBlock->getAttributes()
+            'new' => $infoBlock->getAttributes(),
         ]);
 
         return response()->json($infoBlock);
@@ -136,7 +136,7 @@ class InfoBlocksController extends Controller
         $infoBlock->delete();
 
         // Log activity
-        TAdminAction::log('deleted', 'info_block', $id, 'Удален инфоблок: ' . $infoBlockName);
+        TAdminAction::log('deleted', 'info_block', $id, 'Удален инфоблок: '.$infoBlockName);
 
         return response()->json(['message' => 'Инфоблок удален']);
     }
@@ -147,7 +147,7 @@ class InfoBlocksController extends Controller
     public function toggleFavorite($id)
     {
         $infoBlock = TInfoBlock::findOrFail($id);
-        $infoBlock->is_favorite = !$infoBlock->is_favorite;
+        $infoBlock->is_favorite = ! $infoBlock->is_favorite;
         $infoBlock->save();
 
         // Log activity
@@ -155,12 +155,12 @@ class InfoBlocksController extends Controller
             $infoBlock->is_favorite ? 'favorite_added' : 'favorite_removed',
             'info_block',
             $infoBlock->id,
-            ($infoBlock->is_favorite ? 'Добавлен в избранное: ' : 'Удален из избранного: ') . $infoBlock->name
+            ($infoBlock->is_favorite ? 'Добавлен в избранное: ' : 'Удален из избранного: ').$infoBlock->name
         );
 
         return response()->json([
             'is_favorite' => $infoBlock->is_favorite,
-            'message' => $infoBlock->is_favorite ? 'Добавлено в избранное' : 'Удалено из избранного'
+            'message' => $infoBlock->is_favorite ? 'Добавлено в избранное' : 'Удалено из избранного',
         ]);
     }
 

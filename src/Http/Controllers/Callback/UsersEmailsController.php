@@ -2,10 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Callback;
 
+use HolartWeb\AxoraCMS\Models\Callback\TUsersEmails;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
-use HolartWeb\AxoraCMS\Models\Callback\TUsersEmails;
 
 class UsersEmailsController extends Controller
 {
@@ -18,7 +18,7 @@ class UsersEmailsController extends Controller
 
         // Search
         if ($request->has('search') && $request->search !== '') {
-            $query->where('email', 'like', '%' . $request->search . '%');
+            $query->where('email', 'like', '%'.$request->search.'%');
         }
 
         // Filter by status
@@ -44,6 +44,7 @@ class UsersEmailsController extends Controller
     public function show($id)
     {
         $email = TUsersEmails::findOrFail($id);
+
         return response()->json($email);
     }
 
@@ -54,13 +55,13 @@ class UsersEmailsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:t_users_emails,email',
-            'status' => 'required|in:active,unsubscribed,bounced'
+            'status' => 'required|in:active,unsubscribed,bounced',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -69,7 +70,7 @@ class UsersEmailsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Email успешно добавлен',
-            'data' => $email
+            'data' => $email,
         ], 201);
     }
 
@@ -81,14 +82,14 @@ class UsersEmailsController extends Controller
         $email = TUsersEmails::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|unique:t_users_emails,email,' . $id,
-            'status' => 'required|in:active,unsubscribed,bounced'
+            'email' => 'required|email|unique:t_users_emails,email,'.$id,
+            'status' => 'required|in:active,unsubscribed,bounced',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -97,7 +98,7 @@ class UsersEmailsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Email успешно обновлен',
-            'data' => $email
+            'data' => $email,
         ]);
     }
 
@@ -111,7 +112,7 @@ class UsersEmailsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Email успешно удален'
+            'message' => 'Email успешно удален',
         ]);
     }
 
@@ -122,13 +123,13 @@ class UsersEmailsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
-            'ids.*' => 'exists:t_users_emails,id'
+            'ids.*' => 'exists:t_users_emails,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -136,7 +137,7 @@ class UsersEmailsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Emails успешно удалены'
+            'message' => 'Emails успешно удалены',
         ]);
     }
 }

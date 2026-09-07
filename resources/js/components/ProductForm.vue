@@ -349,6 +349,7 @@ import TinyMCEEditor from './TinyMCEEditor.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductPropertiesForm from './ProductPropertiesForm.vue';
 import RelatedProductsList from './RelatedProductsList.vue';
+import { useAppConfig } from '../composables/useAppConfig';
 
 const { success, error } = useModal();
 const { buttonStyle } = useTheme();
@@ -399,10 +400,7 @@ const tabs = computed(() => {
 
 const loadPanelSettings = async () => {
   try {
-    const response = await fetch('/admin/api/settings', { headers: { Accept: 'application/json' } });
-    if (response.ok) {
-      panelSettings.value = await response.json();
-    }
+    panelSettings.value = (await useAppConfig().loadSettings()) || {};
   } catch (e) {
     panelSettings.value = {};
   }

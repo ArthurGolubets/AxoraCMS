@@ -2,11 +2,11 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 class InfoBlocksUninstallCommand extends Command
@@ -14,6 +14,7 @@ class InfoBlocksUninstallCommand extends Command
     const MODULE_NAME = 'infoblocks';
 
     protected $signature = 'axoracms:infoblocks-uninstall {--preserve-db : Preserve database tables and data}';
+
     protected $description = 'Uninstall AxoraCMS InfoBlocks Module';
 
     public function handle(): int
@@ -25,12 +26,13 @@ class InfoBlocksUninstallCommand extends Command
 
         $preserveDb = $this->option('preserve-db');
 
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->warn('⚠ WARNING: This will delete all infoblocks data from the database!');
             // Only ask for confirmation if running in interactive console
             if ($this->input->isInteractive() && defined('STDIN')) {
-                if (!$this->confirm('Are you sure you want to continue?', false)) {
+                if (! $this->confirm('Are you sure you want to continue?', false)) {
                     $this->info('Uninstallation cancelled.');
+
                     return self::SUCCESS;
                 }
             } else {
@@ -45,7 +47,7 @@ class InfoBlocksUninstallCommand extends Command
         $models = ['TInfoBlock.php', 'TInfoBlockField.php', 'TInfoBlockElement.php', 'TInfoBlockSection.php'];
 
         foreach ($models as $model) {
-            $path = $appModelsPath . '/' . $model;
+            $path = $appModelsPath.'/'.$model;
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed {$model}");
@@ -58,7 +60,7 @@ class InfoBlocksUninstallCommand extends Command
         $helperPath = app_path('Helpers/TInfoBlock.php');
         if (File::exists($helperPath)) {
             File::delete($helperPath);
-            $this->info("✓ Removed TInfoBlock.php");
+            $this->info('✓ Removed TInfoBlock.php');
         }
         $this->newLine();
 
@@ -69,11 +71,11 @@ class InfoBlocksUninstallCommand extends Command
             'InfoBlocksController.php',
             'InfoBlockFieldsController.php',
             'InfoBlockElementsController.php',
-            'InfoBlockSectionsController.php'
+            'InfoBlockSectionsController.php',
         ];
 
         foreach ($controllers as $controller) {
-            $path = $appControllersPath . '/' . $controller;
+            $path = $appControllersPath.'/'.$controller;
             if (File::exists($path)) {
                 File::delete($path);
                 $this->info("✓ Removed {$controller}");
@@ -82,7 +84,7 @@ class InfoBlocksUninstallCommand extends Command
         $this->newLine();
 
         // Step 4: Handle Database
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 4: Removing database tables...');
 
             try {
@@ -110,7 +112,7 @@ class InfoBlocksUninstallCommand extends Command
 
                 Schema::enableForeignKeyConstraints();
             } catch (\Exception $e) {
-                $this->error('❌ Error removing database tables: ' . $e->getMessage());
+                $this->error('❌ Error removing database tables: '.$e->getMessage());
             }
             $this->newLine();
 
@@ -131,15 +133,15 @@ class InfoBlocksUninstallCommand extends Command
                 DB::table('migrations')->whereIn('migration', $migrationFiles)->delete();
                 $this->info('✓ Removed migration records from database');
             } catch (\Exception $e) {
-                $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+                $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
             }
             $this->newLine();
 
             // Step 6: Remove Migration Files
             $this->info('Step 6: Removing migration files...');
             foreach ($migrationFiles as $migration) {
-                $file = $migration . '.php';
-                $path = database_path('migrations/' . $file);
+                $file = $migration.'.php';
+                $path = database_path('migrations/'.$file);
                 if (File::exists($path)) {
                     File::delete($path);
                     $this->info("✓ Removed migration {$file}");

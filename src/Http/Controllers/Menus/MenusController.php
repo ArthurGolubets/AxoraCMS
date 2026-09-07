@@ -2,11 +2,10 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Menus;
 
+use HolartWeb\AxoraCMS\Models\Menus\TMenu;
+use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use HolartWeb\AxoraCMS\Models\Menus\TMenu;
-use HolartWeb\AxoraCMS\Models\Menus\TMenuItem;
-use HolartWeb\AxoraCMS\Models\TAdminAction;
 
 class MenusController extends Controller
 {
@@ -19,9 +18,9 @@ class MenusController extends Controller
 
         // Search
         if ($search = $request->get('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -58,7 +57,7 @@ class MenusController extends Controller
 
         return response()->json([
             'menu' => $menu,
-            'items' => $this->buildNestedItems($menu->rootItems)
+            'items' => $this->buildNestedItems($menu->rootItems),
         ]);
     }
 
@@ -72,6 +71,7 @@ class MenusController extends Controller
             if ($item->children && $item->children->count() > 0) {
                 $itemArray['children'] = $this->buildNestedItems($item->children);
             }
+
             return $itemArray;
         });
     }
@@ -101,12 +101,12 @@ class MenusController extends Controller
 
         // Log activity
         TAdminAction::log('created', 'menu', $menu->id,
-            'Создано меню "' . $menu->name . '" (' . $menu->location . ')');
+            'Создано меню "'.$menu->name.'" ('.$menu->location.')');
 
         return response()->json([
             'id' => $menu->id,
             'menu' => $menu,
-            'message' => 'Меню создано успешно'
+            'message' => 'Меню создано успешно',
         ], 201);
     }
 
@@ -119,7 +119,7 @@ class MenusController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:t_menus,code,' . $id,
+            'code' => 'nullable|string|unique:t_menus,code,'.$id,
             'location' => 'required|in:header,footer,custom',
             'custom_code' => 'nullable|string|max:255',
             'description' => 'nullable|string',
@@ -136,10 +136,10 @@ class MenusController extends Controller
 
         // Log activity
         TAdminAction::log('updated', 'menu', $menu->id,
-            'Обновлено меню "' . $menu->name . '"', [
-            'old' => $oldData,
-            'new' => $menu->getAttributes()
-        ]);
+            'Обновлено меню "'.$menu->name.'"', [
+                'old' => $oldData,
+                'new' => $menu->getAttributes(),
+            ]);
 
         return response()->json($menu);
     }
@@ -156,7 +156,7 @@ class MenusController extends Controller
 
         // Log activity
         TAdminAction::log('deleted', 'menu', $id,
-            'Удалено меню "' . $menuName . '"');
+            'Удалено меню "'.$menuName.'"');
 
         return response()->json(['message' => 'Меню удалено']);
     }
@@ -168,7 +168,7 @@ class MenusController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
-            'exclude_id' => 'nullable|integer'
+            'exclude_id' => 'nullable|integer',
         ]);
 
         $code = TMenu::generateCode(
@@ -185,17 +185,17 @@ class MenusController extends Controller
     public function toggleActive($id)
     {
         $menu = TMenu::findOrFail($id);
-        $menu->is_active = !$menu->is_active;
+        $menu->is_active = ! $menu->is_active;
         $menu->save();
 
         // Log activity
         $status = $menu->is_active ? 'активировано' : 'деактивировано';
         TAdminAction::log('updated', 'menu', $menu->id,
-            'Меню "' . $menu->name . '" ' . $status);
+            'Меню "'.$menu->name.'" '.$status);
 
         return response()->json([
             'message' => 'Статус изменен',
-            'is_active' => $menu->is_active
+            'is_active' => $menu->is_active,
         ]);
     }
 }

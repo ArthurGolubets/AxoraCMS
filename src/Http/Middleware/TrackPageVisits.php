@@ -3,9 +3,9 @@
 namespace HolartWeb\AxoraCMS\Http\Middleware;
 
 use Closure;
+use HolartWeb\AxoraCMS\Services\PageVisitService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use HolartWeb\AxoraCMS\Services\PageVisitService;
 
 class TrackPageVisits
 {
@@ -38,7 +38,7 @@ class TrackPageVisits
             );
         } catch (\Exception $e) {
             // Silently fail to not break the application
-            logger()->error('Failed to track page visit: ' . $e->getMessage());
+            logger()->error('Failed to track page visit: '.$e->getMessage());
         }
 
         return $response;
@@ -50,7 +50,7 @@ class TrackPageVisits
     private function shouldSkipTracking(Request $request, Response $response): bool
     {
         // Only track GET requests
-        if (!$request->isMethod('GET')) {
+        if (! $request->isMethod('GET')) {
             return true;
         }
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 class PagesUninstallCommand extends Command
 {
     protected $signature = 'axoracms:pages-uninstall {--preserve-db : Preserve database tables and data} {--force : Force uninstall without confirmation} {--remove-components : Remove default blade components}';
+
     protected $description = 'Uninstall AxoraCMS Pages Module';
 
     public function handle(): int
@@ -22,8 +23,9 @@ class PagesUninstallCommand extends Command
         $preserveDb = $this->option('preserve-db');
         $force = $this->option('force');
 
-        if (!$preserveDb && !$force && !$this->confirm('This will remove all pages data. Are you sure?')) {
+        if (! $preserveDb && ! $force && ! $this->confirm('This will remove all pages data. Are you sure?')) {
             $this->info('Uninstall cancelled.');
+
             return self::SUCCESS;
         }
 
@@ -33,7 +35,7 @@ class PagesUninstallCommand extends Command
         }
 
         // Step 1: Drop tables (skip if preserve-db)
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Step 1: Dropping database tables...');
             try {
                 // Get database connection
@@ -61,7 +63,7 @@ class PagesUninstallCommand extends Command
                             DB::statement("ALTER TABLE t_page_blocks DROP FOREIGN KEY {$fk->CONSTRAINT_NAME}");
                             $this->info("✓ Dropped foreign key: {$fk->CONSTRAINT_NAME}");
                         } catch (\Exception $e) {
-                            $this->warn("⚠ Could not drop foreign key {$fk->CONSTRAINT_NAME}: " . $e->getMessage());
+                            $this->warn("⚠ Could not drop foreign key {$fk->CONSTRAINT_NAME}: ".$e->getMessage());
                         }
                     }
                 }
@@ -83,7 +85,7 @@ class PagesUninstallCommand extends Command
                             DB::statement("ALTER TABLE t_menu_items DROP FOREIGN KEY {$fk->CONSTRAINT_NAME}");
                             $this->info("✓ Dropped foreign key: {$fk->CONSTRAINT_NAME}");
                         } catch (\Exception $e) {
-                            $this->warn("⚠ Could not drop foreign key {$fk->CONSTRAINT_NAME}: " . $e->getMessage());
+                            $this->warn("⚠ Could not drop foreign key {$fk->CONSTRAINT_NAME}: ".$e->getMessage());
                         }
                     }
                 }
@@ -112,14 +114,15 @@ class PagesUninstallCommand extends Command
 
                 $this->info('✓ All tables dropped successfully');
             } catch (\Exception $e) {
-                $this->error('❌ Failed to drop tables: ' . $e->getMessage());
-                $this->error('Stack trace: ' . $e->getTraceAsString());
+                $this->error('❌ Failed to drop tables: '.$e->getMessage());
+                $this->error('Stack trace: '.$e->getTraceAsString());
                 // Re-enable foreign key checks in case of error
                 try {
                     DB::statement('SET FOREIGN_KEY_CHECKS=1;');
                 } catch (\Exception $ex) {
                     // Ignore
                 }
+
                 return self::FAILURE;
             }
             $this->newLine();
@@ -140,7 +143,7 @@ class PagesUninstallCommand extends Command
         ];
 
         foreach ($migrationFiles as $file) {
-            $migrationPath = database_path('migrations/' . $file);
+            $migrationPath = database_path('migrations/'.$file);
             if (file_exists($migrationPath)) {
                 unlink($migrationPath);
                 $this->info("✓ Removed migration {$file}");
@@ -154,7 +157,7 @@ class PagesUninstallCommand extends Command
             }
             $this->info('✓ Migration records removed');
         } catch (\Exception $e) {
-            $this->warn('⚠ Could not remove migration records: ' . $e->getMessage());
+            $this->warn('⚠ Could not remove migration records: '.$e->getMessage());
         }
         $this->newLine();
 
@@ -162,7 +165,7 @@ class PagesUninstallCommand extends Command
         $this->info('Step 3: Removing models...');
         $models = ['TPage.php', 'TPageBlock.php', 'TPageBlockType.php', 'TMenu.php', 'TMenuItem.php'];
         foreach ($models as $model) {
-            $modelPath = app_path('Models/' . $model);
+            $modelPath = app_path('Models/'.$model);
             if (file_exists($modelPath)) {
                 unlink($modelPath);
                 $this->info("✓ Removed {$model}");
@@ -177,11 +180,11 @@ class PagesUninstallCommand extends Command
             'PageBlocksController.php',
             'PageBlockTypesController.php',
             'MenusController.php',
-            'MenuItemsController.php'
+            'MenuItemsController.php',
         ];
 
         foreach ($controllers as $controller) {
-            $controllerPath = app_path('Http/Controllers/' . $controller);
+            $controllerPath = app_path('Http/Controllers/'.$controller);
             if (file_exists($controllerPath)) {
                 unlink($controllerPath);
                 $this->info("✓ Removed {$controller}");
@@ -197,7 +200,7 @@ class PagesUninstallCommand extends Command
         // Check if --remove-components flag is set (from web interface)
         if ($this->option('remove-components')) {
             $removeComponents = true;
-        } elseif (!$force) {
+        } elseif (! $force) {
             // Interactive mode - ask user
             $removeComponents = $this->confirm('Do you want to remove default blade components (header, footer, blocks)?', false);
         }
@@ -223,7 +226,7 @@ class PagesUninstallCommand extends Command
 
             $viewsPath = resource_path('views/components');
             foreach ($bladeFiles as $file) {
-                $filePath = $viewsPath . '/' . $file;
+                $filePath = $viewsPath.'/'.$file;
                 if (file_exists($filePath)) {
                     unlink($filePath);
                     $this->info("✓ Removed {$file}");
@@ -235,7 +238,7 @@ class PagesUninstallCommand extends Command
             $headersPath = resource_path('views/layouts/headers');
             if (is_dir($headersPath)) {
                 foreach ($headerFiles as $file) {
-                    $filePath = $headersPath . '/' . $file;
+                    $filePath = $headersPath.'/'.$file;
                     if (file_exists($filePath)) {
                         unlink($filePath);
                         $this->info("✓ Removed layouts/headers/{$file}");
@@ -253,7 +256,7 @@ class PagesUninstallCommand extends Command
             $footersPath = resource_path('views/layouts/footers');
             if (is_dir($footersPath)) {
                 foreach ($footerFiles as $file) {
-                    $filePath = $footersPath . '/' . $file;
+                    $filePath = $footersPath.'/'.$file;
                     if (file_exists($filePath)) {
                         unlink($filePath);
                         $this->info("✓ Removed layouts/footers/{$file}");
@@ -270,7 +273,7 @@ class PagesUninstallCommand extends Command
             $layoutFiles = ['app.blade.php', 'simple.blade.php'];
             $layoutsPath = resource_path('views/layouts');
             foreach ($layoutFiles as $file) {
-                $filePath = $layoutsPath . '/' . $file;
+                $filePath = $layoutsPath.'/'.$file;
                 if (file_exists($filePath)) {
                     unlink($filePath);
                     $this->info("✓ Removed layouts/{$file}");
@@ -278,7 +281,7 @@ class PagesUninstallCommand extends Command
             }
 
             // Try to remove empty directories
-            $blocksDir = $viewsPath . '/blocks';
+            $blocksDir = $viewsPath.'/blocks';
             if (is_dir($blocksDir) && count(scandir($blocksDir)) == 2) { // only . and ..
                 rmdir($blocksDir);
                 $this->info('✓ Removed blocks directory');

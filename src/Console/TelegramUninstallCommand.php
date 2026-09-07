@@ -2,9 +2,8 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 class TelegramUninstallCommand extends Command
@@ -12,6 +11,7 @@ class TelegramUninstallCommand extends Command
     const MODULE_NAME = 'telegram';
 
     protected $signature = 'axoracms:telegram-uninstall {--preserve-db : Preserve database tables}';
+
     protected $description = 'Uninstall Telegram Integration';
 
     public function handle(): int
@@ -23,7 +23,7 @@ class TelegramUninstallCommand extends Command
 
         $preserveDb = $this->option('preserve-db');
 
-        if (!$preserveDb) {
+        if (! $preserveDb) {
             $this->info('Removing Telegram settings from database...');
 
             try {
@@ -33,7 +33,8 @@ class TelegramUninstallCommand extends Command
 
                 $this->info('✓ Telegram settings removed');
             } catch (\Exception $e) {
-                $this->error('❌ Failed to remove settings: ' . $e->getMessage());
+                $this->error('❌ Failed to remove settings: '.$e->getMessage());
+
                 return self::FAILURE;
             }
         } else {

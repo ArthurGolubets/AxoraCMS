@@ -2,17 +2,19 @@
 
 namespace HolartWeb\AxoraCMS\Console;
 
-use Illuminate\Console\Command;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Services\LicenseService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
 class CallbackInstallCommand extends Command
 {
     const VERSION = '1.0.0';
+
     const MODULE_NAME = 'callback';
 
     protected $signature = 'axoracms:callback-user-install';
+
     protected $description = 'Install AxoraCMS Callback Module';
 
     protected LicenseService $licenseService;
@@ -32,9 +34,10 @@ class CallbackInstallCommand extends Command
 
         // Step 1: Check License
         $this->info('Step 1: Checking license...');
-        if (!$this->checkLicense()) {
+        if (! $this->checkLicense()) {
             $this->error('❌ License verification failed!');
             $this->error('Please contact support to obtain a valid license key.');
+
             return self::FAILURE;
         }
         $this->info('✓ License verified successfully');
@@ -44,19 +47,20 @@ class CallbackInstallCommand extends Command
         $this->info('Step 2: Running database migrations...');
 
         $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (!file_exists($packagePath)) {
+        if (! file_exists($packagePath)) {
             $packagePath = base_path('packages/holartweb/axora-cms');
         }
 
         try {
-            $migrationsPath = str_replace(base_path() . '/', '', $packagePath) . '/database/migrations/callback';
+            $migrationsPath = str_replace(base_path().'/', '', $packagePath).'/database/migrations/callback';
             Artisan::call('migrate', [
                 '--path' => $migrationsPath,
-                '--force' => true
+                '--force' => true,
             ]);
             $this->info('✓ Migrations completed successfully');
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
         $this->newLine();
@@ -99,12 +103,14 @@ class CallbackInstallCommand extends Command
             return false;
         }
 
-        if (!$this->licenseService->checkLicense($key, 'callback-install')) {
+        if (! $this->licenseService->checkLicense($key, 'callback-install')) {
             $this->error('Invalid license key!');
+
             return false;
         }
 
         $this->licenseService->saveLicense($key);
+
         return true;
     }
 }
