@@ -114,16 +114,28 @@
                   <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Ссылка на карту</label>
                   <input v-model="address.map_link" type="text" placeholder="https://maps.google.com/..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Время работы</label>
-                    <input v-model="address.hours" type="text" placeholder="Пн-Пт: 9:00-18:00" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Телефон</label>
-                    <input v-model="address.phone" type="text" placeholder="+7 (999) 123-45-67" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
-                  </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Время работы</label>
+                  <input v-model="address.hours" type="text" placeholder="Пн-Пт: 9:00-18:00" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
                 </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Телефоны</label>
+                  <div v-for="(phone, pi) in address.phones" :key="pi" class="flex mb-2">
+                    <input v-model="address.phones[pi]" type="text" placeholder="+7 (999) 123-45-67" class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-lg text-gray-900 dark:text-white text-sm">
+                    <button @click.prevent="address.phones.splice(pi, 1)" type="button" class="px-3 py-2 bg-red-600 text-white rounded-r-lg hover:bg-red-700 text-sm">×</button>
+                  </div>
+                  <button @click.prevent="address.phones.push('')" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">+ Добавить телефон</button>
+                </div>
+
+                <div>
+                  <label class="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400 cursor-pointer">
+                    <input type="checkbox" v-model="address._showEmail" @change="address._showEmail || (address.email = '')" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded">
+                    Указать e-mail
+                  </label>
+                  <input v-if="address._showEmail" v-model="address.email" type="email" placeholder="office@example.com" class="w-full mt-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm">
+                </div>
+
                 <button @click.prevent="removeAddress(index)" type="button" class="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">Удалить адрес</button>
               </div>
             </div>
@@ -393,16 +405,23 @@ const fetchSettings = async () => {
       return;
     }
 
-    // Преобразование старого формата адресов в новый
-    let addresses = data.addresses || [];
-    if (addresses.length > 0 && typeof addresses[0] === 'string') {
-      addresses = addresses.map(addr => ({
-        address: addr,
-        hours: '',
-        phone: '',
-        map_link: ''
-      }));
-    }
+    // Нормализация адресов (старые форматы: строка / одиночный phone)
+    const addresses = (data.addresses || []).map((addr) => {
+      const src = typeof addr === 'string' ? { address: addr } : (addr || {});
+      const phones = Array.isArray(src.phones)
+        ? src.phones
+        : (src.phone ? [src.phone] : []);
+      const email = src.email || '';
+
+      return {
+        address: src.address || '',
+        map_link: src.map_link || '',
+        hours: src.hours || '',
+        phones: phones.length ? phones : [''],
+        email,
+        _showEmail: !!email,
+      };
+    });
 
     settings.value = {
       ...settings.value,
@@ -420,6 +439,18 @@ const fetchSettings = async () => {
   }
 };
 
+const buildSettingsPayload = () => {
+  const payload = { ...settings.value };
+  payload.addresses = (settings.value.addresses || []).map((addr) => ({
+    address: addr.address || '',
+    map_link: addr.map_link || '',
+    hours: addr.hours || '',
+    phones: (addr.phones || []).map((p) => (p || '').trim()).filter(Boolean),
+    email: addr._showEmail ? (addr.email || '').trim() : '',
+  }));
+  return payload;
+};
+
 const saveSettings = async () => {
   loading.value = true;
   try {
@@ -430,7 +461,7 @@ const saveSettings = async () => {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': token
       },
-      body: JSON.stringify(settings.value)
+      body: JSON.stringify(buildSettingsPayload())
     });
 
     if (!response.ok) {
@@ -471,9 +502,11 @@ const removeEmail = (index) => {
 const addAddress = () => {
   settings.value.addresses.push({
     address: '',
+    map_link: '',
     hours: '',
-    phone: '',
-    map_link: ''
+    phones: [''],
+    email: '',
+    _showEmail: false,
   });
 };
 

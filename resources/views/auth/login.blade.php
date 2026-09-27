@@ -104,9 +104,13 @@
 
                     <!-- Remember & Forgot -->
                     <div class="flex items-center justify-between">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" name="remember" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600">
-                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Запомнить меня</span>
+                        <label class="flex items-center cursor-pointer select-none">
+                            <span class="relative inline-flex items-center shrink-0">
+                                <input type="checkbox" name="remember" value="1" class="peer sr-only">
+                                <span class="block w-10 h-6 rounded-full bg-gray-300 dark:bg-gray-600 transition-colors peer-checked:bg-[var(--theme-color)]"></span>
+                                <span class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4"></span>
+                            </span>
+                            <span class="ml-3 text-sm text-gray-600 dark:text-gray-400">Запомнить меня</span>
                         </label>
                         <a href="{{ route('axora-cms.password.request') }}" class="text-sm font-medium hover:underline transition" id="forgot-link">
                             Забыли пароль?

@@ -35,16 +35,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Категория *</label>
-              <input
-                  v-model="categorySearch"
-                  @input="filterCategories"
-                  type="text"
-                  placeholder="Поиск категории..."
-                  class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-              >
-              <select v-model="form.catalog_id" required class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-                <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-              </select>
+              <CategorySelect v-model="form.catalog_id" :categories="categories" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
@@ -349,6 +340,7 @@ import TinyMCEEditor from './TinyMCEEditor.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductPropertiesForm from './ProductPropertiesForm.vue';
 import RelatedProductsList from './RelatedProductsList.vue';
+import CategorySelect from './CategorySelect.vue';
 import { useAppConfig } from '../composables/useAppConfig';
 
 const { success, error } = useModal();
@@ -363,8 +355,6 @@ const currentProductId = computed(() =>
   route.params.id ? String(route.params.id).replace(/\/edit$/, '') : null
 );
 const categories = ref([]);
-const categorySearch = ref('');
-const filteredCategories = ref([]);
 const activeTab = ref('main');
 
 // Product search modal state
@@ -624,20 +614,8 @@ const loadCategories = async () => {
     const response = await fetch('/admin/api/catalogs/list');
     const data = await response.json();
     categories.value = data;
-    filteredCategories.value = categories.value;
   } catch (err) {
     console.error('Error loading categories:', err);
-  }
-};
-
-const filterCategories = () => {
-  if (!categorySearch.value) {
-    filteredCategories.value = categories.value;
-  } else {
-    const search = categorySearch.value.toLowerCase();
-    filteredCategories.value = categories.value.filter(cat =>
-        cat.name.toLowerCase().includes(search)
-    );
   }
 };
 
@@ -833,6 +811,13 @@ const handleSubmit = async (stayParam) => {
   // stayParam is `true` only when triggered by "Сохранить и продолжить";
   // the native form submit passes an Event object instead.
   const stay = stayParam === true;
+
+  // The category field is a combobox, not a native <select>, so it no
+  // longer participates in HTML5 `required` validation — check explicitly.
+  if (!form.value.catalog_id) {
+    await error('Выберите категорию товара');
+    return;
+  }
 
   loading.value = true;
   try {
