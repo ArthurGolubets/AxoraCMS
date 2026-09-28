@@ -3,9 +3,11 @@
 namespace HolartWeb\AxoraCMS\Models\Commerce;
 
 use App\Models\TUser;
+use HolartWeb\AxoraCMS\Services\AdminNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Log;
 
 class TOrders extends Model
 {
@@ -41,6 +43,23 @@ class TOrders extends Model
         'promocode_id' => 'integer',
         'user_id' => 'integer',
     ];
+
+    /**
+     * Every order-creation path (storefront checkout via OrderService, manual
+     * creation in OrdersController, future imports) goes through Eloquent, so
+     * hooking the "new order" admin notification here — rather than in each
+     * caller — guarantees none of them are missed.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (self $order) {
+            try {
+                app(AdminNotificationService::class)->notifyNewOrder($order);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to create new-order admin notification: '.$e->getMessage());
+            }
+        });
+    }
 
     // Константы для delivery_type
     const DELIVERY_PICKUP = 'pickup';

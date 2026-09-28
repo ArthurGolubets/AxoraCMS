@@ -1,6 +1,7 @@
 <?php
 
 use HolartWeb\AxoraCMS\Http\Controllers\AdministratorController;
+use HolartWeb\AxoraCMS\Http\Controllers\AdminNotificationsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Auth\ForgotPasswordController;
 use HolartWeb\AxoraCMS\Http\Controllers\Auth\LoginController;
 use HolartWeb\AxoraCMS\Http\Controllers\CatalogImportExportController;
@@ -52,6 +53,12 @@ Route::middleware(['admin.auth'])->group(function () {
     Route::prefix('api')->group(function () {
         Route::get('me', [DashboardController::class, 'me']);
         Route::get('search', [SearchController::class, 'search']);
+
+        // Header bell notifications + "new orders" sidebar badge
+        Route::get('notifications', [AdminNotificationsController::class, 'index']);
+        Route::delete('notifications', [AdminNotificationsController::class, 'clear']);
+        Route::post('notifications/read-all', [AdminNotificationsController::class, 'markAllRead']);
+        Route::post('notifications/{id}/read', [AdminNotificationsController::class, 'markRead']);
 
         // Dashboard metrics routes
         Route::get('dashboard/metrics', [DashboardMetricsController::class, 'index']);

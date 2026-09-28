@@ -120,7 +120,13 @@
             <router-link to="/orders" v-slot="{ isActive }" custom>
               <a @click="$router.push('/orders'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                Список заказов
+                <span class="flex-1">Список заказов</span>
+                <span
+                  v-if="newOrdersCount > 0"
+                  class="ml-2 flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none"
+                >
+                  {{ newOrdersCount > 99 ? '99+' : newOrdersCount }}
+                </span>
               </a>
             </router-link>
             <router-link to="/transactions" v-slot="{ isActive }" custom>
@@ -365,6 +371,9 @@
             </button>
           </router-link>
 
+          <!-- Notifications -->
+          <NotificationBell />
+
           <!-- Theme Toggle -->
           <button
             @click="toggleTheme"
@@ -447,15 +456,18 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import Modal from './components/Modal.vue';
 import GlobalSearch from './components/GlobalSearch.vue';
+import NotificationBell from './components/NotificationBell.vue';
 import { useModal } from './composables/useModal';
 import { useTheme } from './composables/useTheme';
 import { useModuleEvents } from './composables/useModuleEvents';
 import { useAppConfig } from './composables/useAppConfig';
+import { useAdminNotifications } from './composables/useAdminNotifications';
 
 const { modalState, success, error } = useModal();
 const { themeColor: globalThemeColor, setThemeColor } = useTheme();
 const { moduleUpdateCounter } = useModuleEvents();
 const appConfig = useAppConfig();
+const { newOrdersCount, startPolling: startNotificationsPolling } = useAdminNotifications();
 
 const isDark = ref(false);
 const isCollapsed = ref(false);
@@ -693,6 +705,7 @@ onMounted(() => {
   loadCurrentUser();
   loadSettings();
   loadModulesStatus();
+  startNotificationsPolling();
 
   // Listen for favorites update event
   window.addEventListener('infoblocks-favorites-updated', reloadFavoriteInfoBlocks);
