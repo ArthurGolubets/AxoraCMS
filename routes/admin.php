@@ -11,6 +11,7 @@ use HolartWeb\AxoraCMS\Http\Controllers\DashboardController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardMetricsController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardWidgetsController;
 use HolartWeb\AxoraCMS\Http\Controllers\ImageUploadController;
+use HolartWeb\AxoraCMS\Http\Controllers\ImportExport\ImportExportController;
 use HolartWeb\AxoraCMS\Http\Controllers\LogsController;
 use HolartWeb\AxoraCMS\Http\Controllers\MailSettingsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController;
@@ -242,6 +243,21 @@ Route::middleware(['admin.auth'])->group(function () {
                 Route::put('custom-forms/{formId}/submissions/{id}', [CustomFormSubmissionsController::class, 'update']);
                 Route::delete('custom-forms/{formId}/submissions/{id}', [CustomFormSubmissionsController::class, 'destroy']);
             }
+        }
+
+        // Import / export module
+        if (Schema::hasTable('t_import_export_tasks')) {
+            Route::middleware('admin.role:super_admin,administrator')->prefix('import-export')->group(function () {
+                Route::get('meta', [ImportExportController::class, 'meta']);
+                Route::get('tasks', [ImportExportController::class, 'index']);
+                Route::get('tasks/{id}', [ImportExportController::class, 'show'])->whereNumber('id');
+                Route::post('tasks/{id}/cancel', [ImportExportController::class, 'cancel'])->whereNumber('id');
+                Route::delete('tasks/{id}', [ImportExportController::class, 'destroy'])->whereNumber('id');
+                Route::get('tasks/{id}/download', [ImportExportController::class, 'download'])->whereNumber('id');
+                Route::post('import/upload', [ImportExportController::class, 'upload']);
+                Route::post('import/{id}/start', [ImportExportController::class, 'startImport'])->whereNumber('id');
+                Route::post('export', [ImportExportController::class, 'startExport']);
+            });
         }
 
         // Commerce routes - only if commerce module is installed

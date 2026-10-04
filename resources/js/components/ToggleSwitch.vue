@@ -1,5 +1,5 @@
 <template>
-  <label class="inline-flex items-center cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': disabled }">
+  <label class="relative inline-flex items-center cursor-pointer" :class="{ 'opacity-50 cursor-not-allowed': disabled }">
     <input
       type="checkbox"
       :checked="modelValue"

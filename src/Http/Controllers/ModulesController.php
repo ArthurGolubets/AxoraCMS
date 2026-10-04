@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Artisan;
 class ModulesController extends Controller
 {
     // Module versions - должны совпадать с версиями в Install командах
+    const IMPORT_EXPORT_DESCRIPTION = 'Импорт каталога из Excel, CSV и XML с сопоставлением колонок, экспорт каталога, заказов, инфоблоков и обратной связи в фоне с прогрессом. Требует установленный модуль "Каталог и товары"';
+
     const MODULES_VERSIONS = [
         'shop' => '1.0.0',
         'callback' => '1.0.0',
@@ -23,6 +25,7 @@ class ModulesController extends Controller
         'telegram' => '1.0.0',
         'yookassa' => '1.0.0',
         'commerceml' => '1.0.0',
+        'importexport' => '1.0.0',
     ];
 
     /**
@@ -99,6 +102,14 @@ class ModulesController extends Controller
                 'description' => 'Интеграция с 1С через протокол CommerceML для автоматической синхронизации товаров и категорий. Требует установленный модуль "Каталог и товары"',
                 'installed' => $this->isCommerceMLIntegrationInstalled(),
                 'type' => 'integration',
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
+            ],
+            [
+                'id' => 'importexport',
+                'name' => 'Импорт/Экспорт',
+                'description' => self::IMPORT_EXPORT_DESCRIPTION,
+                'installed' => TModule::isInstalled('importexport'),
                 'dependencies' => ['shop'],
                 'can_install' => $this->isShopModuleInstalled(),
             ],
@@ -212,6 +223,16 @@ class ModulesController extends Controller
                 'dependencies' => ['shop'],
                 'can_install' => $this->isShopModuleInstalled(),
             ],
+            [
+                'id' => 'importexport',
+                'name' => 'Импорт/Экспорт',
+                'description' => self::IMPORT_EXPORT_DESCRIPTION,
+                'installed' => TModule::isInstalled('importexport'),
+                'install_command' => 'axoracms:importexport-install',
+                'uninstall_command' => 'axoracms:importexport-uninstall',
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
+            ],
         ];
 
         // Add version information to each module
@@ -301,6 +322,9 @@ class ModulesController extends Controller
                 case 'commerceml':
                     $exitCode = Artisan::call('axoracms:commerceml-install');
                     break;
+                case 'importexport':
+                    $exitCode = Artisan::call('axoracms:importexport-install');
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -382,6 +406,9 @@ class ModulesController extends Controller
                     break;
                 case 'commerceml':
                     $exitCode = Artisan::call('axoracms:commerceml-install');
+                    break;
+                case 'importexport':
+                    $exitCode = Artisan::call('axoracms:importexport-install');
                     break;
                 default:
                     return response()->json([
@@ -491,6 +518,11 @@ class ModulesController extends Controller
                     break;
                 case 'commerceml':
                     Artisan::call('axoracms:commerceml-uninstall', [
+                        '--preserve-db' => $preserveDatabase,
+                    ]);
+                    break;
+                case 'importexport':
+                    Artisan::call('axoracms:importexport-uninstall', [
                         '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
@@ -630,6 +662,7 @@ class ModulesController extends Controller
             'telegram' => ['dirs' => ['integrations'], 'files' => []],
             'yookassa' => ['dirs' => ['integrations'], 'files' => []],
             'commerceml' => ['dirs' => ['commerceml'], 'files' => []],
+            'importexport' => ['dirs' => ['importexport'], 'files' => []],
             'logging' => ['dirs' => [], 'files' => ['2026_02_27_125658_create_t_admin_actions_table']],
         ];
 

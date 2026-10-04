@@ -10,8 +10,20 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
+  /* The panel scrolls inside its own layout; the page itself never scrolls,
+     so stray absolutely positioned elements cannot reveal a blank strip. */
+  html,
+  body {
+    @apply h-full overflow-hidden bg-gray-50;
+  }
+
+  html.dark,
+  html.dark body {
+    @apply bg-gray-900;
+  }
+
   #app {
-    @apply w-full h-screen overflow-hidden;
+    @apply relative w-full h-screen overflow-hidden;
   }
 
   /* Fix dark mode input/select text color */

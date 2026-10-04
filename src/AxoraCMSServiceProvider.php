@@ -9,6 +9,8 @@ use HolartWeb\AxoraCMS\Console\CommerceInstallCommand;
 use HolartWeb\AxoraCMS\Console\CommerceMLInstallCommand;
 use HolartWeb\AxoraCMS\Console\CommerceMLUninstallCommand;
 use HolartWeb\AxoraCMS\Console\CommerceUninstallCommand;
+use HolartWeb\AxoraCMS\Console\ImportExportInstallCommand;
+use HolartWeb\AxoraCMS\Console\ImportExportUninstallCommand;
 use HolartWeb\AxoraCMS\Console\InfoBlocksInstallCommand;
 use HolartWeb\AxoraCMS\Console\InfoBlocksUninstallCommand;
 use HolartWeb\AxoraCMS\Console\InstallCommand;
@@ -154,6 +156,8 @@ class AxoraCMSServiceProvider extends ServiceProvider
                 YookassaInstallCommand::class,
                 YookassaUninstallCommand::class,
                 YKassaCheckPaymentCommand::class,
+                ImportExportInstallCommand::class,
+                ImportExportUninstallCommand::class,
             ]);
 
             // Schedule automatic cleanup of old page visits

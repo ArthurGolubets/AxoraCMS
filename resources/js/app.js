@@ -39,6 +39,8 @@ import MenuItems from './components/Menus/MenuItems.vue';
 import FiltersList from './components/FiltersList.vue';
 import FilterView from './components/FilterView.vue';
 import PriceManager from './components/PriceManager.vue';
+import ImportExportCatalog from './components/ImportExport/ImportExportCatalog.vue';
+import ImportExportEntities from './components/ImportExport/ImportExportEntities.vue';
 import PagesList from './components/Pages/PagesList.vue';
 import PageForm from './components/Pages/PageForm.vue';
 import ContentSettings from './views/ContentSettings.vue';
@@ -267,6 +269,16 @@ const router = createRouter({
             component: MenuItems
         },
         {
+            path: '/import-export/catalog',
+            name: 'import-export-catalog',
+            component: ImportExportCatalog
+        },
+        {
+            path: '/import-export/entities',
+            name: 'import-export-entities',
+            component: ImportExportEntities
+        },
+        {
             path: '/price-manager',
             name: 'price-manager',
             component: PriceManager
@@ -349,10 +361,11 @@ const MODULE_GATED_ROUTES = {
     shop: ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit', 'price-manager'],
     callback: ['users-emails', 'users-email-view', 'comments', 'comment-view', 'user-requests', 'user-request-view'],
     commerce: ['orders', 'order-create', 'order-edit', 'order-view', 'transactions', 'promocodes', 'orders-settings'],
+    importexport: ['import-export-catalog', 'import-export-entities'],
     infoblocks: ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'],
 };
 
-const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', ...MODULE_GATED_ROUTES.commerce];
+const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', 'price-manager', ...MODULE_GATED_ROUTES.commerce, ...MODULE_GATED_ROUTES.importexport];
 
 // Global navigation guard.
 // `me` and `modules/status` come from useAppConfig(), which fetches each once

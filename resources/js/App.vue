@@ -272,6 +272,31 @@
           </div>
         </div>
 
+        <!-- Import / export (module "importexport") -->
+        <div v-if="importExportModuleInstalled && canAccessSettings" class="mb-1">
+          <button @click="toggleMenuGroup('import_export')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Импорт/Экспорт' : ''">
+            <div class="flex items-center">
+              <svg class="w-5 h-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span v-if="!isCollapsed">Импорт/Экспорт</span>
+            </div>
+            <svg v-if="!isCollapsed" class="w-4 h-4 transition-transform" :class="{ 'rotate-180': menuGroups.import_export }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div v-if="menuGroups.import_export && !isCollapsed" class="ml-3 mt-1 space-y-1">
+            <router-link to="/import-export/catalog" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/import-export/catalog'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Импорт/экспорт каталогов
+              </a>
+            </router-link>
+            <router-link to="/import-export/entities" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/import-export/entities'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Экспорт сущностей
+              </a>
+            </router-link>
+          </div>
+        </div>
+
         <!-- Settings Group (only for super_admin and administrator) -->
         <div v-if="canAccessSettings" class="mb-1">
           <button @click="toggleMenuGroup('settings')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Настройки' : ''">
@@ -492,6 +517,7 @@ const menuGroups = ref({
   infoblocks: false,
   pages_seo: false,
   integrations: false,
+  import_export: false,
   settings: false,
 });
 
@@ -531,6 +557,7 @@ const showModules = ref(true);
 const telegramIntegrationInstalled = ref(false);
 const yookassaIntegrationInstalled = ref(false);
 const commerceMLIntegrationInstalled = ref(false);
+const importExportModuleInstalled = ref(false);
 const favoriteInfoBlocks = ref([]);
 
 const roleLabel = computed(() => {
@@ -673,6 +700,8 @@ const loadModulesStatus = async (force = false) => {
 
       const commerceMLIntegration = data.modules?.find(m => m.id === 'commerceml');
       commerceMLIntegrationInstalled.value = commerceMLIntegration?.installed || false;
+
+      importExportModuleInstalled.value = data.modules?.find(m => m.id === 'importexport')?.installed || false;
 
       // Load favorite infoblocks if module is installed
       if (infoblocksModuleInstalled.value) {
