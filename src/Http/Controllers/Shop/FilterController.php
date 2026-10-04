@@ -8,6 +8,7 @@ use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
 
 class FilterController extends Controller
 {
@@ -109,9 +110,13 @@ class FilterController extends Controller
 
         $filter = TFilter::create($validated);
 
-        // Create filter values (skip for range type as they don't need predefined values)
-        if ($filter->type !== 'range' && $filter->type !== 'entity' && $filter->type !== 'string') {
-            foreach ($values as $valueData) {
+        // Create filter values. Entity / string filters have none; a range filter
+        // may carry its bounds as "from" / "to" values.
+        if (! in_array($filter->type, ['entity', 'string'], true)) {
+            $usedCodes = [];
+            foreach (array_values($values) as $index => $valueData) {
+                $valueData['code'] = $this->valueCode($valueData['value'] ?? '', $valueData['code'] ?? null, $usedCodes);
+                $valueData['sort'] = $valueData['sort'] ?? ($index + 1) * 10;
                 $filter->values()->create($valueData);
             }
         }
@@ -160,18 +165,21 @@ class FilterController extends Controller
             $values = $validated['values'] ?? [];
             unset($validated['values']);
 
-            $valuelessType = in_array($filter->type, ['range', 'entity', 'string'], true);
+            // The type may change in the same request — check the new one.
+            $valuelessType = in_array($validated['type'], ['entity', 'string'], true)
+                || ($validated['type'] === 'range' && empty($values));
 
             if ($valuelessType) {
                 $filter->values()->delete();
             } else {
                 $keepIds = [];
+                $usedCodes = [];
 
-                foreach ($values as $valueData) {
+                foreach (array_values($values) as $index => $valueData) {
                     $payload = [
                         'value' => $valueData['value'] ?? '',
-                        'code' => $valueData['code'] ?? null,
-                        'sort' => $valueData['sort'] ?? 0,
+                        'code' => $this->valueCode((string) ($valueData['value'] ?? ''), $valueData['code'] ?? null, $usedCodes),
+                        'sort' => $valueData['sort'] ?? ($index + 1) * 10,
                         'is_active' => $valueData['is_active'] ?? true,
                     ];
 
@@ -236,6 +244,10 @@ class FilterController extends Controller
             'sort' => 'nullable|integer',
             'is_active' => 'boolean',
         ]);
+
+        $usedCodes = $filter->values()->pluck('code')->filter()->all();
+        $validated['code'] = $this->valueCode($validated['value'], $validated['code'] ?? null, $usedCodes);
+        $validated['sort'] = $validated['sort'] ?? ((int) $filter->values()->max('sort') + 10);
 
         $filterValue = $filter->values()->create($validated);
 
@@ -312,5 +324,49 @@ class FilterController extends Controller
         );
 
         return response()->json(['code' => $code]);
+    }
+
+    /**
+     * Persist a drag & drop order of filters: sort = position * 10.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:t_filters,id',
+        ]);
+
+        foreach (array_values($validated['ids']) as $index => $filterId) {
+            TFilter::whereKey($filterId)->update(['sort' => ($index + 1) * 10]);
+        }
+
+        TAdminAction::log('reordered', 'filter', null, 'Изменён порядок фильтров');
+
+        return response()->json(['message' => 'Порядок фильтров сохранён']);
+    }
+
+    /**
+     * Code of a filter value: the given one, or a slug of the value; unique
+     * within the filter (a "_2", "_3" suffix is appended on collisions).
+     *
+     * @param  array<int, string>  $used  Codes already taken in this filter (updated in place).
+     */
+    protected function valueCode(string $value, ?string $code, array &$used): string
+    {
+        $code = trim((string) $code);
+        if ($code === '') {
+            $code = Str::slug($value, '_') ?: 'value';
+        }
+
+        $base = $code;
+        $n = 1;
+        while (in_array($code, $used, true)) {
+            $n++;
+            $code = $base.'_'.$n;
+        }
+
+        $used[] = $code;
+
+        return $code;
     }
 }

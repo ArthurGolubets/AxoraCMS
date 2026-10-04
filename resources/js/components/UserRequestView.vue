@@ -93,6 +93,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { useAdminNotifications } from '../composables/useAdminNotifications';
+
+const { fetchNotifications: refreshBadges } = useAdminNotifications();
 
 const router = useRouter();
 const route = useRoute();
@@ -118,6 +121,7 @@ const loadRequest = async () => {
 
     if (response.ok) {
       request.value = await response.json();
+      refreshBadges();
     } else {
       error('Ошибка загрузки данных');
       router.push('/user-requests');

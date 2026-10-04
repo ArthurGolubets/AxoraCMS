@@ -60,7 +60,7 @@ class CallbackUninstallCommand extends Command
         // Step 3: Drop Tables or Keep Database
         if (! $preserveDb) {
             $this->info('Step 3: Dropping database tables...');
-            $tables = ['t_users_emails', 't_comments', 't_user_requests'];
+            $tables = ['t_custom_form_submissions', 't_custom_form_fields', 't_custom_forms', 't_users_emails', 't_comments', 't_user_requests'];
             foreach ($tables as $table) {
                 if (Schema::hasTable($table)) {
                     Schema::dropIfExists($table);
@@ -75,11 +75,8 @@ class CallbackUninstallCommand extends Command
         // Step 4: Remove Migration Records from Database
         if (! $preserveDb) {
             $this->info('Step 4: Removing migration records from database...');
-            $migrationFiles = [
-                '2024_01_01_000020_create_t_users_emails_table.php',
-                '2024_01_01_000021_create_t_comments_table.php',
-                '2024_01_01_000022_create_t_user_requests_table.php',
-            ];
+            // Every migration shipped with the module (a hardcoded list goes stale).
+            $migrationFiles = array_map('basename', glob(dirname(__DIR__, 2).'/database/migrations/callback/*.php') ?: []);
 
             try {
                 DB::table('migrations')->whereIn('migration', array_map(function ($file) {

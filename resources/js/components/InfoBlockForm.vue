@@ -67,16 +67,7 @@
             ></textarea>
           </div>
 
-          <div>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                v-model="form.is_active"
-                type="checkbox"
-                class="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
-              >
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Активен</span>
-            </label>
-          </div>
+          <ToggleSwitch v-model="form.is_active" :theme-color="themeColor" label="Активен" />
         </div>
       </div>
 
@@ -101,9 +92,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ThemeButton from './ThemeButton.vue';
+import ToggleSwitch from './ToggleSwitch.vue';
+import { useTheme } from '../composables/useTheme';
 
 const route = useRoute();
 const router = useRouter();
+const { themeColor } = useTheme();
 
 const isEdit = computed(() => !!route.params.id);
 const saving = ref(false);

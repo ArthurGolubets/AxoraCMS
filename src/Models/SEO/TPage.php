@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Models\SEO;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 class TPage extends Model
@@ -27,6 +28,25 @@ class TPage extends Model
         'is_active' => 'boolean',
         'views_count' => 'integer',
     ];
+
+    protected $appends = ['public_url'];
+
+    /**
+     * Relative URL of the page on the site: the route path for pages bound to
+     * a route without parameters, otherwise "/{slug}" ("home" is "/").
+     */
+    public function getPublicUrlAttribute(): string
+    {
+        if ($this->route_name && Route::has($this->route_name)) {
+            try {
+                return '/'.ltrim((string) parse_url(route($this->route_name), PHP_URL_PATH), '/');
+            } catch (\Throwable $e) {
+                // Route requires parameters — fall back to the slug.
+            }
+        }
+
+        return $this->slug === 'home' ? '/' : '/'.ltrim((string) $this->slug, '/');
+    }
 
     /**
      * Relationship: page visits

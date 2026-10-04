@@ -9,7 +9,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тип сущности</label>
-          <select v-model="filters.entity_type" @change="loadLogs" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+          <select v-model="filters.entity_type" @change="loadLogs" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
             <option value="">Все</option>
             <option value="product">Товар</option>
             <option value="catalog">Категория</option>
@@ -22,7 +22,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Действие</label>
-          <select v-model="filters.action" @change="loadLogs" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+          <select v-model="filters.action" @change="loadLogs" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
             <option value="">Все</option>
             <option value="created">Создано</option>
             <option value="updated">Обновлено</option>
@@ -34,16 +34,16 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Дата от</label>
-          <input v-model="filters.date_from" @change="loadLogs" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+          <input v-model="filters.date_from" @change="loadLogs" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Дата до</label>
-          <input v-model="filters.date_to" @change="loadLogs" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+          <input v-model="filters.date_to" @change="loadLogs" type="date" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
         </div>
       </div>
       <div class="mt-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Поиск</label>
-        <input v-model="filters.search" @input="debounceSearch" type="text" placeholder="Поиск по названию или пользователю..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+        <input v-model="filters.search" @input="debounceSearch" type="text" placeholder="Поиск по названию или пользователю..." class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white">
       </div>
     </div>
 
@@ -134,7 +134,7 @@
           </div>
           <div v-if="selectedLog.data">
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Данные</p>
-            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded text-xs overflow-x-auto">{{ JSON.stringify(selectedLog.data, null, 2) }}</pre>
+            <pre class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4 rounded text-xs overflow-x-auto whitespace-pre-wrap break-words">{{ JSON.stringify(selectedLog.data, null, 2) }}</pre>
           </div>
         </div>
       </div>

@@ -39,20 +39,13 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Родительская категория</label>
-              <input
-                  v-model="categorySearch"
-                  @input="filterCategories"
-                  type="text"
-                  placeholder="Поиск категории..."
-                  class="w-full px-4 py-2 mb-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-              >
-              <select
+              <CategorySelect
                   v-model="form.parent_id"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-              >
-                <option :value="null">Корневая категория</option>
-                <option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-              </select>
+                  :categories="parentCandidates"
+                  clearable
+                  placeholder="Корневая категория — начните вводить название"
+                  picker-title="Выберите родительскую категорию"
+              />
             </div>
 
             <div>
@@ -192,6 +185,7 @@ import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
 import ImageUpload from './ImageUpload.vue';
 import ToggleSwitch from './ToggleSwitch.vue';
+import CategorySelect from './CategorySelect.vue';
 import TinyMCEEditor from './TinyMCEEditor.vue';
 import CatalogFiltersBlock from './CatalogFiltersBlock.vue';
 import ProductCharacteristics from './ProductCharacteristics.vue';
@@ -206,8 +200,27 @@ const loading = ref(false);
 const isEdit = computed(() => !!route.params.id);
 const catalogId = computed(() => route.params.id ? parseInt(route.params.id) : null);
 const availableCategories = ref([]);
-const categorySearch = ref('');
-const filteredCategories = ref([]);
+
+/**
+ * Categories that may become the parent: when editing, not the category
+ * itself and not one of its descendants.
+ */
+const parentCandidates = computed(() => {
+  if (!catalogId.value) return availableCategories.value;
+
+  const excluded = new Set([catalogId.value]);
+  let added = true;
+  while (added) {
+    added = false;
+    availableCategories.value.forEach((cat) => {
+      if (!excluded.has(cat.id) && excluded.has(cat.parent_id)) {
+        excluded.add(cat.id);
+        added = true;
+      }
+    });
+  }
+  return availableCategories.value.filter((cat) => !excluded.has(cat.id));
+});
 const activeTab = ref('main');
 
 const tabs = [
@@ -267,20 +280,8 @@ const loadCategories = async () => {
     const response = await fetch('/admin/api/catalogs/list');
     const data = await response.json();
     availableCategories.value = data;
-    filteredCategories.value = data;
   } catch (err) {
     console.error('Error loading categories:', err);
-  }
-};
-
-const filterCategories = () => {
-  if (!categorySearch.value) {
-    filteredCategories.value = availableCategories.value;
-  } else {
-    const search = categorySearch.value.toLowerCase();
-    filteredCategories.value = availableCategories.value.filter(cat =>
-        cat.name.toLowerCase().includes(search)
-    );
   }
 };
 

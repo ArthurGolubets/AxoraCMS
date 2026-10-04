@@ -62,8 +62,6 @@ class CommerceUninstallCommand extends Command
         if (! $preserveDb) {
             $this->info('Step 3: Dropping database tables...');
             $tables = [
-                't_admin_notification_reads',
-                't_admin_notifications',
                 't_orders_data',
                 't_payment_transactions',
                 't_promocodes',
@@ -80,17 +78,8 @@ class CommerceUninstallCommand extends Command
 
             // Remove migration records from database
             $this->info('Removing migration records from database...');
-            $migrationFiles = [
-                '2024_01_01_000030_create_t_orders_table.php',
-                '2024_01_01_000031_create_t_order_items_table.php',
-                '2024_01_01_000032_create_t_promocodes_table.php',
-                '2024_01_01_000033_create_t_payment_transactions_table.php',
-                '2024_01_01_000034_create_t_orders_data_table.php',
-                '2026_08_08_000001_add_variant_id_to_t_order_items_table.php',
-                '2026_09_07_000002_add_set_columns_to_t_order_items_table.php',
-                '2026_09_27_000001_create_t_admin_notifications_table.php',
-                '2026_09_27_000002_create_t_admin_notification_reads_table.php',
-            ];
+            // Every migration shipped with the module (a hardcoded list goes stale).
+            $migrationFiles = array_map('basename', glob(dirname(__DIR__, 2).'/database/migrations/commerce/*.php') ?: []);
 
             try {
                 DB::table('migrations')->whereIn('migration', array_map(function ($file) {

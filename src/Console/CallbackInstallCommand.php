@@ -46,15 +46,11 @@ class CallbackInstallCommand extends Command
         // Step 2: Run Migrations
         $this->info('Step 2: Running database migrations...');
 
-        $packagePath = base_path('vendor/holartweb/axora-cms');
-        if (! file_exists($packagePath)) {
-            $packagePath = base_path('packages/holartweb/axora-cms');
-        }
-
         try {
-            $migrationsPath = str_replace(base_path().'/', '', $packagePath).'/database/migrations/callback';
+            // Absolute path + --realpath so it also works on Windows.
             Artisan::call('migrate', [
-                '--path' => $migrationsPath,
+                '--path' => dirname(__DIR__, 2).'/database/migrations/callback',
+                '--realpath' => true,
                 '--force' => true,
             ]);
             $this->info('✓ Migrations completed successfully');

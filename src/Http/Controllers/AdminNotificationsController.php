@@ -2,6 +2,9 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers;
 
+use HolartWeb\AxoraCMS\Models\Callback\TComments;
+use HolartWeb\AxoraCMS\Models\Callback\TCustomFormSubmission;
+use HolartWeb\AxoraCMS\Models\Callback\TUserRequests;
 use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Models\TAdminNotification;
@@ -30,6 +33,7 @@ class AdminNotificationsController extends Controller
                 'notifications' => [],
                 'unread_count' => 0,
                 'new_orders_count' => $this->newOrdersCount(),
+                'counters' => $this->counters(),
             ]);
         }
 
@@ -61,6 +65,7 @@ class AdminNotificationsController extends Controller
             'notifications' => $notifications,
             'unread_count' => $unreadCount,
             'new_orders_count' => $this->newOrdersCount(),
+            'counters' => $this->counters(),
         ]);
     }
 
@@ -137,5 +142,26 @@ class AdminNotificationsController extends Controller
         }
 
         return TOrders::where('delivery_status', TOrders::DELIVERY_PENDING)->count();
+    }
+
+    /**
+     * Sidebar badge counters: items that still need an administrator's attention.
+     *
+     * @return array{orders: int, comments: int, user_requests: int, custom_forms: int}
+     */
+    protected function counters(): array
+    {
+        return [
+            'orders' => $this->newOrdersCount(),
+            'comments' => Schema::hasTable('t_comments')
+                ? TComments::where('is_moderated', false)->count()
+                : 0,
+            'user_requests' => Schema::hasColumn('t_user_requests', 'viewed_at')
+                ? TUserRequests::whereNull('viewed_at')->count()
+                : 0,
+            'custom_forms' => Schema::hasTable('t_custom_form_submissions')
+                ? TCustomFormSubmission::whereNull('viewed_at')->count()
+                : 0,
+        ];
     }
 }

@@ -179,7 +179,7 @@
       </table>
     </div>
 
-    <!-- Section Form Modal -->
+    <!-- Section Form Side Panel -->
     <InfoBlockSectionForm
       v-if="showForm"
       :info-block-id="infoBlockId"

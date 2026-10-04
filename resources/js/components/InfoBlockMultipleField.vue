@@ -10,10 +10,10 @@
       <div v-for="(value, index) in localValues" :key="index" class="flex items-center gap-2">
         <!-- Input based on type -->
         <input
-          v-if="fieldType === 'string'"
+          v-if="['string', 'email', 'phone'].includes(fieldType)"
           :value="value"
           @input="updateValue(index, $event.target.value)"
-          type="text"
+          :type="{ email: 'email', phone: 'tel' }[fieldType] || 'text'"
           :placeholder="`Значение ${index + 1}`"
           class="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
         >

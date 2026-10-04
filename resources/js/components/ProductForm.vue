@@ -87,65 +87,59 @@
 
       <!-- Variants Tab -->
       <div v-show="activeTab === 'variants'" class="space-y-6">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Варианты товара</h3>
-          <div v-for="(variant, index) in form.variants" :key="index" class="mb-6 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
-            <div class="flex justify-between items-center mb-4">
-              <span class="font-medium text-gray-900 dark:text-white text-lg">Вариант {{ index + 1 }}</span>
-              <button type="button" @click="removeVariant(index)" class="text-red-600 hover:text-red-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-            </div>
-
-            <!-- Основные поля -->
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label><input v-model="variant.name" required class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
-              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SKU *</label><input v-model="variant.sku" required class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
-              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Цена *</label><input v-model.number="variant.price" type="number" step="0.01" required class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
-              <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Старая цена</label><input v-model.number="variant.old_price" type="number" step="0.01" class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></div>
-            </div>
-
-            <!-- Изображение -->
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Изображение варианта</label>
-              <ImageUpload v-model="variant.image" />
-            </div>
-
-            <!-- Описание -->
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Описание</label>
-              <textarea v-model="variant.description" rows="3" class="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"></textarea>
-            </div>
-
-            <!-- Свойства варианта -->
-            <div class="mb-4">
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Свойства варианта</h4>
-              <ProductPropertiesForm
-                  :available-properties="availableProperties"
-                  :initial-values="variant.property_values || {}"
-                  @update:values="(newValues) => { variant.property_values = newValues; }"
-              />
-            </div>
-
-            <!-- Характеристики варианта -->
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Характеристики варианта</h4>
-              <ProductCharacteristics v-model="variant.addition_info" applies-to="variant" />
-            </div>
-
-            <!-- Сопутствующие товары варианта -->
-            <div v-if="panelSettings.related_products_enabled === true" class="mt-4">
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Сопутствующие товары варианта</h4>
-              <p v-if="!variant.sku" class="text-xs text-amber-600 dark:text-amber-400 mb-2">Укажите SKU варианта, чтобы добавить сопутствующие товары.</p>
-              <RelatedProductsList
-                v-else
-                :links="form.variant_related_products[variant.sku] || []"
-                @update:links="setVariantRelated(variant.sku, $event)"
-              />
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Варианты товара</h3>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" @click="openFromProductPanel" class="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-colors">
+                Создать на основе товара
+              </button>
+              <button type="button" @click="openVariantPanel(null)" :style="buttonStyle" class="px-4 py-2 text-sm text-white rounded-lg transition-opacity hover:opacity-90">
+                + Добавить вариант
+              </button>
             </div>
           </div>
-          <div class="flex gap-3">
-            <button type="button" @click="addVariant" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 text-sm">+ Добавить вариант</button>
-            <button type="button" @click="showProductSelectModal = true" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm">Создать вариант на основании товара</button>
+
+          <div v-if="form.variants.length === 0" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+            У товара пока нет вариантов
           </div>
+
+          <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Название</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Артикул</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Цена</th>
+                <th class="px-6 py-3 w-24"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+              <tr v-for="(variant, index) in form.variants" :key="variant.id || variant._key || index" class="hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer" @click="openVariantPanel(index)">
+                <td class="px-6 py-3">
+                  <div class="flex items-center gap-3">
+                    <img v-if="variant.image" :src="imageUrl(variant.image)" alt="" class="w-9 h-9 rounded object-cover border border-gray-200 dark:border-gray-700">
+                    <span v-else class="w-9 h-9 rounded bg-gray-100 dark:bg-gray-700"></span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ variant.name || 'Без названия' }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-3 text-sm font-mono text-gray-600 dark:text-gray-300">{{ variant.sku || '—' }}</td>
+                <td class="px-6 py-3 text-right text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                  {{ formatPrice(variant.price) }}
+                  <span v-if="variant.old_price" class="ml-1 text-xs text-gray-400 line-through">{{ formatPrice(variant.old_price) }}</span>
+                </td>
+                <td class="px-6 py-3 text-right" @click.stop>
+                  <div class="inline-flex items-center gap-1">
+                    <button type="button" @click="openVariantPanel(index)" title="Редактировать" class="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </button>
+                    <button type="button" @click="removeVariant(index)" title="Удалить" class="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -249,81 +243,131 @@
       </div>
     </form>
 
-    <!-- Product Select Modal -->
-    <teleport to="body">
-      <transition name="modal">
-        <div v-if="showProductSelectModal" class="fixed inset-0 z-50 overflow-y-auto">
-          <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div @click="showProductSelectModal = false" class="fixed inset-0 transition-opacity bg-black bg-opacity-50"></div>
-            <div class="relative z-10 w-full max-w-2xl p-6 mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Выбрать товар для создания варианта</h3>
+    <!-- Create a variant from another product -->
+    <SidePanel v-if="showProductSelectModal" title="Вариант на основе товара" width-class="max-w-2xl" @close="showProductSelectModal = false">
+      <!-- Search -->
+      <div class="mb-4">
+        <input
+          v-model="productSearchQuery"
+          @input="searchProducts"
+          type="text"
+          placeholder="Начните вводить название товара..."
+          class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+        />
+      </div>
 
-              <!-- Search -->
-              <div class="mb-4">
-                <input
-                  v-model="productSearchQuery"
-                  @input="searchProducts"
-                  type="text"
-                  placeholder="Начните вводить название товара..."
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                />
+      <!-- Products List -->
+      <div v-if="searchedProducts.length > 0" class="max-h-96 overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div
+          v-for="product in searchedProducts"
+          :key="product.id"
+          @click="selectedProduct = product"
+          class="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
+          :class="{'bg-blue-50 dark:bg-blue-900/20': selectedProduct?.id === product.id}"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <img v-if="product.image" :src="product.image" class="w-12 h-12 object-cover rounded" />
+              <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center" v-else>
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               </div>
-
-              <!-- Products List -->
-              <div v-if="searchedProducts.length > 0" class="max-h-96 overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div
-                  v-for="product in searchedProducts"
-                  :key="product.id"
-                  @click="selectedProduct = product"
-                  class="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-200 dark:border-gray-700 last:border-b-0 transition-colors"
-                  :class="{'bg-blue-50 dark:bg-blue-900/20': selectedProduct?.id === product.id}"
-                >
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                      <img v-if="product.image" :src="product.image" class="w-12 h-12 object-cover rounded" />
-                      <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center" v-else>
-                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                      </div>
-                      <div class="text-left">
-                        <div class="font-medium text-gray-900 dark:text-white">{{ product.name }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">SKU: {{ product.sku }}</div>
-                      </div>
-                    </div>
-                    <div class="text-right">
-                      <div class="font-semibold text-gray-900 dark:text-white">{{ product.price }} ₽</div>
-                    </div>
-                  </div>
-                </div>
+              <div class="text-left">
+                <div class="font-medium text-gray-900 dark:text-white">{{ product.name }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">SKU: {{ product.sku }}</div>
               </div>
-              <div v-else-if="productSearchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400">
-                Товары не найдены
-              </div>
-
-              <!-- Deactivate toggle -->
-              <div v-if="selectedProduct" class="mb-4 flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Деактивировать товар после создания варианта</span>
-                <ToggleSwitch v-model="deactivateSourceProduct" />
-              </div>
-
-              <!-- Duplicate variant toggle -->
-              <div v-if="selectedProduct" class="mb-4 flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Создать дубль вариант
-                  <span class="block text-xs font-normal text-gray-500 dark:text-gray-400">В выбранном товаре тоже создать вариант на основе текущего товара</span>
-                </span>
-                <ToggleSwitch v-model="createDuplicateVariant" />
-              </div>
-
-              <!-- Actions -->
-              <div class="flex space-x-3">
-                <button @click="showProductSelectModal = false" type="button" class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition">Отмена</button>
-                <button @click="createVariantFromProduct" :disabled="!selectedProduct" type="button" :style="buttonStyle" class="flex-1 px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 disabled:opacity-50">Создать вариант</button>
-              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-semibold text-gray-900 dark:text-white">{{ product.price }} ₽</div>
             </div>
           </div>
         </div>
-      </transition>
-    </teleport>
+      </div>
+      <div v-else-if="productSearchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        Товары не найдены
+      </div>
+
+      <!-- Deactivate toggle -->
+      <div v-if="selectedProduct" class="mb-4 flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Деактивировать товар после создания варианта</span>
+        <ToggleSwitch v-model="deactivateSourceProduct" />
+      </div>
+
+      <!-- Duplicate variant toggle -->
+      <div v-if="selectedProduct" class="mb-4 flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Создать дубль вариант
+          <span class="block text-xs font-normal text-gray-500 dark:text-gray-400">В выбранном товаре тоже создать вариант на основе текущего товара</span>
+        </span>
+        <ToggleSwitch v-model="createDuplicateVariant" />
+      </div>
+
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <button @click="showProductSelectModal = false" type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition">Отмена</button>
+          <button @click="createVariantFromProduct" :disabled="!selectedProduct" type="button" :style="buttonStyle" class="px-4 py-2 text-white rounded-lg transition-opacity hover:opacity-90 disabled:opacity-50">Создать вариант</button>
+        </div>
+      </template>
+    </SidePanel>
+
+    <!-- Variant editor -->
+    <ProductVariantPanel
+      v-if="variantPanel.show"
+      :variant="variantPanel.variant"
+      :is-new="variantPanel.index === null"
+      :available-properties="availableProperties"
+      :related-enabled="panelSettings.related_products_enabled === true"
+      :related-links="variantPanel.links"
+      :taken-skus="variantPanel.takenSkus"
+      @apply="applyVariant"
+      @close="variantPanel.show = false"
+    />
+
+    <!-- Duplicate SKU (same look as the panel notifications) -->
+    <Modal
+      v-if="duplicateSku"
+      type="warning"
+      title="Артикул уже занят"
+      @close="duplicateSku = null"
+    >
+      <template #body>
+        <p class="text-gray-600 dark:text-gray-400 mb-2">
+          Артикул <span class="font-mono font-semibold text-gray-900 dark:text-white">{{ form.sku }}</span>
+          уже используется товаром «{{ duplicateSku.existing.name }}».
+        </p>
+        <p class="text-gray-600 dark:text-gray-400">Что сделать?</p>
+      </template>
+      <template #footer>
+        <div class="space-y-3">
+          <button
+            type="button"
+            @click="submitWithDuplicateAction('prefix')"
+            :style="buttonStyle"
+            class="w-full px-4 py-2 text-white rounded-lg transition hover:opacity-90"
+          >
+            Создать с артикулом <span class="font-mono">{{ duplicateSku.suggested_sku }}</span>
+          </button>
+          <div class="flex space-x-3">
+            <button
+              type="button"
+              @click="duplicateSku = null"
+              class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              @click="openExistingProduct(duplicateSku.existing.id)"
+              class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition"
+            >
+              Открыть товар
+            </button>
+          </div>
+        </div>
+      </template>
+    </Modal>
+
+    <ConfirmModal ref="confirmModal" />
   </div>
 </template>
 
@@ -341,6 +385,10 @@ import ProductCharacteristics from './ProductCharacteristics.vue';
 import ProductPropertiesForm from './ProductPropertiesForm.vue';
 import RelatedProductsList from './RelatedProductsList.vue';
 import CategorySelect from './CategorySelect.vue';
+import SidePanel from './SidePanel.vue';
+import ConfirmModal from './ConfirmModal.vue';
+import Modal from './Modal.vue';
+import ProductVariantPanel from './ProductVariantPanel.vue';
 import { useAppConfig } from '../composables/useAppConfig';
 
 const { success, error } = useModal();
@@ -367,20 +415,25 @@ const createDuplicateVariant = ref(true);
 const searchTimeout = ref(null);
 
 const panelSettings = ref({});
+const confirmModal = ref(null);
+const variantPanel = ref({ show: false, index: null, variant: null, links: [], takenSkus: [] });
+// Set when the server reports that the SKU is already used by another product.
+const duplicateSku = ref(null);
+let variantKeySeq = 1;
 
 const tabs = computed(() => {
   const list = [
     { id: 'main', label: 'Основное' },
+    { id: 'content', label: 'Контент' },
     { id: 'seo', label: 'SEO' },
   ];
   if (panelSettings.value.product_variants_enabled !== false) {
     list.push({ id: 'variants', label: 'Варианты' });
   }
-  list.push({ id: 'properties', label: 'Свойства и характеристики' });
   if (panelSettings.value.related_products_enabled === true) {
     list.push({ id: 'related', label: 'Сопутствующие товары' });
   }
-  list.push({ id: 'content', label: 'Контент' });
+  list.push({ id: 'properties', label: 'Свойства и характеристики' });
   list.push({ id: 'filters', label: 'Фильтры' });
   if (isEdit.value) {
     list.push({ id: 'integration', label: 'Интеграция и остатки' });
@@ -469,22 +522,76 @@ const generateSlug = () => {
   }
 };
 
-const addVariant = () => {
-  form.value.variants.push({
-    name: '',
-    sku: '',
-    price: 0,
-    old_price: null,
-    attributes: {},
-    image: '',
-    description: '',
-    addition_info: {},
-    property_values: {}
-  });
+const blankVariant = () => ({
+  _key: variantKeySeq++,
+  name: '',
+  sku: '',
+  price: 0,
+  old_price: null,
+  attributes: {},
+  image: '',
+  description: '',
+  addition_info: {},
+  property_values: {}
+});
+
+const formatPrice = (value) => (value === null || value === undefined || value === ''
+  ? '—'
+  : `${Number(value).toLocaleString('ru-RU')} ₽`);
+
+const imageUrl = (path) => (/^(https?:)?\/\//.test(path) || String(path).startsWith('/') ? path : `/storage/${path}`);
+
+/**
+ * Open the variant editor: index === null creates a new variant.
+ */
+const openVariantPanel = (index) => {
+  const variant = index === null ? blankVariant() : form.value.variants[index];
+  variantPanel.value = {
+    show: true,
+    index,
+    variant,
+    links: (form.value.variant_related_products || {})[variant.sku] || [],
+    takenSkus: form.value.variants.filter((_, i) => i !== index).map((v) => String(v.sku || '').trim()).filter(Boolean),
+  };
 };
 
-const removeVariant = (index) => {
+const applyVariant = ({ variant, links }) => {
+  const { index } = variantPanel.value;
+  const previousSku = index === null ? null : form.value.variants[index].sku;
+
+  if (index === null) {
+    form.value.variants.push(variant);
+  } else {
+    form.value.variants[index] = variant;
+  }
+
+  // Companion products are keyed by the variant SKU.
+  const related = { ...(form.value.variant_related_products || {}) };
+  if (previousSku && previousSku !== variant.sku) delete related[previousSku];
+  if (variant.sku) related[variant.sku] = links;
+  form.value.variant_related_products = related;
+
+  variantPanel.value.show = false;
+};
+
+const removeVariant = async (index) => {
+  const variant = form.value.variants[index];
+  const confirmed = await confirmModal.value.open({
+    title: 'Удалить вариант?',
+    message: `Вариант «${variant.name || variant.sku || 'без названия'}» будет удалён после сохранения товара.`,
+    confirmText: 'Удалить',
+    dangerMode: true,
+  });
+  if (!confirmed) return;
+
   form.value.variants.splice(index, 1);
+};
+
+const openFromProductPanel = () => {
+  productSearchQuery.value = '';
+  searchedProducts.value = [];
+  selectedProduct.value = null;
+  showProductSelectModal.value = true;
 };
 
 const searchProducts = () => {
@@ -529,6 +636,7 @@ const createVariantFromProduct = async () => {
   try {
     // Create variant from selected product
     const newVariant = {
+      _key: variantKeySeq++,
       name: selectedProduct.value.name,
       sku: selectedProduct.value.sku + '-variant',
       price: selectedProduct.value.price,
@@ -781,12 +889,6 @@ const loadProduct = async () => {
   }
 };
 
-// Companion products for a single variant, keyed by the variant SKU.
-const setVariantRelated = (sku, links) => {
-  if (!sku) return;
-  form.value.variant_related_products = { ...form.value.variant_related_products, [sku]: links };
-};
-
 // Flatten companion-product links into the shape the API expects:
 // - product-level under `related_products`
 // - variant-level injected into each `variants[i].related_products` by SKU
@@ -807,10 +909,24 @@ const buildProductPayload = () => {
   return payload;
 };
 
-const handleSubmit = async (stayParam) => {
+// Last submit mode, reused when the duplicate-SKU dialog re-submits the form.
+let lastSubmitStay = false;
+
+const openExistingProduct = (id) => {
+  duplicateSku.value = null;
+  router.push(`/products/${id}/edit`);
+};
+
+const submitWithDuplicateAction = (action) => {
+  duplicateSku.value = null;
+  handleSubmit(lastSubmitStay, action);
+};
+
+const handleSubmit = async (stayParam, duplicateAction = null) => {
   // stayParam is `true` only when triggered by "Сохранить и продолжить";
   // the native form submit passes an Event object instead.
   const stay = stayParam === true;
+  lastSubmitStay = stay;
 
   // The category field is a combobox, not a native <select>, so it no
   // longer participates in HTML5 `required` validation — check explicitly.
@@ -826,12 +942,6 @@ const handleSubmit = async (stayParam) => {
     // Extract just the numeric ID from route params
     const productId = currentProductId.value;
 
-    console.log('=== SUBMITTING PRODUCT ===');
-    console.log('route.params.id raw:', route.params.id);
-    console.log('productId cleaned:', productId);
-    console.log('isEdit:', isEdit.value);
-    console.log('route.path:', route.path);
-    console.log('route.params:', route.params);
 
     // Use absolute URL to prevent redirects
     const baseUrl = window.location.origin;
@@ -839,10 +949,6 @@ const handleSubmit = async (stayParam) => {
     const url = `${baseUrl}${apiPath}`;
     const method = isEdit.value ? 'PUT' : 'POST';
 
-    console.log('Base URL:', baseUrl);
-    console.log('API Path:', apiPath);
-    console.log('Final URL:', url);
-    console.log('Method:', method);
 
     const response = await fetch(url, {
       method,
@@ -851,12 +957,31 @@ const handleSubmit = async (stayParam) => {
         'X-CSRF-TOKEN': token,
         'Accept': 'application/json'
       },
-      body: JSON.stringify(buildProductPayload()),
+      body: JSON.stringify({
+        ...buildProductPayload(),
+        ...(duplicateAction ? { duplicate_sku_action: duplicateAction } : {}),
+      }),
     });
+
+    if (response.status === 409) {
+      const data = await response.json();
+      if (data.code === 'duplicate_sku') {
+        if (data.action === 'edit') {
+          // Settings say: open the existing product instead of creating a duplicate.
+          await router.push(`/products/${data.existing.id}/edit`);
+          success(`Артикул «${data.existing.sku}» уже занят — открыт товар «${data.existing.name}»`);
+        } else {
+          duplicateSku.value = data;
+        }
+        return;
+      }
+      throw new Error(data.message || 'Failed to save product');
+    }
 
     if (!response.ok) {
       const data = await response.json();
-      throw new Error(data.message || 'Failed to save product');
+      const firstError = data.errors ? Object.values(data.errors)[0]?.[0] : null;
+      throw new Error(firstError || data.message || 'Failed to save product');
     }
 
     const saved = await response.json().catch(() => null);

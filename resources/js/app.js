@@ -37,15 +37,17 @@ import InfoBlockSections from './components/InfoBlockSections.vue';
 import MenuList from './components/Menus/MenuList.vue';
 import MenuItems from './components/Menus/MenuItems.vue';
 import FiltersList from './components/FiltersList.vue';
-import FilterForm from './components/FilterForm.vue';
 import FilterView from './components/FilterView.vue';
+import PriceManager from './components/PriceManager.vue';
 import PagesList from './components/Pages/PagesList.vue';
 import PageForm from './components/Pages/PageForm.vue';
-import PagesSettings from './components/Pages/PagesSettings.vue';
 import ContentSettings from './views/ContentSettings.vue';
 import TelegramSettings from './components/Integrations/TelegramSettings.vue';
 import YookassaSettings from './components/Integrations/YookassaSettings.vue';
 import CommerceMLSettings from './components/Integrations/CommerceMLSettings.vue';
+import CustomFormsList from './components/CustomForms/CustomFormsList.vue';
+import CustomFormEdit from './components/CustomForms/CustomFormEdit.vue';
+import CustomFormSubmissions from './components/CustomForms/CustomFormSubmissions.vue';
 import Error403 from './components/Error403.vue';
 import Error404 from './components/Error404.vue';
 import './style.css';
@@ -128,6 +130,26 @@ const router = createRouter({
             path: '/products/:id/edit',
             name: 'product-edit',
             component: ProductForm
+        },
+        {
+            path: '/custom-forms',
+            name: 'custom-forms',
+            component: CustomFormsList
+        },
+        {
+            path: '/custom-forms/create',
+            name: 'custom-form-create',
+            component: CustomFormEdit
+        },
+        {
+            path: '/custom-forms/:id/edit',
+            name: 'custom-form-edit',
+            component: CustomFormEdit
+        },
+        {
+            path: '/custom-forms/:id/submissions',
+            name: 'custom-form-submissions',
+            component: CustomFormSubmissions
         },
         {
             path: '/users-emails',
@@ -245,6 +267,11 @@ const router = createRouter({
             component: MenuItems
         },
         {
+            path: '/price-manager',
+            name: 'price-manager',
+            component: PriceManager
+        },
+        {
             path: '/filters',
             name: 'filters',
             component: FiltersList
@@ -252,7 +279,7 @@ const router = createRouter({
         {
             path: '/filters/create',
             name: 'filter-create',
-            component: FilterForm
+            redirect: { path: '/filters', query: { create: '1' } }
         },
         {
             path: '/filters/:id',
@@ -262,7 +289,7 @@ const router = createRouter({
         {
             path: '/filters/:id/edit',
             name: 'filter-edit',
-            component: FilterForm
+            redirect: (to) => ({ path: '/filters', query: { edit: to.params.id } })
         },
         {
             path: '/pages',
@@ -278,11 +305,6 @@ const router = createRouter({
             path: '/pages/:id/edit',
             name: 'pages-edit',
             component: PageForm
-        },
-        {
-            path: '/pages-settings',
-            name: 'pages-settings',
-            component: PagesSettings
         },
         {
             path: '/content-settings',
@@ -324,7 +346,7 @@ const router = createRouter({
 
 // Route -> required module id. A route missing from here has no module gate.
 const MODULE_GATED_ROUTES = {
-    shop: ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit'],
+    shop: ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit', 'price-manager'],
     callback: ['users-emails', 'users-email-view', 'comments', 'comment-view', 'user-requests', 'user-request-view'],
     commerce: ['orders', 'order-create', 'order-edit', 'order-view', 'transactions', 'promocodes', 'orders-settings'],
     infoblocks: ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'],

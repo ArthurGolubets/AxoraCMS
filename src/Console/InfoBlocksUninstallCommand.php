@@ -118,16 +118,8 @@ class InfoBlocksUninstallCommand extends Command
 
             // Step 5: Remove Migration Records from Database
             $this->info('Step 5: Removing migration records from database...');
-            $migrationFiles = [
-                '2024_01_01_000040_create_t_info_blocks_table',
-                '2024_01_01_000041_create_t_info_block_fields_table',
-                '2024_01_01_000042_create_t_info_block_elements_table',
-                '2026_04_08_151443_change_type_column_in_t_info_block_fields_table',
-                '2026_04_12_102436_add_content_column_in_t_info_block_elements_table',
-                '2026_08_08_000001_add_type_to_t_info_blocks_table',
-                '2026_08_08_000002_create_t_info_block_sections_table',
-                '2026_08_08_000003_add_section_id_to_t_info_block_elements_table',
-            ];
+            // Every migration shipped with the module (a hardcoded list goes stale).
+            $migrationFiles = array_map('basename', glob(dirname(__DIR__, 2).'/database/migrations/infoblocks/*.php') ?: []);
 
             try {
                 DB::table('migrations')->whereIn('migration', $migrationFiles)->delete();

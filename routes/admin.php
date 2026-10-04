@@ -4,6 +4,8 @@ use HolartWeb\AxoraCMS\Http\Controllers\AdministratorController;
 use HolartWeb\AxoraCMS\Http\Controllers\AdminNotificationsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Auth\ForgotPasswordController;
 use HolartWeb\AxoraCMS\Http\Controllers\Auth\LoginController;
+use HolartWeb\AxoraCMS\Http\Controllers\Callback\CustomFormsController;
+use HolartWeb\AxoraCMS\Http\Controllers\Callback\CustomFormSubmissionsController;
 use HolartWeb\AxoraCMS\Http\Controllers\CatalogImportExportController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardController;
 use HolartWeb\AxoraCMS\Http\Controllers\DashboardMetricsController;
@@ -18,6 +20,8 @@ use HolartWeb\AxoraCMS\Http\Controllers\PanelCustomFieldsController;
 use HolartWeb\AxoraCMS\Http\Controllers\ProductImportExportController;
 use HolartWeb\AxoraCMS\Http\Controllers\SearchController;
 use HolartWeb\AxoraCMS\Http\Controllers\SettingsController;
+use HolartWeb\AxoraCMS\Http\Controllers\Shop\PriceManagerController;
+use HolartWeb\AxoraCMS\Http\Controllers\UsersLookupController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -53,6 +57,10 @@ Route::middleware(['admin.auth'])->group(function () {
     Route::prefix('api')->group(function () {
         Route::get('me', [DashboardController::class, 'me']);
         Route::get('search', [SearchController::class, 'search']);
+
+        // Site users lookup for "user" fields (infoblocks, custom forms)
+        Route::get('users', [UsersLookupController::class, 'index']);
+        Route::get('users/{id}', [UsersLookupController::class, 'show'])->whereNumber('id');
 
         // Header bell notifications + "new orders" sidebar badge
         Route::get('notifications', [AdminNotificationsController::class, 'index']);
@@ -160,6 +168,11 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('products/import-preview', [ProductImportExportController::class, 'previewImport']);
             Route::post('products/import', [ProductImportExportController::class, 'import']);
             Route::get('products/import-progress/{importId}', [ProductImportExportController::class, 'checkProgress']);
+            // Price manager (bulk price changes)
+            Route::middleware('admin.role:super_admin,administrator')->group(function () {
+                Route::post('price-manager/preview', [PriceManagerController::class, 'preview']);
+                Route::post('price-manager/apply', [PriceManagerController::class, 'apply']);
+            });
             Route::post('products/bulk-delete', [$productController, 'bulkDestroy']);
             Route::get('products/search', [$productController, 'search']);
             Route::get('products/stock-meta', [$productController, 'stockMeta']);
@@ -212,6 +225,23 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::put('user-requests/{id}', [$userRequestsController, 'update']);
             Route::delete('user-requests/{id}', [$userRequestsController, 'destroy']);
             Route::post('user-requests/bulk-delete', [$userRequestsController, 'bulkDestroy']);
+
+            // Custom forms ("Своя форма") — tables added by a later callback migration.
+            if (Schema::hasTable('t_custom_forms')) {
+                Route::get('custom-forms', [CustomFormsController::class, 'index']);
+                Route::post('custom-forms', [CustomFormsController::class, 'store']);
+                Route::get('custom-forms/{id}', [CustomFormsController::class, 'show'])->whereNumber('id');
+                Route::put('custom-forms/{id}', [CustomFormsController::class, 'update'])->whereNumber('id');
+                Route::delete('custom-forms/{id}', [CustomFormsController::class, 'destroy'])->whereNumber('id');
+
+                Route::get('custom-forms/{formId}/submissions', [CustomFormSubmissionsController::class, 'index']);
+                Route::post('custom-forms/{formId}/submissions', [CustomFormSubmissionsController::class, 'store']);
+                Route::post('custom-forms/{formId}/submissions/bulk-delete', [CustomFormSubmissionsController::class, 'bulkDestroy']);
+                Route::post('custom-forms/{formId}/submissions/mark-viewed', [CustomFormSubmissionsController::class, 'markAllViewed']);
+                Route::get('custom-forms/{formId}/submissions/{id}', [CustomFormSubmissionsController::class, 'show']);
+                Route::put('custom-forms/{formId}/submissions/{id}', [CustomFormSubmissionsController::class, 'update']);
+                Route::delete('custom-forms/{formId}/submissions/{id}', [CustomFormSubmissionsController::class, 'destroy']);
+            }
         }
 
         // Commerce routes - only if commerce module is installed
@@ -325,6 +355,7 @@ Route::middleware(['admin.auth'])->group(function () {
             // Specific routes MUST come before generic {id} routes
             Route::get('filters/for-catalog/{catalogId}', [$filterController, 'forCatalog']);
             Route::post('filters/generate-code', [$filterController, 'generateCode']);
+            Route::post('filters/reorder', [$filterController, 'reorder']);
 
             // Filter values routes
             Route::post('filters/{filterId}/values', [$filterController, 'addValue']);

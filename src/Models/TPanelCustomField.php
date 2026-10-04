@@ -18,12 +18,14 @@ class TPanelCustomField extends Model
         'is_multiple',
         'sort',
         'value',
+        'default_value',
     ];
 
     protected $casts = [
         'is_multiple' => 'boolean',
         'sort' => 'integer',
         'value' => 'json',
+        'default_value' => 'json',
     ];
 
     /**
@@ -34,7 +36,17 @@ class TPanelCustomField extends Model
     /**
      * All supported field types.
      */
-    public const TYPES = ['text', 'html', 'number', 'image', 'file', 'email', 'phone', 'table'];
+    public const TYPES = ['text', 'html', 'number', 'image', 'file', 'email', 'phone', 'table', 'boolean'];
+
+    /**
+     * The value to output: the stored value, or the default while it is empty.
+     */
+    public function resolvedValue(): mixed
+    {
+        $isEmpty = $this->value === null || $this->value === '' || $this->value === [];
+
+        return $isEmpty ? $this->default_value : $this->value;
+    }
 
     /**
      * All custom fields as a [code => value] map for projectSettings.
@@ -44,7 +56,7 @@ class TPanelCustomField extends Model
     public static function asSettingsMap(): array
     {
         return static::orderBy('sort')->orderBy('id')->get()
-            ->mapWithKeys(fn (self $field) => [$field->code => $field->value])
+            ->mapWithKeys(fn (self $field) => [$field->code => $field->resolvedValue()])
             ->all();
     }
 }

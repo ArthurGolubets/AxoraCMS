@@ -41,6 +41,11 @@ class SettingsController extends Controller
         // Only known keys may be written — ignore everything else.
         $data = array_intersect_key($request->all(), array_flip($this->allowedKeys()));
 
+        if (array_key_exists('duplicate_sku_action', $data)
+            && ! in_array($data['duplicate_sku_action'], self::DUPLICATE_SKU_ACTIONS, true)) {
+            $data['duplicate_sku_action'] = '';
+        }
+
         // Get old settings for logging
         $oldSettings = TPanelSettings::all_settings();
         $changes = [];
@@ -128,6 +133,13 @@ class SettingsController extends Controller
     }
 
     /**
+     * Allowed values of "duplicate_sku_action" ('' — ask the administrator every time).
+     *
+     * @var array<int, string>
+     */
+    public const DUPLICATE_SKU_ACTIONS = ['', 'skip', 'edit', 'prefix'];
+
+    /**
      * Whitelist of setting keys that may be written through the API.
      *
      * @return array<int, string>
@@ -151,6 +163,8 @@ class SettingsController extends Controller
             // Feature flags
             'can_edit_product_stock', 'products_list_enabled',
             'product_variants_enabled', 'related_products_enabled',
+            // What to do with a duplicate SKU when creating a product
+            'duplicate_sku_action',
             // Integrations
             'bitrix24_webhook', 'payment_shop_id', 'payment_secret',
             'telegram_chat_id', 'telegram_token',

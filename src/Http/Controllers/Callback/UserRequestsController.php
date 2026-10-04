@@ -26,6 +26,11 @@ class UserRequestsController extends Controller
             });
         }
 
+        // Only requests nobody has opened yet
+        if ($request->get('status') === 'new') {
+            $query->whereNull('viewed_at');
+        }
+
         // Filter by user
         if ($request->has('user_id') && $request->user_id !== '') {
             $query->where('user_id', $request->user_id);
@@ -50,6 +55,10 @@ class UserRequestsController extends Controller
     {
         $userRequest = TUserRequests::findOrFail($id);
 
+        if (! $userRequest->viewed_at) {
+            $userRequest->update(['viewed_at' => now()]);
+        }
+
         return response()->json($userRequest);
     }
 
@@ -63,7 +72,7 @@ class UserRequestsController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:255',
             'comment' => 'required|string',
-            'user_id' => 'nullable|integer|exists:t_users,id',
+            'user_id' => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
@@ -73,7 +82,7 @@ class UserRequestsController extends Controller
             ], 422);
         }
 
-        $userRequest = TUserRequests::create($request->all());
+        $userRequest = TUserRequests::create([...$validator->validated(), 'viewed_at' => now()]);
 
         return response()->json([
             'success' => true,
@@ -94,7 +103,7 @@ class UserRequestsController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:255',
             'comment' => 'required|string',
-            'user_id' => 'nullable|integer|exists:t_users,id',
+            'user_id' => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
@@ -104,7 +113,7 @@ class UserRequestsController extends Controller
             ], 422);
         }
 
-        $userRequest->update($request->all());
+        $userRequest->update($validator->validated());
 
         return response()->json([
             'success' => true,

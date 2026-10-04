@@ -38,7 +38,7 @@
                 border: 'none'
               }"
             >
-              {{ currentConfirmText }} 1
+              {{ currentConfirmText }}
             </button>
           </div>
         </div>
@@ -90,11 +90,6 @@ function open(options = {}) {
   currentConfirmText.value = options.confirmText || props.confirmText;
   currentCancelText.value = options.cancelText || props.cancelText;
   currentDangerMode.value = options.dangerMode !== undefined ? options.dangerMode : props.dangerMode;
-
-  console.log('ConfirmModal opened with:', {
-    dangerMode: currentDangerMode.value,
-    themeColor: themeColor.value || themeColor,
-  });
 
   show.value = true;
   return new Promise((resolve) => {

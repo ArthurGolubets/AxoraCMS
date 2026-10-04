@@ -41,7 +41,11 @@
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
           <tr v-for="field in fields" :key="field.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
             <td class="px-6 py-4">
-              <div class="font-medium text-gray-900 dark:text-white">{{ field.name }}</div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-900 dark:text-white">{{ field.name }}</span>
+                <span v-if="field.is_system" class="px-1.5 py-0.5 text-[11px] rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Системное</span>
+                <span v-if="field.is_hidden" class="px-1.5 py-0.5 text-[11px] rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Скрытое</span>
+              </div>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 font-mono">{{ field.code }}</td>
             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ getFieldTypeLabel(field.type) }}</td>
@@ -71,140 +75,166 @@
       </table>
     </div>
 
-    <!-- Field Modal -->
-    <div v-if="showFieldModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-            {{ editingField ? 'Редактировать поле' : 'Добавить поле' }}
-          </h3>
+    <!-- Field Side Panel -->
+    <SidePanel v-if="showFieldModal" :title="editingField ? 'Редактировать поле' : 'Добавить поле'" @close="closeFieldModal">
+      <form id="info-block-field-form" @submit.prevent="saveField" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
+          <input v-model="fieldForm.name" @input="generateFieldCode" type="text" required class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
         </div>
-        <form @submit.prevent="saveField" class="p-6 space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
-            <input v-model="fieldForm.name" @input="generateFieldCode" type="text" required class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Код *</label>
+          <input v-model="fieldForm.code" type="text" required pattern="[a-z0-9_]+" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тип *</label>
+          <select v-model="fieldForm.type" @change="onTypeChange" required class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+            <option v-for="type in fieldTypes" :key="type.value" :value="type.value">{{ type.label }}</option>
+          </select>
+        </div>
+        <div v-if="fieldForm.type === 'enum'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div class="flex items-center justify-between mb-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Варианты выбора
+            </label>
+            <button type="button" @click="addEnumOption"
+                    class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+              + Добавить вариант
+            </button>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Код *</label>
-            <input v-model="fieldForm.code" type="text" required pattern="[a-z0-9_]+" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тип *</label>
-            <select v-model="fieldForm.type" required class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-              <option v-for="type in fieldTypes" :key="type.value" :value="type.value">{{ type.label }}</option>
-            </select>
-          </div>
-          <div v-if="fieldForm.type === 'enum'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div class="flex items-center justify-between mb-3">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Варианты выбора
-              </label>
-              <button type="button" @click="addEnumOption"
-                      class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
-                + Добавить вариант
+          <div class="space-y-2">
+            <div v-for="(option, index) in fieldForm.settings.options" :key="index"
+                 class="flex items-center space-x-2">
+              <input v-model="option.title" type="text" placeholder="Название"
+                     class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" />
+              <input v-model="option.code" type="text" placeholder="Код"
+                     class="w-32 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm font-mono" />
+              <button type="button" @click="removeEnumOption(index)"
+                      class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
               </button>
             </div>
-            <div class="space-y-2">
-              <div v-for="(option, index) in fieldForm.settings.options" :key="index"
-                   class="flex items-center space-x-2">
-                <input v-model="option.title" type="text" placeholder="Название"
-                       class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" />
-                <input v-model="option.code" type="text" placeholder="Код"
-                       class="w-32 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm font-mono" />
-                <button type="button" @click="removeEnumOption(index)"
-                        class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
-                </button>
-              </div>
-              <p v-if="!fieldForm.settings.options || fieldForm.settings.options.length === 0" class="text-sm text-gray-400 dark:text-gray-500">
-                Добавьте хотя бы один вариант
-              </p>
-            </div>
-          </div>
-          <div v-if="fieldForm.type === 'entity'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div class="mb-3">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Тип сущности *
-              </label>
-              <select v-model="fieldForm.settings.entity_type"
-                      class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-                <option value="">— Выберите тип —</option>
-                <option value="infoblock">Элемент инфоблока</option>
-                <option value="product">Товар</option>
-                <option value="catalog">Категория</option>
-              </select>
-            </div>
-            <div v-if="fieldForm.settings.entity_type === 'infoblock'">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Инфоблок *
-              </label>
-              <select v-model="fieldForm.settings.entity_id"
-                      class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-                <option :value="null">— Выберите инфоблок —</option>
-                <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">
-                  {{ ib.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div v-if="fieldForm.type === 'table'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Размер таблицы
-            </label>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Строк</label>
-                <input v-model.number="fieldForm.settings.rows" type="number" min="1" max="20" placeholder="3"
-                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
-              </div>
-              <div>
-                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Колонок</label>
-                <input v-model.number="fieldForm.settings.cols" type="number" min="1" max="20" placeholder="3"
-                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
-              </div>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              По умолчанию: 3x3 (если не указано)
+            <p v-if="!fieldForm.settings.options || fieldForm.settings.options.length === 0" class="text-sm text-gray-400 dark:text-gray-500">
+              Добавьте хотя бы один вариант
             </p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сортировка</label>
-            <input v-model.number="fieldForm.sort" type="number" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-          </div>
-          <div class="flex items-center space-x-4">
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input v-model="fieldForm.is_required" type="checkbox" class="w-4 h-4 rounded">
-              <span class="text-sm text-gray-700 dark:text-gray-300">Обязательное</span>
+        </div>
+        <div v-if="fieldForm.type === 'entity'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Тип сущности *
             </label>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input v-model="fieldForm.is_multiple" type="checkbox" class="w-4 h-4 rounded">
-              <span class="text-sm text-gray-700 dark:text-gray-300">Множественное</span>
+            <select v-model="fieldForm.settings.entity_type"
+                    class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+              <option value="">— Выберите тип —</option>
+              <option value="infoblock">Элемент инфоблока</option>
+              <option value="product">Товар</option>
+              <option value="catalog">Категория</option>
+            </select>
+          </div>
+          <div v-if="fieldForm.settings.entity_type === 'infoblock'">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Инфоблок *
             </label>
+            <select v-model="fieldForm.settings.entity_id"
+                    class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+              <option :value="null">— Выберите инфоблок —</option>
+              <option v-for="ib in infoBlocks" :key="ib.id" :value="ib.id">
+                {{ ib.name }}
+              </option>
+            </select>
           </div>
-          <div class="flex justify-end space-x-3 pt-4">
-            <button type="button" @click="closeFieldModal" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
-              Отмена
-            </button>
-            <ThemeButton type="submit" variant="primary" :disabled="saving">
-              {{ saving ? 'Сохранение...' : 'Сохранить' }}
-            </ThemeButton>
+        </div>
+        <div v-if="fieldForm.type === 'table'" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Размер таблицы
+          </label>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Строк</label>
+              <input v-model.number="fieldForm.settings.rows" type="number" min="1" max="20" placeholder="3"
+                     class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Колонок</label>
+              <input v-model.number="fieldForm.settings.cols" type="number" min="1" max="20" placeholder="3"
+                     class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
+            </div>
           </div>
-        </form>
-      </div>
-    </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            По умолчанию: 3x3 (если не указано)
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сортировка</label>
+          <input v-model.number="fieldForm.sort" type="number" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Обязательное</span>
+            <ToggleSwitch v-model="fieldForm.is_required" :disabled="fieldForm.is_system || fieldForm.is_hidden" :theme-color="themeColor" />
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Множественное</span>
+            <ToggleSwitch :model-value="fieldForm.is_multiple" @update:model-value="setMultiple" :theme-color="themeColor" />
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Системное поле</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Отображается в элементе, но не редактируется</p>
+            </div>
+            <ToggleSwitch :model-value="fieldForm.is_system" @update:model-value="setSystem" :theme-color="themeColor" />
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Скрытое поле</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Не показывается в форме элемента</p>
+            </div>
+            <ToggleSwitch :model-value="fieldForm.is_hidden" @update:model-value="setHidden" :theme-color="themeColor" />
+          </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Значение по умолчанию</label>
+          <InfoBlockFieldInput
+            :key="`${fieldForm.type}-${fieldForm.is_multiple}`"
+            v-model="fieldForm.default_value"
+            :field="defaultValueField"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Подставляется в новые элементы</p>
+        </div>
+      </form>
+
+      <template #footer>
+        <div class="flex justify-end space-x-3">
+          <button type="button" @click="closeFieldModal" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+            Отмена
+          </button>
+          <ThemeButton type="submit" form="info-block-field-form" variant="primary" :disabled="saving">
+            {{ saving ? 'Сохранение...' : 'Сохранить' }}
+          </ThemeButton>
+        </div>
+      </template>
+    </SidePanel>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch  } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ThemeButton from './ThemeButton.vue';
+import SidePanel from './SidePanel.vue';
+import ToggleSwitch from './ToggleSwitch.vue';
+import InfoBlockFieldInput from './InfoBlockFieldInput.vue';
 import { useModal } from '../composables/useModal';
+import { useTheme } from '../composables/useTheme';
+import { emptyFieldValue } from '../utils/infoBlockFields';
 
 const route = useRoute();
-const { confirm } = useModal();
+const { confirm, error } = useModal();
+const { themeColor } = useTheme();
 
 const infoBlock = ref(null);
 const fields = ref([]);
@@ -214,15 +244,55 @@ const editingField = ref(null);
 const saving = ref(false);
 const infoBlocks = ref([]);
 
-const fieldForm = ref({
+const blankFieldForm = () => ({
   name: '',
   code: '',
   type: 'string',
   sort: 500,
   is_required: false,
   is_multiple: false,
+  is_system: false,
+  is_hidden: false,
+  default_value: '',
   settings: {}
 });
+
+const fieldForm = ref(blankFieldForm());
+
+const defaultValueField = computed(() => ({ ...fieldForm.value, is_required: false }));
+
+const onTypeChange = () => {
+  fieldForm.value.settings = {};
+  fieldForm.value.default_value = emptyFieldValue(fieldForm.value);
+};
+
+const setMultiple = (value) => {
+  fieldForm.value.is_multiple = value;
+  fieldForm.value.default_value = emptyFieldValue(fieldForm.value);
+};
+
+const setSystem = (value) => {
+  fieldForm.value.is_system = value;
+  if (value) {
+    fieldForm.value.is_hidden = false;
+    fieldForm.value.is_required = false;
+  }
+};
+
+const setHidden = (value) => {
+  fieldForm.value.is_hidden = value;
+  if (value) {
+    fieldForm.value.is_system = false;
+    fieldForm.value.is_required = false;
+  }
+};
+
+const isEmptyValue = (value) => {
+  if (value === null || value === undefined || value === '') return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') return Object.values(value).every((v) => v === '' || v === null);
+  return false;
+};
 
 const fieldTypes = [
   { value: 'string', label: 'Строка' },
@@ -318,7 +388,6 @@ const loadFields = async () => {
 };
 
 const editField = (field) => {
-  isEditing = true;
   editingField.value = field;
   fieldForm.value = {
     name: field.name,
@@ -327,6 +396,9 @@ const editField = (field) => {
     sort: field.sort,
     is_required: field.is_required,
     is_multiple: field.is_multiple,
+    is_system: !!field.is_system,
+    is_hidden: !!field.is_hidden,
+    default_value: field.default_value ?? emptyFieldValue(field),
     settings: field.settings || {}
   };
   showFieldModal.value = true;
@@ -335,22 +407,17 @@ const editField = (field) => {
 const closeFieldModal = () => {
   showFieldModal.value = false;
   editingField.value = null;
-  fieldForm.value = {
-    name: '',
-    code: '',
-    type: 'string',
-    sort: 500,
-    is_required: false,
-    is_multiple: false,
-    settings: {}
-  };
+  fieldForm.value = blankFieldForm();
 };
 
 const saveField = async () => {
   saving.value = true;
   try {
 
-    const payload = { ...fieldForm.value };
+    const payload = {
+      ...fieldForm.value,
+      default_value: isEmptyValue(fieldForm.value.default_value) ? null : fieldForm.value.default_value,
+    };
 
     const url = editingField.value
       ? `/admin/api/infoblocks/${route.params.id}/fields/${editingField.value.id}`
@@ -371,9 +438,12 @@ const saveField = async () => {
     if (response.ok) {
       closeFieldModal();
       loadFields();
+    } else {
+      const data = await response.json().catch(() => ({}));
+      error(data.message || 'Ошибка при сохранении поля');
     }
-  } catch (error) {
-    console.error('Failed to save field:', error);
+  } catch (e) {
+    console.error('Failed to save field:', e);
   } finally {
     saving.value = false;
   }
@@ -416,12 +486,4 @@ onMounted(() => {
   loadInfoBlocks();
 
 });
-let isEditing = false;
-watch(() => fieldForm.value.type, () => {
-  if (!isEditing) {
-    fieldForm.value.settings = {};
-  }
-  isEditing = false;
-});
-
 </script>

@@ -3,11 +3,13 @@
 namespace HolartWeb\AxoraCMS\Http\Controllers\SEO;
 
 use HolartWeb\AxoraCMS\Console\ScanRoutesCommand;
+use HolartWeb\AxoraCMS\Models\Menus\TMenuItem;
 use HolartWeb\AxoraCMS\Models\SEO\TPage;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class PagesController extends Controller
@@ -47,7 +49,10 @@ class PagesController extends Controller
 
         // Sorting
         $sortBy = $request->input('sort_by', 'created_at');
-        $sortOrder = $request->input('sort_order', 'desc');
+        if (! in_array($sortBy, ['created_at', 'updated_at', 'title', 'slug', 'type', 'is_active', 'views_count', 'today_views'], true)) {
+            $sortBy = 'created_at';
+        }
+        $sortOrder = strtolower((string) $request->input('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         $perPage = $request->input('per_page', 15);
@@ -81,6 +86,8 @@ class PagesController extends Controller
             'meta_description' => 'nullable|string',
             'meta_keywords' => 'nullable|string|max:255',
             'is_active' => 'boolean',
+            'menu_id' => Schema::hasTable('t_menus') ? 'nullable|integer|exists:t_menus,id' : 'prohibited',
+            'menu_parent_id' => Schema::hasTable('t_menu_items') ? 'nullable|integer|exists:t_menu_items,id' : 'prohibited',
         ]);
 
         if ($validator->fails()) {
@@ -91,6 +98,9 @@ class PagesController extends Controller
         }
 
         $data = $validator->validated();
+        $menuId = $data['menu_id'] ?? null;
+        $menuParentId = $data['menu_parent_id'] ?? null;
+        unset($data['menu_id'], $data['menu_parent_id']);
 
         // Generate slug if not provided
         if (empty($data['slug'])) {
@@ -111,9 +121,12 @@ class PagesController extends Controller
         // Log activity
         TAdminAction::log('created', 'page', $page->id, 'Создана страница: '.$page->title);
 
+        $menuItem = $menuId ? $this->addPageToMenu($page, (int) $menuId, $menuParentId ? (int) $menuParentId : null) : null;
+
         return response()->json([
             'message' => 'Страница создана успешно',
             'page' => $page,
+            'menu_item' => $menuItem,
         ], 201);
     }
 
@@ -243,6 +256,30 @@ class PagesController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Append a link to the page at the end of a menu (or of a parent item).
+     */
+    protected function addPageToMenu(TPage $page, int $menuId, ?int $parentId): TMenuItem
+    {
+        if ($parentId && ! TMenuItem::whereKey($parentId)->where('menu_id', $menuId)->exists()) {
+            $parentId = null;
+        }
+
+        $item = TMenuItem::create([
+            'menu_id' => $menuId,
+            'parent_id' => $parentId,
+            'title' => $page->title,
+            'url' => $page->public_url,
+            'target' => TMenuItem::TARGET_SELF,
+            'sort' => TMenuItem::nextSort($menuId, $parentId),
+            'is_active' => true,
+        ]);
+
+        TAdminAction::log('created', 'menu_item', $item->id, 'Страница "'.$page->title.'" добавлена в меню');
+
+        return $item;
     }
 
     /**

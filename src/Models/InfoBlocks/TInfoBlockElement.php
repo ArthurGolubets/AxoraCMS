@@ -82,12 +82,21 @@ class TInfoBlockElement extends Model
     }
 
     /**
+     * Whether the key is a real table column rather than an info block property.
+     */
+    protected function isModelColumn(string $key): bool
+    {
+        return in_array($key, $this->fillable, true)
+            || in_array($key, [$this->getKeyName(), $this->getCreatedAtColumn(), $this->getUpdatedAtColumn()], true);
+    }
+
+    /**
      * Magic getter for properties
      */
     public function __get($key)
     {
-        // First try to get from model attributes
-        if (array_key_exists($key, $this->attributes) || $this->hasGetMutator($key)) {
+        // First try to get from model attributes / relations
+        if (array_key_exists($key, $this->attributes) || $this->hasGetMutator($key) || $this->isRelation($key)) {
             return parent::__get($key);
         }
 
@@ -100,8 +109,8 @@ class TInfoBlockElement extends Model
      */
     public function __set($key, $value)
     {
-        // If it's a model attribute, set it
-        if (array_key_exists($key, $this->attributes)) {
+        // If it's a model attribute (incl. timestamps not yet set on a new model), set it
+        if (array_key_exists($key, $this->attributes) || $this->isModelColumn($key) || $this->hasSetMutator($key)) {
             parent::__set($key, $value);
 
             return;

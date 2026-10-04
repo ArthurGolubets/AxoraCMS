@@ -12,6 +12,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('t_admin_notification_reads')) {
+            return;
+        }
+
         Schema::create('t_admin_notification_reads', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('notification_id');

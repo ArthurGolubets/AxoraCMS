@@ -31,3 +31,113 @@
     @apply bg-gray-700 text-white;
   }
 }
+
+/* -------------------------------------------------------------------------
+ * Quill editor (TinyMCEEditor.vue) — light / dark theme
+ * ------------------------------------------------------------------------- */
+.ql-toolbar.ql-snow {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.ql-container.ql-snow {
+  font-size: 14px;
+  background-color: #ffffff;
+  border-color: #d1d5db;
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.ql-snow .ql-editor {
+  min-height: 300px;
+  color: #1f2937;
+}
+
+.dark .ql-toolbar.ql-snow {
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .ql-container.ql-snow {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.dark .ql-snow .ql-editor {
+  color: #f3f4f6;
+}
+
+.dark .ql-snow .ql-editor.ql-blank::before {
+  color: #9ca3af;
+}
+
+.dark .ql-snow .ql-editor a {
+  color: #93c5fd;
+}
+
+.dark .ql-snow .ql-editor pre.ql-syntax,
+.dark .ql-snow .ql-editor code {
+  background-color: #111827;
+  color: #e5e7eb;
+}
+
+.dark .ql-snow .ql-stroke,
+.dark .ql-snow .ql-stroke-miter {
+  stroke: #d1d5db;
+}
+
+.dark .ql-snow .ql-fill,
+.dark .ql-snow .ql-stroke.ql-fill {
+  fill: #d1d5db;
+}
+
+.dark .ql-snow .ql-picker,
+.dark .ql-snow .ql-picker-label {
+  color: #d1d5db;
+}
+
+.dark .ql-snow .ql-picker-options {
+  background-color: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark .ql-snow .ql-picker-item {
+  color: #d1d5db;
+}
+
+.dark .ql-snow button:hover .ql-stroke,
+.dark .ql-snow button.ql-active .ql-stroke,
+.dark .ql-snow .ql-picker-label:hover .ql-stroke,
+.dark .ql-snow .ql-picker-label.ql-active .ql-stroke {
+  stroke: #60a5fa;
+}
+
+.dark .ql-snow button:hover .ql-fill,
+.dark .ql-snow button.ql-active .ql-fill {
+  fill: #60a5fa;
+}
+
+.dark .ql-snow button:hover,
+.dark .ql-snow button.ql-active,
+.dark .ql-snow .ql-picker-label:hover,
+.dark .ql-snow .ql-picker-label.ql-active,
+.dark .ql-snow .ql-picker-item:hover,
+.dark .ql-snow .ql-picker-item.ql-selected {
+  color: #60a5fa;
+}
+
+.dark .ql-snow .ql-tooltip {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+  box-shadow: none;
+}
+
+.dark .ql-snow .ql-tooltip input[type='text'] {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #f3f4f6;
+}
+

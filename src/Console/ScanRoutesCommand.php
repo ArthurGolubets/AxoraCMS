@@ -176,12 +176,11 @@ class ScanRoutesCommand extends Command
                 $this->line("  - [{$methods[0]}] {$uri} (name: {$name}, middleware: ".implode(',', $middleware).')');
             }
 
-            // Only GET routes from web middleware, excluding admin routes
+            // Only GET routes from web middleware, excluding admin and API routes
             if (
                 in_array('GET', $methods) &&
                 in_array('web', $middleware) &&
-                ! str_starts_with($uri, 'admin') &&
-                ! str_starts_with($uri, 'admin/')
+                ! $this->isExcludedUri($uri)
             ) {
                 $routes[] = [
                     'name' => $name,
@@ -192,6 +191,23 @@ class ScanRoutesCommand extends Command
         }
 
         return $routes;
+    }
+
+    /**
+     * Admin panel and API endpoints are not site pages.
+     */
+    private function isExcludedUri(string $uri): bool
+    {
+        $uri = trim($uri, '/');
+        $adminPrefix = trim((string) config('axora-cms.route_prefix', 'admin'), '/');
+
+        foreach (array_filter([$adminPrefix, 'admin', 'api']) as $prefix) {
+            if ($uri === $prefix || str_starts_with($uri, $prefix.'/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

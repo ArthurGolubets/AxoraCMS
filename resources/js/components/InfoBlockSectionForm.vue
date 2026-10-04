@@ -1,126 +1,106 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-            {{ isEdit ? 'Редактировать раздел' : 'Создать раздел' }}
-          </h3>
-          <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Parent Section -->
-          <div v-if="!isEdit">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Родительский раздел</label>
-            <select
-              v-model="form.parent_id"
-              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-            >
-              <option :value="null">Корневой раздел</option>
-              <option v-for="sec in allSections" :key="sec.id" :value="sec.id">
-                {{ sec.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Name -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
-            <input
-              v-model="form.name"
-              @input="generateCode"
-              type="text"
-              required
-              placeholder="Например: Электроника"
-              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-            >
-          </div>
-
-          <!-- Code -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Системное имя *</label>
-            <input
-              v-model="form.code"
-              type="text"
-              required
-              placeholder="elektronika"
-              pattern="[a-z0-9_]+"
-              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono"
-            >
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Только латинские буквы, цифры и нижнее подчеркивание</p>
-          </div>
-
-          <!-- Image -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Аватар</label>
-            <InfoBlockImageUpload
-              v-model="form.image"
-              :is-multiple="false"
-            />
-          </div>
-
-          <!-- Description -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Описание</label>
-            <textarea
-              v-model="form.description"
-              rows="3"
-              placeholder="Описание раздела"
-              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-            ></textarea>
-          </div>
-
-          <!-- Sort -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сортировка</label>
-            <input
-              v-model.number="form.sort"
-              type="number"
-              placeholder="500"
-              class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-            >
-          </div>
-
-          <!-- Active -->
-          <div>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                v-model="form.is_active"
-                type="checkbox"
-                class="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
-              >
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Активен</span>
-            </label>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              @click="$emit('close')"
-              class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-            >
-              Отмена
-            </button>
-            <ThemeButton type="submit" variant="primary" :disabled="saving">
-              {{ saving ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Создать') }}
-            </ThemeButton>
-          </div>
-        </form>
+  <SidePanel :title="isEdit ? 'Редактировать раздел' : 'Создать раздел'" @close="$emit('close')">
+    <form id="info-block-section-form" @submit.prevent="handleSubmit" class="space-y-4">
+      <!-- Parent Section -->
+      <div v-if="!isEdit">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Родительский раздел</label>
+        <CategorySelect
+          v-model="form.parent_id"
+          :categories="allSections"
+          clearable
+          placeholder="Корневой раздел — начните вводить название"
+          picker-title="Выберите родительский раздел"
+          empty-text="Разделы не найдены"
+        />
       </div>
-    </div>
-  </div>
+
+      <!-- Name -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Название *</label>
+        <input
+          v-model="form.name"
+          @input="generateCode"
+          type="text"
+          required
+          placeholder="Например: Электроника"
+          class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+        >
+      </div>
+
+      <!-- Code -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Системное имя *</label>
+        <input
+          v-model="form.code"
+          type="text"
+          required
+          placeholder="elektronika"
+          pattern="[a-z0-9_]+"
+          class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-mono"
+        >
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Только латинские буквы, цифры и нижнее подчеркивание</p>
+      </div>
+
+      <!-- Image -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Аватар</label>
+        <InfoBlockImageUpload
+          v-model="form.image"
+          :is-multiple="false"
+        />
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Описание</label>
+        <textarea
+          v-model="form.description"
+          rows="3"
+          placeholder="Описание раздела"
+          class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+        ></textarea>
+      </div>
+
+      <!-- Sort -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Сортировка</label>
+        <input
+          v-model.number="form.sort"
+          type="number"
+          placeholder="500"
+          class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+        >
+      </div>
+
+      <!-- Active -->
+      <ToggleSwitch v-model="form.is_active" :theme-color="themeColor" label="Активен" />
+    </form>
+
+    <template #footer>
+      <div class="flex justify-end space-x-3">
+        <button
+          type="button"
+          @click="$emit('close')"
+          class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+        >
+          Отмена
+        </button>
+        <ThemeButton type="submit" form="info-block-section-form" variant="primary" :disabled="saving">
+          {{ saving ? 'Сохранение...' : (isEdit ? 'Сохранить' : 'Создать') }}
+        </ThemeButton>
+      </div>
+    </template>
+  </SidePanel>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import ThemeButton from './ThemeButton.vue';
 import InfoBlockImageUpload from './InfoBlockImageUpload.vue';
+import SidePanel from './SidePanel.vue';
+import CategorySelect from './CategorySelect.vue';
+import ToggleSwitch from './ToggleSwitch.vue';
+import { useTheme } from '../composables/useTheme';
 
 const props = defineProps({
   infoBlockId: {
@@ -138,6 +118,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'saved']);
+const { themeColor } = useTheme();
 
 const isEdit = computed(() => !!props.section);
 const saving = ref(false);

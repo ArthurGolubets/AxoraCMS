@@ -16,7 +16,18 @@
           autocomplete="off"
           :placeholder="placeholder"
           class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+          :class="{ 'pr-9': clearable && modelValue != null }"
         >
+
+        <button
+          v-if="clearable && modelValue != null"
+          type="button"
+          @mousedown.prevent="clear"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          title="Очистить"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
 
         <div
           v-if="open"
@@ -45,7 +56,7 @@
 
       <button
         type="button"
-        title="Выбрать из дерева категорий"
+        :title="pickerTitle"
         @click="modalOpen = true"
         class="shrink-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors"
       >
@@ -59,6 +70,8 @@
       :show="modalOpen"
       :categories="categories"
       :selected-id="modelValue"
+      :title="pickerTitle"
+      :empty-text="emptyText"
       @select="chooseFromModal"
       @close="modalOpen = false"
     />
@@ -74,6 +87,9 @@ const props = defineProps({
   modelValue: { type: [Number, String, null], default: null },
   categories: { type: Array, default: () => [] },
   placeholder: { type: String, default: 'Поиск категории...' },
+  pickerTitle: { type: String, default: 'Выберите категорию' },
+  emptyText: { type: String, default: 'Категории не найдены' },
+  clearable: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -153,6 +169,12 @@ const choose = (cat) => {
   query.value = breadcrumbLabel(cat.id);
   open.value = false;
   inputEl.value?.blur();
+};
+
+const clear = () => {
+  emit('update:modelValue', null);
+  query.value = '';
+  open.value = false;
 };
 
 const chooseFromModal = (cat) => {

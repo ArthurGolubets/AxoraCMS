@@ -12,6 +12,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('t_admin_notifications')) {
+            return;
+        }
+
         Schema::create('t_admin_notifications', function (Blueprint $table) {
             $table->id();
             $table->string('type'); // e.g. "order.created"

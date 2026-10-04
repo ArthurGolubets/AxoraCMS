@@ -26,6 +26,9 @@ class InfoBlockFieldsController extends Controller
             'sort' => 'nullable|integer',
             'is_required' => 'boolean',
             'is_multiple' => 'boolean',
+            'is_system' => 'boolean',
+            'is_hidden' => 'boolean',
+            'default_value' => 'nullable',
             'settings' => 'nullable|array',
         ];
     }

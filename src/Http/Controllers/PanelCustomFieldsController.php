@@ -39,6 +39,7 @@ class PanelCustomFieldsController extends Controller
             'fields.*.is_multiple' => 'boolean',
             'fields.*.sort' => 'nullable|integer',
             'fields.*.value' => 'nullable',
+            'fields.*.default_value' => 'nullable',
         ]);
 
         $keptIds = [];
@@ -46,7 +47,8 @@ class PanelCustomFieldsController extends Controller
 
         foreach ($validated['fields'] as $index => $field) {
             $type = $field['type'];
-            $isMultiple = ($type === 'table') ? false : (bool) ($field['is_multiple'] ?? false);
+            $isMultiple = in_array($type, TPanelCustomField::MULTIPLE_CAPABLE_TYPES, true)
+                && (bool) ($field['is_multiple'] ?? false);
 
             $code = $this->normalizeCode($field['code'] ?? '', $field['name'], $usedCodes);
             $usedCodes[] = $code;
@@ -58,6 +60,7 @@ class PanelCustomFieldsController extends Controller
                 'is_multiple' => $isMultiple,
                 'sort' => $field['sort'] ?? (($index + 1) * 10),
                 'value' => $this->normalizeValue($type, $isMultiple, $field['value'] ?? null),
+                'default_value' => $this->normalizeDefault($type, $isMultiple, $field['default_value'] ?? null),
             ];
 
             $model = ! empty($field['id'])
@@ -109,6 +112,20 @@ class PanelCustomFieldsController extends Controller
     }
 
     /**
+     * Normalize a default value; an empty default is stored as null.
+     */
+    protected function normalizeDefault(string $type, bool $isMultiple, mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = $this->normalizeValue($type, $isMultiple, $value);
+
+        return ($value === null || $value === '' || $value === []) ? null : $value;
+    }
+
+    /**
      * Coerce a field value to the shape implied by its type / multiplicity,
      * and sanitize HTML.
      */
@@ -129,6 +146,10 @@ class PanelCustomFieldsController extends Controller
 
         if ($type === 'table') {
             return is_array($value) ? $value : [];
+        }
+
+        if ($type === 'boolean') {
+            return filter_var(is_array($value) ? ($value[0] ?? false) : $value, FILTER_VALIDATE_BOOLEAN);
         }
 
         if ($isMultiple) {

@@ -67,6 +67,12 @@
                 Фильтры
               </a>
             </router-link>
+            <router-link v-if="canAccessSettings" to="/price-manager" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/price-manager'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                Менеджер цен
+              </a>
+            </router-link>
             <router-link to="/content-settings" v-slot="{ isActive }" custom>
               <a @click="$router.push('/content-settings'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -82,6 +88,7 @@
             <div class="flex items-center">
               <svg class="w-5 h-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
               <span v-if="!isCollapsed">Обратная связь</span>
+              <SidebarBadge v-if="!isCollapsed && !menuGroups.callback" :count="callbackBadgeCount" />
             </div>
             <svg v-if="!isCollapsed" class="w-4 h-4 transition-transform" :class="{ 'rotate-180': menuGroups.callback }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </button>
@@ -95,13 +102,22 @@
             <router-link to="/comments" v-slot="{ isActive }" custom>
               <a @click="$router.push('/comments'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
-                Комментарии
+                <span class="flex-1">Комментарии</span>
+                <SidebarBadge :count="counters.comments" />
               </a>
             </router-link>
             <router-link to="/user-requests" v-slot="{ isActive }" custom>
               <a @click="$router.push('/user-requests'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                Обращения
+                <span class="flex-1">Обращения</span>
+                <SidebarBadge :count="counters.user_requests" />
+              </a>
+            </router-link>
+            <router-link to="/custom-forms" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/custom-forms'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive || $route.path.startsWith('/custom-forms') ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive || $route.path.startsWith('/custom-forms') ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                <span class="flex-1">Свои формы</span>
+                <SidebarBadge :count="counters.custom_forms" />
               </a>
             </router-link>
           </div>
@@ -121,12 +137,7 @@
               <a @click="$router.push('/orders'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
                 <span class="flex-1">Список заказов</span>
-                <span
-                  v-if="newOrdersCount > 0"
-                  class="ml-2 flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none"
-                >
-                  {{ newOrdersCount > 99 ? '99+' : newOrdersCount }}
-                </span>
+                <SidebarBadge :count="newOrdersCount" />
               </a>
             </router-link>
             <router-link to="/transactions" v-slot="{ isActive }" custom>
@@ -197,12 +208,6 @@
                 Страницы
               </a>
             </router-link>
-            <router-link to="/pages-settings" v-slot="{ isActive }" custom>
-              <a @click="$router.push('/pages-settings'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                Настройки
-              </a>
-            </router-link>
             <router-link v-if="pageBuilderModuleInstalled" to="/page-builder" v-slot="{ isActive }" custom>
               <a @click="$router.push('/page-builder'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"/></svg>
@@ -228,7 +233,7 @@
               </a>
             </router-link>
             <router-link to="/menus" v-slot="{ isActive }" custom>
-              <a @click="$router.push('/menus'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+              <a @click="$router.push('/menus'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive || $route.path.startsWith('/menus/') ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive || $route.path.startsWith('/menus/') ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 Настройка меню
               </a>
@@ -457,6 +462,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import Modal from './components/Modal.vue';
 import GlobalSearch from './components/GlobalSearch.vue';
 import NotificationBell from './components/NotificationBell.vue';
+import SidebarBadge from './components/SidebarBadge.vue';
 import { useModal } from './composables/useModal';
 import { useTheme } from './composables/useTheme';
 import { useModuleEvents } from './composables/useModuleEvents';
@@ -467,7 +473,8 @@ const { modalState, success, error } = useModal();
 const { themeColor: globalThemeColor, setThemeColor } = useTheme();
 const { moduleUpdateCounter } = useModuleEvents();
 const appConfig = useAppConfig();
-const { newOrdersCount, startPolling: startNotificationsPolling } = useAdminNotifications();
+const { newOrdersCount, counters, startPolling: startNotificationsPolling } = useAdminNotifications();
+const callbackBadgeCount = computed(() => counters.value.comments + counters.value.user_requests + counters.value.custom_forms);
 
 const isDark = ref(false);
 const isCollapsed = ref(false);
@@ -712,6 +719,11 @@ onMounted(() => {
 });
 
 // Watch for module updates and reload sidebar
+// Catalog settings (e.g. «Список товаров») can change without a page reload.
+watch(() => appConfig.settings.value, (settings) => {
+  if (settings) productsListEnabled.value = settings.products_list_enabled !== false;
+});
+
 watch(moduleUpdateCounter, () => {
   loadModulesStatus(true);
 });

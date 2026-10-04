@@ -41,6 +41,7 @@ use HolartWeb\AxoraCMS\Services\PageVisitService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -81,6 +82,9 @@ class AxoraCMSServiceProvider extends ServiceProvider
 
             // Load views
             $this->loadViewsFrom(__DIR__.'/../resources/views', 'axora-cms');
+
+            // Anonymous Blade components: <x-axora-cms::custom-form code="..." />
+            Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'axora-cms');
 
             // Register services as singletons (lazy loaded)
             $this->app->singleton(PageDataService::class, function ($app) {

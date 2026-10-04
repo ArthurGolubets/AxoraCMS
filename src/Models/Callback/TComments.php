@@ -3,8 +3,10 @@
 namespace HolartWeb\AxoraCMS\Models\Callback;
 
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
+use HolartWeb\AxoraCMS\Services\AdminNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Log;
 
 class TComments extends Model
 {
@@ -25,6 +27,21 @@ class TComments extends Model
         'product_id' => 'integer',
         'is_moderated' => 'boolean',
     ];
+
+    /**
+     * Every creation path (storefront services, custom controllers) goes through
+     * Eloquent, so the admin notification is hooked here.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (self $record) {
+            try {
+                app(AdminNotificationService::class)->notifyNewComment($record);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to create admin notification: '.$e->getMessage());
+            }
+        });
+    }
 
     /**
      * Get the product associated with the comment

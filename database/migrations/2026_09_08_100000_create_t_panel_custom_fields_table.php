@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->string('name');
-            // text | html | number | image | file | email | phone | table
+            // text | html | number | image | file | email | phone | table | boolean
             $table->string('type', 20)->default('text');
             $table->boolean('is_multiple')->default(false);
             $table->unsignedInteger('sort')->default(500);

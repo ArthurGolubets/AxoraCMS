@@ -77,6 +77,11 @@ class ShopUninstallCommand extends Command
                 Schema::disableForeignKeyConstraints();
 
                 // Drop property-related tables first (they have foreign keys)
+                if (Schema::hasTable('t_product_related')) {
+                    Schema::dropIfExists('t_product_related');
+                    $this->info('✓ Dropped t_product_related table');
+                }
+
                 if (Schema::hasTable('t_product_variant_property_values')) {
                     Schema::dropIfExists('t_product_variant_property_values');
                     $this->info('✓ Dropped t_product_variant_property_values table');
@@ -142,28 +147,9 @@ class ShopUninstallCommand extends Command
 
             // Step 4: Remove Migration Records from Database
             $this->info('Step 4: Removing migration records from database...');
-            $migrationFiles = [
-                '2024_01_01_000010_create_t_catalogs_table.php',
-                '2024_01_01_000011_create_t_products_table.php',
-                '2024_01_01_000012_create_t_product_variants_table.php',
-                '2024_01_01_000013_add_main_image_to_products.php',
-                '2024_01_01_000018_add_range_filter_values_to_t_products_table.php',
-                '2026_03_03_000070_create_t_filters_table.php',
-                '2026_03_03_000071_create_t_filter_values_table.php',
-                '2026_03_03_000072_create_t_product_filter_values_table.php',
-                '2026_03_09_000080_create_t_characteristic_definitions_table.php',
-                '2026_03_09_000081_add_applies_to_to_characteristic_definitions.php',
-                '2026_03_29_000090_create_t_catalog_properties_table.php',
-                '2026_03_29_000091_create_t_product_property_values_table.php',
-                '2026_04_09_181628_add_entity_filter_values_column_in_t_products_table.php',
-                '2026_04_12_110348_create_t_catalog_property_groups_table.php',
-                '2026_04_12_111030_add_group_id_column_in_t_catalog_properties_table.php',
-                '2026_04_12_130517_add_string_filter_values_column_in_t_products_table.php',
-                '2026_08_02_135840_add_image_description_to_product_variants_table.php',
-                '2026_08_02_135901_create_t_product_variant_property_values_table.php',
-                '2026_08_02_140148_add_color_and_image_types_to_catalog_properties.php',
-                '2026_08_02_165559_add_color_and_image_types_to_characteristic_definitions.php',
-            ];
+            // Every migration shipped in database/migrations/shop — a hardcoded list
+            // went stale and left records behind, so a reinstall skipped them.
+            $migrationFiles = array_map('basename', glob(dirname(__DIR__, 2).'/database/migrations/shop/*.php') ?: []);
 
             try {
                 DB::table('migrations')->whereIn('migration', array_map(function ($file) {

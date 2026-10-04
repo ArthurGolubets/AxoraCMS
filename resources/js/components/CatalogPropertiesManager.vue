@@ -74,11 +74,11 @@
                 <option value="entity">Привязка к элементам</option>
               </select>
             </div>
-            <div class="flex items-end">
-              <label class="flex items-center cursor-pointer">
-                <input v-model="property.is_multiple" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded">
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Множественное</span>
-              </label>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Множественное</label>
+              <div class="h-[38px] flex items-center">
+                <ToggleSwitch v-model="property.is_multiple" :theme-color="themeColor" />
+              </div>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Порядок</label>
@@ -169,11 +169,11 @@
                 <option value="entity">Привязка к элементам</option>
               </select>
             </div>
-            <div class="flex items-end">
-              <label class="flex items-center cursor-pointer">
-                <input v-model="property.is_multiple" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded">
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Множественное</span>
-              </label>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Множественное</label>
+              <div class="h-[38px] flex items-center">
+                <ToggleSwitch v-model="property.is_multiple" :theme-color="themeColor" />
+              </div>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Порядок</label>
@@ -256,14 +256,27 @@
         </div>
       </div>
     </div>
+    <ConfirmModal ref="confirmModal" />
   </div>
 </template>
 
 <script>
+import ToggleSwitch from './ToggleSwitch.vue';
+import ConfirmModal from './ConfirmModal.vue';
+import { useModal } from '../composables/useModal';
+import { useTheme } from '../composables/useTheme';
+
 let tempIdCounter = 1;
 
 export default {
   name: 'CatalogPropertiesManager',
+  components: { ToggleSwitch, ConfirmModal },
+  setup() {
+    const { error } = useModal();
+    const { themeColor } = useTheme();
+
+    return { showError: error, themeColor };
+  },
   props: {
     catalogId: { type: Number, default: null },
     initialProperties: { type: Array, default: () => [] },
@@ -319,8 +332,6 @@ export default {
       const hasGroups = this.initialGroups.length > 0;
       const hasProperties = this.initialProperties.length > 0;
 
-      console.log('[tryInit] called', { catalogId: this.catalogId, hasGroups, hasProperties, initialGroups: JSON.parse(JSON.stringify(this.initialGroups)), initialProperties: JSON.parse(JSON.stringify(this.initialProperties)) });
-
       if (!this.catalogId) {
         this.groups = [{ temp_id: `temp_${tempIdCounter++}`, name: 'Основные', code: 'main', sort_order: 100 }];
         this.properties = [];
@@ -371,14 +382,26 @@ export default {
       });
     },
 
-    removeGroup(gIndex) {
+    async removeGroup(gIndex) {
       const group = this.groups[gIndex];
       const groupKey = String(group.id || group.temp_id);
-      if (this.properties.some(p => String(p.group_id) === groupKey)) {
-        alert('Нельзя удалить группу, в которой есть свойства. Сначала удалите или перенесите свойства.');
+      const propertiesCount = this.properties.filter(p => String(p.group_id) === groupKey).length;
+
+      if (propertiesCount > 0) {
+        this.showError(
+          `В группе «${group.name}» есть свойства (${propertiesCount}). Сначала удалите их или перенесите в другую группу.`,
+          'Нельзя удалить группу'
+        );
         return;
       }
-      this.groups.splice(gIndex, 1);
+
+      const confirmed = await this.$refs.confirmModal.open({
+        title: 'Удалить группу?',
+        message: `Группа «${group.name}» будет удалена после сохранения категории.`,
+        confirmText: 'Удалить',
+        dangerMode: true,
+      });
+      if (confirmed) this.groups.splice(this.groups.indexOf(group), 1);
     },
 
     async loadInfoBlocks() {
@@ -427,11 +450,17 @@ export default {
       settings.table[key] = Math.max(1, Number(value) || 1);
     },
 
-    removeProperty(property) {
-      if (confirm('Вы уверены, что хотите удалить это свойство?')) {
-        const index = this.properties.indexOf(property);
-        if (index !== -1) this.properties.splice(index, 1);
-      }
+    async removeProperty(property) {
+      const confirmed = await this.$refs.confirmModal.open({
+        title: 'Удалить свойство?',
+        message: `Свойство «${property.name || property.code || 'без названия'}» и его значения у товаров будут удалены после сохранения категории.`,
+        confirmText: 'Удалить',
+        dangerMode: true,
+      });
+      if (!confirmed) return;
+
+      const index = this.properties.indexOf(property);
+      if (index !== -1) this.properties.splice(index, 1);
     },
 
     moveProperty(property, targetGroupKey) {

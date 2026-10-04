@@ -80,6 +80,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { useAdminNotifications } from '../composables/useAdminNotifications';
+
+const { fetchNotifications: refreshBadges } = useAdminNotifications();
 
 const router = useRouter();
 const { success, error, confirm } = useModal();
@@ -166,6 +169,7 @@ const deleteRequest = async (id) => {
     if (response.ok) {
       success('Обращение успешно удалено');
       loadRequests();
+      refreshBadges();
     } else {
       error('Ошибка при удалении');
     }

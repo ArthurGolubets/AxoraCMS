@@ -43,6 +43,11 @@ class MenuItemsController extends Controller
             $validated['menu_id'] = $menuId;
         }
 
+        // New items go to the end of their level unless a position is given.
+        if (! isset($validated['sort'])) {
+            $validated['sort'] = TMenuItem::nextSort((int) $validated['menu_id'], $validated['parent_id'] ?? null);
+        }
+
         $item = TMenuItem::create($validated);
 
         // Log activity

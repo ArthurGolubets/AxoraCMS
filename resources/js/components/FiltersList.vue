@@ -1,300 +1,268 @@
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Глобальные фильтры</h2>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">Управление фильтрами для товаров</p>
+        <p class="text-gray-600 dark:text-gray-400 mt-1">Фильтры, доступные во всех категориях каталога</p>
       </div>
-      <ThemeButton variant="primary" @click="$router.push('/filters/create')">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
+      <ThemeButton variant="primary" @click="openEditor(null)">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Создать фильтр
       </ThemeButton>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Поиск</label>
-          <input
-            v-model="filters.search"
-            @input="loadFilters"
-            type="text"
-            class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-            placeholder="Название или код..."
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тип</label>
-          <select v-model="filters.type" @change="loadFilters" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-            <option value="">Все типы</option>
-            <option value="select">Выбор</option>
-            <option value="checkbox">Флажки</option>
-            <option value="range">Диапазон</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Статус</label>
-          <select v-model="filters.is_active" @change="loadFilters" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
-            <option value="">Все</option>
-            <option value="1">Активные</option>
-            <option value="0">Неактивные</option>
-          </select>
-        </div>
+    <!-- Toolbar -->
+    <div class="mb-4 flex flex-col md:flex-row gap-3">
+      <div class="relative flex-1">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input
+          v-model="query.search"
+          @input="onSearch"
+          type="text"
+          placeholder="Поиск по названию или коду..."
+          class="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+        >
       </div>
+      <select v-model="query.type" @change="loadFilters" class="md:w-56 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+        <option value="">Все типы</option>
+        <option v-for="type in FILTER_TYPES" :key="type.value" :value="type.value">{{ type.short }}</option>
+      </select>
+      <select v-model="query.is_active" @change="loadFilters" class="md:w-44 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
+        <option value="">Все статусы</option>
+        <option value="1">Активные</option>
+        <option value="0">Неактивные</option>
+      </select>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="text-gray-600 dark:text-gray-400 mt-4">Загрузка фильтров...</p>
-    </div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <div v-if="loading" class="p-12 text-center text-gray-500 dark:text-gray-400">Загрузка фильтров...</div>
 
-    <!-- Empty State -->
-    <div v-else-if="filtersList.length === 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-12 text-center">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-      </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">Фильтры не найдены</h3>
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Начните с создания первого фильтра</p>
-      <ThemeButton variant="primary" @click="$router.push('/filters/create')" class="mt-6">
-        Создать первый фильтр
-      </ThemeButton>
-    </div>
+      <div v-else-if="filtersList.length === 0" class="p-12 text-center">
+        <div class="mx-auto w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+        </div>
+        <h3 class="mt-4 text-base font-medium text-gray-900 dark:text-white">{{ hasActiveFilters ? 'Ничего не найдено' : 'Фильтров пока нет' }}</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ hasActiveFilters ? 'Измените условия поиска' : 'Создайте первый фильтр для каталога' }}</p>
+      </div>
 
-    <!-- Filters List -->
-    <div v-else class="grid grid-cols-1 gap-4">
-      <div
-        v-for="filter in filtersList"
-        :key="filter.id"
-        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow"
-      >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-2">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ filter.name }}</h3>
-              <span
-                :class="[
-                  'px-2 py-1 text-xs font-medium rounded-full',
-                  filter.is_active
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                ]"
-              >
-                {{ filter.is_active ? 'Активен' : 'Неактивен' }}
-              </span>
-              <span
-                :class="[
-                  'px-2 py-1 text-xs font-medium rounded-full',
-                  getTypeColor(filter.type)
-                ]"
-              >
-                {{ getTypeLabel(filter.type) }}
-              </span>
-              <span v-if="!filter.catalog_id" class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                Глобальный
-              </span>
-              <span v-else class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                {{ filter.catalog?.name }}
-              </span>
-            </div>
+      <template v-else>
+        <div class="hidden md:flex items-center gap-4 px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
+          <span class="w-5"></span>
+          <span class="flex-1">Фильтр</span>
+          <span class="w-44">Тип</span>
+          <span class="w-72">Значения</span>
+          <span class="w-24">Статус</span>
+          <span class="w-8"></span>
+        </div>
 
-            <code class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-              {{ filter.code }}
-            </code>
-
-            <p v-if="filter.description" class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              {{ filter.description }}
-            </p>
-
-            <!-- Filter Values -->
-            <div v-if="filter.values && filter.values.length > 0" class="mt-4">
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Значения ({{ filter.values.length }}):
-              </p>
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="value in filter.values.slice(0, 10)"
-                  :key="value.id"
-                  class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full"
-                >
-                  {{ value.value }}
-                </span>
-                <span v-if="filter.values.length > 10" class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400">
-                  +{{ filter.values.length - 10 }} еще
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex gap-2 ml-4">
-            <ThemeButton variant="secondary" size="sm" @click="$router.push(`/filters/${filter.id}`)">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
-            </ThemeButton>
-
-            <ThemeButton variant="primary" size="sm" @click="$router.push(`/filters/${filter.id}/edit`)">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-            </ThemeButton>
-
-            <button
-              @click="confirmDelete(filter)"
-              class="px-3 py-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+        <draggable
+          v-model="filtersList"
+          item-key="id"
+          handle=".drag-handle"
+          ghost-class="opacity-40"
+          :disabled="hasActiveFilters"
+          class="divide-y divide-gray-100 dark:divide-gray-700"
+          @end="saveOrder"
+        >
+          <template #item="{ element: filter }">
+            <div
+              class="flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition-colors"
+              @click="$router.push(`/filters/${filter.id}`)"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+              <span
+                class="drag-handle w-5 shrink-0 text-gray-400"
+                :class="hasActiveFilters ? 'opacity-30 cursor-not-allowed' : 'cursor-move hover:text-gray-600 dark:hover:text-gray-300'"
+                :title="hasActiveFilters ? 'Сбросьте поиск и фильтры, чтобы менять порядок' : 'Перетащите, чтобы изменить порядок'"
+                @click.stop
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+              </span>
+
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center" :class="filterType(filter.type).badge">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="filterType(filter.type).icon"/></svg>
+                </span>
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ filter.name }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">{{ filter.code }}</div>
+                </div>
+              </div>
+
+              <span class="md:w-44 text-sm text-gray-600 dark:text-gray-300">{{ filterType(filter.type).short }}</span>
+
+              <div class="md:w-72 flex flex-wrap gap-1.5 min-w-0">
+                <template v-if="listValues(filter).length">
+                  <span
+                    v-for="value in listValues(filter).slice(0, 4)"
+                    :key="value.id"
+                    class="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    :class="{ 'line-through opacity-60': !value.is_active }"
+                  >{{ value.value }}</span>
+                  <span v-if="listValues(filter).length > 4" class="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">+{{ listValues(filter).length - 4 }}</span>
+                </template>
+                <span v-else class="text-xs text-gray-400">{{ valuesHint(filter) }}</span>
+              </div>
+
+              <span class="md:w-24">
+                <span class="inline-flex items-center gap-1.5 text-xs" :class="filter.is_active ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'">
+                  <span class="w-2 h-2 rounded-full" :class="filter.is_active ? 'bg-green-500' : 'bg-gray-400'"></span>
+                  {{ filter.is_active ? 'Активен' : 'Выключен' }}
+                </span>
+              </span>
+
+              <span class="w-8 text-right" @click.stop>
+                <ActionMenu :items="rowActions(filter)" />
+              </span>
+            </div>
+          </template>
+        </draggable>
+      </template>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <Modal v-if="deleteModal.show" @close="deleteModal.show = false">
-      <template #header>
-        <h5 class="text-xl font-semibold text-gray-900 dark:text-white">Подтверждение удаления</h5>
-      </template>
-      <template #body>
-        <div class="text-center py-4">
-          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
-            <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-          </div>
-          <p class="text-gray-900 dark:text-white mb-2">
-            Вы действительно хотите удалить фильтр <strong>{{ deleteModal.filter?.name }}</strong>?
-          </p>
-          <p class="text-sm text-red-600 dark:text-red-400">
-            Все значения фильтра также будут удалены. Это действие нельзя отменить.
-          </p>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex gap-3">
-          <ThemeButton variant="secondary" @click="deleteModal.show = false" class="flex-1">
-            Отмена
-          </ThemeButton>
-          <button
-            @click="deleteFilter"
-            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-          >
-            Удалить
-          </button>
-        </div>
-      </template>
-    </Modal>
+    <FilterEditorPanel v-if="editor.show" :filter="editor.filter" @saved="onSaved" @close="editor.show = false" />
+    <ConfirmModal ref="confirmModal" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import Modal from './Modal.vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import draggable from 'vuedraggable';
 import ThemeButton from './ThemeButton.vue';
+import ActionMenu from './ActionMenu.vue';
+import ConfirmModal from './ConfirmModal.vue';
+import FilterEditorPanel from './FilterEditorPanel.vue';
+import { useModal } from '../composables/useModal';
+import { FILTER_TYPES, filterType, ENTITY_TYPE_LABELS } from '../utils/filterTypes';
 
 const route = useRoute();
+const router = useRouter();
+const { error: showError } = useModal();
+
 const filtersList = ref([]);
 const loading = ref(false);
-const deleteModal = ref({ show: false, filter: null });
+const editor = ref({ show: false, filter: null });
+const confirmModal = ref(null);
+let searchTimer = null;
 
-const filters = ref({
+const query = ref({
   search: '',
   type: '',
   is_active: '',
   catalog_id: 'global', // только глобальные фильтры
 });
 
+// Reordering is only meaningful on the full, unfiltered list.
+const hasActiveFilters = computed(() => !!(query.value.search || query.value.type || query.value.is_active !== ''));
+
+const csrfHeaders = () => ({
+  'Content-Type': 'application/json',
+  'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+  Accept: 'application/json',
+});
+
+const listValues = (filter) => (['select', 'checkbox'].includes(filter.type)
+  ? [...(filter.values || [])].sort((a, b) => a.sort - b.sort)
+  : []);
+
+const valuesHint = (filter) => {
+  if (filter.type === 'range') {
+    const from = filter.values?.find((v) => v.code === 'from')?.value;
+    const to = filter.values?.find((v) => v.code === 'to')?.value;
+    return from || to ? `от ${from ?? '…'} до ${to ?? '…'}` : 'Диапазон без границ';
+  }
+  if (filter.type === 'entity') return ENTITY_TYPE_LABELS[filter.settings?.entity_type] || 'Привязка не настроена';
+  if (filter.type === 'string') return 'Значение задаётся в товаре';
+  return 'Нет значений';
+};
+
+const rowActions = (filter) => [
+  { label: 'Открыть', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', action: () => router.push(`/filters/${filter.id}`) },
+  { label: 'Редактировать', icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z', action: () => openEditor(filter) },
+  { divider: true },
+  { label: 'Удалить', danger: true, icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16', action: () => deleteFilter(filter) },
+];
+
 const loadFilters = async () => {
   loading.value = true;
   try {
-    // Build params only with non-empty values
     const params = new URLSearchParams();
-    Object.keys(filters.value).forEach(key => {
-      const value = filters.value[key];
-      if (value !== '' && value !== null && value !== undefined) {
-        params.append(key, value);
-      }
+    Object.entries(query.value).forEach(([key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) params.append(key, value);
     });
-
-    const response = await fetch(`/admin/api/filters?${params}`, {
-      headers: { 'Accept': 'application/json' },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      filtersList.value = data;
-    }
-  } catch (error) {
-    console.error('Failed to load filters:', error);
+    const response = await fetch(`/admin/api/filters?${params}`, { headers: { Accept: 'application/json' } });
+    if (response.ok) filtersList.value = await response.json();
+  } catch (e) {
+    showError('Не удалось загрузить фильтры');
   } finally {
     loading.value = false;
   }
 };
 
-const getTypeLabel = (type) => {
-  const labels = {
-    'select': 'Выбор',
-    'checkbox': 'Флажки',
-    'range': 'Диапазон',
-  };
-  return labels[type] || type;
+const onSearch = () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadFilters, 300);
 };
 
-const getTypeColor = (type) => {
-  const colors = {
-    'select': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    'checkbox': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    'range': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
-  };
-  return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+const openEditor = (filter) => {
+  editor.value = { show: true, filter };
 };
 
-const confirmDelete = (filter) => {
-  deleteModal.value = {
-    show: true,
-    filter,
-  };
+const onSaved = () => {
+  editor.value.show = false;
+  loadFilters();
 };
 
-const deleteFilter = async () => {
+const saveOrder = async () => {
   try {
-    const response = await fetch(`/admin/api/filters/${deleteModal.value.filter.id}`, {
-      method: 'DELETE',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-        'Accept': 'application/json',
-      },
+    const response = await fetch('/admin/api/filters/reorder', {
+      method: 'POST',
+      headers: csrfHeaders(),
+      body: JSON.stringify({ ids: filtersList.value.map((f) => f.id) }),
     });
-
-    if (response.ok) {
-      deleteModal.value.show = false;
-      loadFilters();
-    } else {
-      const error = await response.json();
-      alert(error.message || 'Ошибка при удалении фильтра');
-    }
-  } catch (error) {
-    console.error('Failed to delete filter:', error);
-    alert('Ошибка при удалении фильтра');
-  }
-};
-
-// Watch for route changes to reload filters
-watch(() => route.path, () => {
-  if (route.path === '/filters') {
+    if (!response.ok) throw new Error();
+  } catch (e) {
+    showError('Не удалось сохранить порядок фильтров');
     loadFilters();
   }
-});
+};
+
+const deleteFilter = async (filter) => {
+  const confirmed = await confirmModal.value.open({
+    title: 'Удалить фильтр?',
+    message: `Фильтр «${filter.name}», его значения и связи с товарами будут удалены. Действие нельзя отменить.`,
+    confirmText: 'Удалить',
+    dangerMode: true,
+  });
+  if (!confirmed) return;
+
+  const response = await fetch(`/admin/api/filters/${filter.id}`, { method: 'DELETE', headers: csrfHeaders() });
+  if (response.ok) {
+    loadFilters();
+  } else {
+    const data = await response.json().catch(() => ({}));
+    showError(data.message || 'Ошибка при удалении фильтра');
+  }
+};
+
+/**
+ * Old links /filters/create and /filters/:id/edit redirect here with ?create / ?edit.
+ */
+const openFromQuery = () => {
+  if (route.query.create) {
+    openEditor(null);
+  } else if (route.query.edit) {
+    openEditor({ id: Number(route.query.edit) });
+  } else {
+    return;
+  }
+  router.replace({ query: {} });
+};
+
+watch(() => route.query, openFromQuery);
 
 onMounted(() => {
   loadFilters();
+  openFromQuery();
 });
 </script>

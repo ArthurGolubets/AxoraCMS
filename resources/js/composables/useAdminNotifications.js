@@ -1,9 +1,10 @@
 import { ref } from 'vue';
 
 /**
- * Shared, polled state for the header bell (notifications) and the "new
- * orders" badge on the sidebar's "Список заказов" link. A single interval
- * feeds both — started once from App.vue's onMounted.
+ * Shared, polled state for the header bell (notifications) and the sidebar
+ * badges (new orders, unmoderated comments, unviewed requests and custom
+ * form records). A single interval feeds them all — started once from
+ * App.vue's onMounted.
  */
 
 const POLL_INTERVAL_MS = 30000;
@@ -11,6 +12,7 @@ const POLL_INTERVAL_MS = 30000;
 const notifications = ref([]);
 const unreadCount = ref(0);
 const newOrdersCount = ref(0);
+const counters = ref({ orders: 0, comments: 0, user_requests: 0, custom_forms: 0 });
 const loaded = ref(false);
 
 let inflight = null;
@@ -35,6 +37,7 @@ const fetchNotifications = async () => {
         notifications.value = data.notifications || [];
         unreadCount.value = data.unread_count || 0;
         newOrdersCount.value = data.new_orders_count || 0;
+        counters.value = { ...counters.value, ...(data.counters || {}) };
         loaded.value = true;
       }
       return data;
@@ -120,6 +123,7 @@ export function useAdminNotifications() {
     notifications,
     unreadCount,
     newOrdersCount,
+    counters,
     fetchNotifications,
     startPolling,
     stopPolling,

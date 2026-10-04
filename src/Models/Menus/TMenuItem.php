@@ -30,6 +30,18 @@ class TMenuItem extends Model
     const TARGET_BLANK = '_blank';
 
     /**
+     * Sort value that places a new item after its siblings.
+     */
+    public static function nextSort(int $menuId, ?int $parentId = null): int
+    {
+        $max = static::where('menu_id', $menuId)
+            ->when($parentId, fn ($query) => $query->where('parent_id', $parentId), fn ($query) => $query->whereNull('parent_id'))
+            ->max('sort');
+
+        return $max === null ? 10 : ((int) $max + 10);
+    }
+
+    /**
      * Get the menu this item belongs to
      */
     public function menu()

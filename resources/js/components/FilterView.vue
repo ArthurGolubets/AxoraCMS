@@ -1,210 +1,94 @@
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <button @click="$router.push('/filters')" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-        <div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-            {{ filter?.name }}
-          </h2>
-          <p class="text-gray-600 dark:text-gray-400 mt-1">
-            Просмотр фильтра
-          </p>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <ThemeButton variant="primary" @click="$router.push(`/filters/${filterId}/edit`)">
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-          </svg>
-          Редактировать
-        </ThemeButton>
-        <ThemeButton variant="danger" @click="confirmDelete">
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-          </svg>
-          Удалить
-        </ThemeButton>
-      </div>
-    </div>
+    <div v-if="loading" class="p-12 text-center text-gray-500 dark:text-gray-400">Загрузка...</div>
 
-    <div v-if="loading" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="text-gray-600 dark:text-gray-400 mt-4">Загрузка...</p>
-    </div>
-
-    <div v-else-if="filter" class="space-y-6">
-      <!-- Basic Info -->
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Основная информация</h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Название</label>
-            <p class="text-gray-900 dark:text-white">{{ filter.name }}</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Символьный код</label>
-            <p class="text-gray-900 dark:text-white font-mono">{{ filter.code }}</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Тип фильтра</label>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-1 text-xs font-medium rounded"
-                :class="{
-                  'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200': filter.type === 'select',
-                  'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200': filter.type === 'checkbox',
-                  'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200': filter.type === 'range'
-                }">
-                {{ typeLabels[filter.type] }}
+    <template v-else-if="filter">
+      <!-- Header -->
+      <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div class="flex items-start gap-4 min-w-0">
+          <button @click="$router.push('/filters')" class="mt-1 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white" title="К списку фильтров">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          </button>
+          <span class="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center" :class="type.badge">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="type.icon"/></svg>
+          </span>
+          <div class="min-w-0">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white truncate">{{ filter.name }}</h2>
+            <div class="mt-1 flex flex-wrap items-center gap-2 text-sm">
+              <code class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs">{{ filter.code }}</code>
+              <span class="inline-flex items-center gap-1.5 text-xs" :class="filter.is_active ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'">
+                <span class="w-2 h-2 rounded-full" :class="filter.is_active ? 'bg-green-500' : 'bg-gray-400'"></span>
+                {{ filter.is_active ? 'Активен' : 'Выключен' }}
               </span>
             </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Порядок сортировки</label>
-            <p class="text-gray-900 dark:text-white">{{ filter.sort }}</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Категория</label>
-            <div class="flex items-center gap-2">
-              <span v-if="filter.catalog_id === null" class="px-2 py-1 text-xs font-medium rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                Глобальный фильтр
-              </span>
-              <span v-else class="px-2 py-1 text-xs font-medium rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
-                {{ filter.catalog?.name || `ID: ${filter.catalog_id}` }}
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Статус</label>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-1 text-xs font-medium rounded"
-                :class="filter.is_active
-                  ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                  : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'">
-                {{ filter.is_active ? 'Активен' : 'Неактивен' }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="filter.description" class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Описание</label>
-            <p class="text-gray-900 dark:text-white">{{ filter.description }}</p>
           </div>
         </div>
+        <div class="flex gap-2">
+          <ThemeButton variant="primary" @click="editorOpen = true">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            Редактировать
+          </ThemeButton>
+          <button type="button" @click="deleteFilter" class="px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors">
+            Удалить
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <p class="text-xs uppercase font-medium text-gray-500 dark:text-gray-400">Тип</p>
+          <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ type.label }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ type.description }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <p class="text-xs uppercase font-medium text-gray-500 dark:text-gray-400">Где доступен</p>
+          <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ filter.catalog_id ? (filter.catalog?.name || `Категория #${filter.catalog_id}`) : 'Во всех категориях' }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ filter.catalog_id ? 'В категории и её дочерних' : 'Глобальный фильтр' }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <p class="text-xs uppercase font-medium text-gray-500 dark:text-gray-400">Значения</p>
+          <template v-if="hasValueList">
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ activeValuesCount }} из {{ sortedValues.length }} активны</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Варианты для выбора покупателем</p>
+          </template>
+          <template v-else>
+            <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ valuesSummary.title }}</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ valuesSummary.hint }}</p>
+          </template>
+        </div>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <p class="text-xs uppercase font-medium text-gray-500 dark:text-gray-400">Создан</p>
+          <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ formatDate(filter.created_at) }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Изменён {{ formatDate(filter.updated_at) }}</p>
+        </div>
+      </div>
+
+      <div v-if="filter.description" class="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <p class="text-xs uppercase font-medium text-gray-500 dark:text-gray-400 mb-1">Описание</p>
+        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ filter.description }}</p>
       </div>
 
       <!-- Values -->
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Значения фильтра ({{ filter.values?.length || 0 }})
-        </h3>
-
-        <div v-if="!filter.values || filter.values.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-          </svg>
-          <p>Нет значений</p>
+      <div v-if="hasValueList" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Значения фильтра</h3>
+          <button type="button" @click="editorOpen = true" class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400">Изменить значения</button>
         </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-900">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Значение
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Код
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Сортировка
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Статус
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="value in sortedValues" :key="value.id">
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {{ value.value }}
-                </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 font-mono">
-                  {{ value.code || '—' }}
-                </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                  {{ value.sort }}
-                </td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm">
-                  <span class="px-2 py-1 text-xs font-medium rounded"
-                    :class="value.is_active
-                      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                      : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'">
-                    {{ value.is_active ? 'Активно' : 'Неактивно' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div v-if="sortedValues.length === 0" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">Значений пока нет</div>
+        <ul v-else class="divide-y divide-gray-100 dark:divide-gray-700">
+          <li v-for="(value, index) in sortedValues" :key="value.id" class="flex items-center gap-4 px-6 py-3">
+            <span class="w-6 text-xs text-gray-400 text-right">{{ index + 1 }}</span>
+            <span class="flex-1 text-sm" :class="value.is_active ? 'text-gray-900 dark:text-white' : 'text-gray-400 line-through'">{{ value.value }}</span>
+            <code class="text-xs text-gray-500 dark:text-gray-400">{{ value.code || '—' }}</code>
+            <span v-if="!value.is_active" class="px-2 py-0.5 text-[11px] rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">выключено</span>
+          </li>
+        </ul>
       </div>
+    </template>
 
-      <!-- Statistics -->
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Статистика</h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p class="text-sm text-blue-600 dark:text-blue-400 mb-1">Всего значений</p>
-            <p class="text-2xl font-bold text-blue-900 dark:text-blue-100">{{ filter.values?.length || 0 }}</p>
-          </div>
-
-          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <p class="text-sm text-green-600 dark:text-green-400 mb-1">Активных значений</p>
-            <p class="text-2xl font-bold text-green-900 dark:text-green-100">{{ activeValuesCount }}</p>
-          </div>
-
-          <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <p class="text-sm text-purple-600 dark:text-purple-400 mb-1">Создан</p>
-            <p class="text-2xl font-bold text-purple-900 dark:text-purple-100">{{ formatDate(filter.created_at) }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <Modal v-if="showDeleteModal" @close="showDeleteModal = false">
-      <template #header>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Подтверждение удаления</h3>
-      </template>
-      <template #body>
-        <p class="text-gray-700 dark:text-gray-300">
-          Вы действительно хотите удалить фильтр <strong>{{ filter?.name }}</strong>?
-        </p>
-        <p class="text-sm text-red-600 dark:text-red-400 mt-2">
-          Все значения фильтра и связи с товарами также будут удалены. Это действие необратимо.
-        </p>
-      </template>
-      <template #footer>
-        <ThemeButton variant="secondary" @click="showDeleteModal = false">
-          Отмена
-        </ThemeButton>
-        <ThemeButton variant="danger" @click="deleteFilter" :disabled="deleting">
-          <span v-if="deleting">Удаление...</span>
-          <span v-else>Удалить</span>
-        </ThemeButton>
-      </template>
-    </Modal>
+    <FilterEditorPanel v-if="editorOpen && filter" :filter="filter" @saved="onSaved" @close="editorOpen = false" />
+    <ConfirmModal ref="confirmModal" />
   </div>
 </template>
 
@@ -212,95 +96,91 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ThemeButton from './ThemeButton.vue';
-import Modal from './Modal.vue';
+import ConfirmModal from './ConfirmModal.vue';
+import FilterEditorPanel from './FilterEditorPanel.vue';
+import { useModal } from '../composables/useModal';
+import { filterType, ENTITY_TYPE_LABELS } from '../utils/filterTypes';
 
 const route = useRoute();
 const router = useRouter();
+const { error: showError } = useModal();
 
 const filterId = route.params.id;
 const filter = ref(null);
 const loading = ref(false);
-const showDeleteModal = ref(false);
-const deleting = ref(false);
+const editorOpen = ref(false);
+const confirmModal = ref(null);
 
-const typeLabels = {
-  select: 'Выбор (dropdown)',
-  checkbox: 'Флажки (multiple)',
-  range: 'Диапазон (min-max)'
-};
+const type = computed(() => filterType(filter.value?.type));
+const hasValueList = computed(() => ['select', 'checkbox'].includes(filter.value?.type));
 
-const sortedValues = computed(() => {
-  if (!filter.value?.values) return [];
-  return [...filter.value.values].sort((a, b) => a.sort - b.sort);
+const sortedValues = computed(() => [...(filter.value?.values || [])].sort((a, b) => (a.sort - b.sort) || (a.id - b.id)));
+const activeValuesCount = computed(() => sortedValues.value.filter((v) => v.is_active).length);
+
+const valuesSummary = computed(() => {
+  const f = filter.value;
+  if (f?.type === 'range') {
+    const from = f.values?.find((v) => v.code === 'from')?.value;
+    const to = f.values?.find((v) => v.code === 'to')?.value;
+    return from || to
+      ? { title: `от ${from ?? '…'} до ${to ?? '…'}`, hint: 'Границы диапазона' }
+      : { title: 'Без границ', hint: 'Покупатель вводит любые «от» и «до»' };
+  }
+  if (f?.type === 'entity') {
+    return { title: ENTITY_TYPE_LABELS[f.settings?.entity_type] || 'Не настроено', hint: 'Источник значений' };
+  }
+  return { title: 'Задаётся в товаре', hint: 'Своё значение у каждого товара' };
 });
 
-const activeValuesCount = computed(() => {
-  if (!filter.value?.values) return 0;
-  return filter.value.values.filter(v => v.is_active).length;
-});
+const formatDate = (value) => (value
+  ? new Date(value).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  : '—');
 
 const loadFilter = async () => {
   loading.value = true;
   try {
-    const response = await fetch(`/admin/api/filters/${filterId}`, {
-      headers: { 'Accept': 'application/json' },
-    });
-
-    if (response.ok) {
-      filter.value = await response.json();
-    } else {
-      alert('Фильтр не найден');
+    const response = await fetch(`/admin/api/filters/${filterId}`, { headers: { Accept: 'application/json' } });
+    if (!response.ok) {
+      showError('Фильтр не найден');
       router.push('/filters');
+      return;
     }
-  } catch (error) {
-    console.error('Failed to load filter:', error);
-    alert('Ошибка при загрузке фильтра');
+    filter.value = await response.json();
+  } catch (e) {
+    showError('Ошибка при загрузке фильтра');
   } finally {
     loading.value = false;
   }
 };
 
-const confirmDelete = () => {
-  showDeleteModal.value = true;
+const onSaved = () => {
+  editorOpen.value = false;
+  loadFilter();
 };
 
 const deleteFilter = async () => {
-  deleting.value = true;
-  try {
-    const response = await fetch(`/admin/api/filters/${filterId}`, {
-      method: 'DELETE',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-        'Accept': 'application/json',
-      },
-    });
+  const confirmed = await confirmModal.value.open({
+    title: 'Удалить фильтр?',
+    message: `Фильтр «${filter.value.name}», его значения и связи с товарами будут удалены. Действие нельзя отменить.`,
+    confirmText: 'Удалить',
+    dangerMode: true,
+  });
+  if (!confirmed) return;
 
-    if (response.ok) {
-      router.push('/filters');
-    } else {
-      const error = await response.json();
-      alert(error.message || 'Ошибка при удалении фильтра');
-    }
-  } catch (error) {
-    console.error('Failed to delete filter:', error);
-    alert('Ошибка при удалении фильтра');
-  } finally {
-    deleting.value = false;
-    showDeleteModal.value = false;
+  const response = await fetch(`/admin/api/filters/${filterId}`, {
+    method: 'DELETE',
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+      Accept: 'application/json',
+    },
+  });
+  if (response.ok) {
+    router.push('/filters');
+  } else {
+    const data = await response.json().catch(() => ({}));
+    showError(data.message || 'Ошибка при удалении фильтра');
   }
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return '—';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
-
-onMounted(() => {
-  loadFilter();
-});
+onMounted(loadFilter);
 </script>

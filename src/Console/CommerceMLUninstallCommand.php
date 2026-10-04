@@ -85,11 +85,8 @@ class CommerceMLUninstallCommand extends Command
 
             // Step 2: Remove Migration Records
             $this->info('Step 2: Removing migration records from database...');
-            $migrationFiles = [
-                '2026_08_02_173050_add_1c_fields_to_products_table',
-                '2026_08_02_173057_add_1c_id_to_catalogs_table',
-                '2026_08_02_173144_create_t_commerceml_settings_table',
-            ];
+            // Every migration shipped with the module (a hardcoded list goes stale).
+            $migrationFiles = array_map('basename', glob(dirname(__DIR__, 2).'/database/migrations/commerceml/*.php') ?: []);
 
             try {
                 DB::table('migrations')->whereIn('migration', $migrationFiles)->delete();

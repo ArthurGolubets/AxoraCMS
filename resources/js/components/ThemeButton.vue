@@ -21,8 +21,8 @@ const props = defineProps({
   },
   variant: {
     type: String,
-    default: 'primary', // primary, secondary, danger
-    validator: (value) => ['primary', 'secondary', 'danger'].includes(value)
+    default: 'primary', // primary, secondary, success, danger
+    validator: (value) => ['primary', 'secondary', 'success', 'danger'].includes(value)
   },
   size: {
     type: String,
@@ -53,6 +53,8 @@ const computedClass = computed(() => {
   let variantClass = '';
   if (props.variant === 'secondary') {
     variantClass = 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white';
+  } else if (props.variant === 'success') {
+    variantClass = 'bg-green-600 hover:bg-green-700 text-white';
   } else if (props.variant === 'danger') {
     variantClass = 'bg-red-600 hover:bg-red-700 text-white';
   } else {

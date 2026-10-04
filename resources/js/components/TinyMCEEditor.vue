@@ -15,6 +15,10 @@
 </template>
 
 <script setup>
+/**
+ * Rich text editor (Quill). Light / dark theming lives in style.css
+ * ("Quill editor" section) so it also applies to the global .dark class.
+ */
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 
@@ -52,46 +56,3 @@ const toolbarOptions = [
   ['clean']
 ];
 </script>
-
-<style scoped>
-:deep(.ql-container) {
-  font-size: 14px;
-  background-color: white;
-}
-
-:deep(.ql-editor) {
-  min-height: 300px;
-  background-color: white;
-  color: #1f2937;
-}
-
-:deep(.ql-toolbar) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
-
-/* Dark theme support */
-:deep(.dark .ql-container),
-:deep(.dark .ql-editor) {
-  background-color: #374151;
-  color: #f9fafb;
-  border-color: #4b5563;
-}
-
-:deep(.dark .ql-toolbar) {
-  background-color: #1f2937;
-  border-color: #4b5563;
-}
-
-:deep(.dark .ql-stroke) {
-  stroke: #9ca3af;
-}
-
-:deep(.dark .ql-fill) {
-  fill: #9ca3af;
-}
-
-:deep(.dark .ql-picker-label) {
-  color: #9ca3af;
-}
-</style>

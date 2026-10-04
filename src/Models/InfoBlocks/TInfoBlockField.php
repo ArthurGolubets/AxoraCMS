@@ -16,12 +16,18 @@ class TInfoBlockField extends Model
         'sort',
         'is_required',
         'is_multiple',
+        'is_system',
+        'is_hidden',
+        'default_value',
         'settings',
     ];
 
     protected $casts = [
         'is_required' => 'boolean',
         'is_multiple' => 'boolean',
+        'is_system' => 'boolean',
+        'is_hidden' => 'boolean',
+        'default_value' => 'json',
         'settings' => 'array',
     ];
 
@@ -31,6 +37,15 @@ class TInfoBlockField extends Model
     public function infoBlock()
     {
         return $this->belongsTo(TInfoBlock::class, 'info_block_id');
+    }
+
+    /**
+     * Whether the admin cannot fill this field in the element form
+     * (system fields are read-only, hidden fields are not shown).
+     */
+    public function isUserEditable(): bool
+    {
+        return ! $this->is_system && ! $this->is_hidden;
     }
 
     /**

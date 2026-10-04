@@ -6,11 +6,62 @@ use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockSection;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class InfoBlockElementsController extends Controller
 {
+    /**
+     * Validate submitted property values against the info block fields.
+     *
+     * System (read-only) and hidden fields cannot be filled from the admin
+     * form: their submitted values are ignored, the stored value is kept on
+     * update and the field default is used otherwise. For regular fields the
+     * default is applied only when the value was not submitted at all.
+     *
+     * @param  array<string, mixed>  $properties
+     * @return array<string, mixed>|JsonResponse
+     */
+    protected function resolveProperties(TInfoBlock $infoBlock, array $properties, ?TInfoBlockElement $element = null): array|JsonResponse
+    {
+        $stored = $element?->properties ?? [];
+
+        foreach ($infoBlock->fields as $field) {
+            $code = $field->code;
+
+            if (! $field->isUserEditable()) {
+                $properties[$code] = $element && array_key_exists($code, $stored)
+                    ? $stored[$code]
+                    : $field->default_value;
+
+                continue;
+            }
+
+            if (! $element && ! array_key_exists($code, $properties) && $field->default_value !== null) {
+                $properties[$code] = $field->default_value;
+            }
+
+            if ($field->is_required && (
+                ! isset($properties[$code]) ||
+                $properties[$code] === '' ||
+                $properties[$code] === null
+            )) {
+                return response()->json([
+                    'message' => 'Поле "'.$field->name.'" обязательно для заполнения',
+                ], 422);
+            }
+
+            if (isset($properties[$code]) && ! $field->validateValue($properties[$code])) {
+                return response()->json([
+                    'message' => 'Неверное значение для поля "'.$field->name.'"',
+                ], 422);
+            }
+        }
+
+        return $properties;
+    }
+
     /**
      * Get all elements for info block
      */
@@ -84,25 +135,11 @@ class InfoBlockElementsController extends Controller
             }
         }
 
-        // Validate properties against fields
-        $properties = $validated['properties'] ?? [];
-        foreach ($infoBlock->fields as $field) {
-            if ($field->is_required && (
-                ! isset($properties[$field->code]) ||
-                $properties[$field->code] === '' ||
-                $properties[$field->code] === null
-            )) {
-                return response()->json([
-                    'message' => 'Поле "'.$field->name.'" обязательно для заполнения',
-                ], 422);
-            }
-
-            if (isset($properties[$field->code]) && ! $field->validateValue($properties[$field->code])) {
-                return response()->json([
-                    'message' => 'Неверное значение для поля "'.$field->name.'"',
-                ], 422);
-            }
+        $properties = $this->resolveProperties($infoBlock, $validated['properties'] ?? []);
+        if ($properties instanceof JsonResponse) {
+            return $properties;
         }
+        $validated['properties'] = $properties;
 
         $element = $infoBlock->createElement($validated);
 
@@ -139,25 +176,11 @@ class InfoBlockElementsController extends Controller
             }
         }
 
-        // Validate properties against fields
-        $properties = $validated['properties'] ?? [];
-        foreach ($infoBlock->fields as $field) {
-            if ($field->is_required && (
-                ! isset($properties[$field->code]) ||
-                $properties[$field->code] === '' ||
-                $properties[$field->code] === null
-            )) {
-                return response()->json([
-                    'message' => 'Поле "'.$field->name.'" обязательно для заполнения',
-                ], 422);
-            }
-
-            if (isset($properties[$field->code]) && ! $field->validateValue($properties[$field->code])) {
-                return response()->json([
-                    'message' => 'Неверное значение для поля "'.$field->name.'"',
-                ], 422);
-            }
+        $properties = $this->resolveProperties($infoBlock, $validated['properties'] ?? ($element->properties ?? []), $element);
+        if ($properties instanceof JsonResponse) {
+            return $properties;
         }
+        $validated['properties'] = $properties;
 
         $oldData = $element->getOriginal();
         $element->update($validated);

@@ -54,6 +54,23 @@ class ProductController extends Controller
     }
 
     /**
+     * A product SKU not used by any product yet: "ABC-2", "ABC-3", ...
+     */
+    protected function freeProductSku(string $sku): string
+    {
+        $base = trim($sku);
+        $n = 2;
+        $candidate = $base.'-'.$n;
+
+        while (TProduct::where('sku', $candidate)->exists()) {
+            $n++;
+            $candidate = $base.'-'.$n;
+        }
+
+        return $candidate;
+    }
+
+    /**
      * Return a SKU that is unique within the given product.
      *
      * A variant SKU only needs to be unique per product, so the same SKU can be
@@ -322,7 +339,8 @@ class ProductController extends Controller
             'keywords' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'old_price' => 'nullable|numeric|min:0',
-            'sku' => 'required|string|unique:t_products,sku',
+            'sku' => 'required|string|max:255',
+            'duplicate_sku_action' => 'nullable|in:skip,prefix',
             'main_image' => 'nullable|string',
             'tags' => 'nullable|array',
             'is_new' => 'boolean',
@@ -360,6 +378,32 @@ class ProductController extends Controller
             'variants.*.related_products.*.related_variant_sku' => 'nullable|string',
             'variants.*.related_products.*.sort' => 'nullable|integer',
         ]);
+
+        // A product with this SKU already exists: apply the chosen / configured action.
+        $duplicateAction = $validated['duplicate_sku_action'] ?? null;
+        unset($validated['duplicate_sku_action']);
+
+        $existingWithSku = TProduct::where('sku', $validated['sku'])->first();
+        if ($existingWithSku) {
+            $duplicateAction = $duplicateAction ?: (string) TPanelSettings::get('duplicate_sku_action', '');
+
+            if ($duplicateAction === 'prefix') {
+                $validated['sku'] = $this->freeProductSku($validated['sku']);
+            } elseif ($duplicateAction !== 'skip') {
+                return response()->json([
+                    'code' => 'duplicate_sku',
+                    'message' => 'Артикул «'.$validated['sku'].'» уже занят товаром «'.$existingWithSku->name.'»',
+                    // "edit" — the settings say to open the existing product; null — ask the administrator.
+                    'action' => $duplicateAction === 'edit' ? 'edit' : null,
+                    'existing' => [
+                        'id' => $existingWithSku->id,
+                        'name' => $existingWithSku->name,
+                        'sku' => $existingWithSku->sku,
+                    ],
+                    'suggested_sku' => $this->freeProductSku($validated['sku']),
+                ], 409);
+            }
+        }
 
         // Generate slug if not provided
         if (empty($validated['slug'])) {
@@ -527,7 +571,10 @@ class ProductController extends Controller
             'keywords' => 'nullable|string',
             'price' => 'sometimes|required|numeric|min:0',
             'old_price' => 'nullable|numeric|min:0',
-            'sku' => 'sometimes|required|string|unique:t_products,sku,'.$id,
+            // Duplicate SKUs are allowed only when the "duplicate SKU" setting says "skip".
+            'sku' => TPanelSettings::get('duplicate_sku_action', '') === 'skip'
+                ? 'sometimes|required|string|max:255'
+                : 'sometimes|required|string|max:255|unique:t_products,sku,'.$id,
             'main_image' => 'nullable|string',
             'tags' => 'nullable|array',
             'is_new' => 'boolean',

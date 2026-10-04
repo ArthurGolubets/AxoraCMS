@@ -94,6 +94,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { useAdminNotifications } from '../composables/useAdminNotifications';
+
+const { fetchNotifications: refreshBadges } = useAdminNotifications();
 
 const router = useRouter();
 const { success, error, confirm } = useModal();
@@ -177,6 +180,7 @@ const toggleModeration = async (comment) => {
     if (response.ok) {
       success('Статус модерации изменен');
       loadComments();
+      refreshBadges();
     } else {
       error('Ошибка при изменении статуса');
     }
@@ -202,6 +206,7 @@ const deleteComment = async (id) => {
     if (response.ok) {
       success('Комментарий успешно удален');
       loadComments();
+      refreshBadges();
     } else {
       error('Ошибка при удалении');
     }

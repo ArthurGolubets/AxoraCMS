@@ -104,4 +104,41 @@ class TMenu extends Model
             }])
             ->get();
     }
+
+    /**
+     * Active items of an active menu as a nested array (any depth), ready
+     * for Blade:
+     *
+     *   @foreach (\HolartWeb\AxoraCMS\Models\Menus\TMenu::tree('main') as $item)
+     *       <a href="{{ $item['url'] }}" target="{{ $item['target'] }}">{{ $item['title'] }}</a>
+     *
+     *   @endforeach
+     *
+     * @return array<int, array{id: int, title: string, url: ?string, target: string, children: array}>
+     */
+    public static function tree(string $code): array
+    {
+        $menu = static::where('code', $code)->where('is_active', true)->first();
+
+        if (! $menu) {
+            return [];
+        }
+
+        $items = $menu->items()->where('is_active', true)->orderBy('sort')->orderBy('id')->get()->groupBy('parent_id');
+
+        $build = function ($parentId) use (&$build, $items): array {
+            return ($items->get($parentId ?? '') ?? collect())
+                ->map(fn (TMenuItem $item) => [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'url' => $item->url,
+                    'target' => $item->target ?: TMenuItem::TARGET_SELF,
+                    'children' => $build($item->id),
+                ])
+                ->values()
+                ->all();
+        };
+
+        return $build(null);
+    }
 }
