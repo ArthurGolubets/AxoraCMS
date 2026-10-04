@@ -358,10 +358,11 @@ const router = createRouter({
 
 // Route -> required module id. A route missing from here has no module gate.
 const MODULE_GATED_ROUTES = {
-    shop: ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit', 'price-manager'],
+    shop: ['catalog', 'catalog-create', 'catalog-view', 'catalog-edit', 'products', 'product-create', 'product-view', 'product-edit', 'filters', 'filter-create', 'filter-view', 'filter-edit'],
     callback: ['users-emails', 'users-email-view', 'comments', 'comment-view', 'user-requests', 'user-request-view'],
     commerce: ['orders', 'order-create', 'order-edit', 'order-view', 'transactions', 'promocodes', 'orders-settings'],
     importexport: ['import-export-catalog', 'import-export-entities'],
+    pricemanager: ['price-manager'],
     infoblocks: ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'],
 };
 

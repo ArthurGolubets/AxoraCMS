@@ -67,7 +67,7 @@
                 Фильтры
               </a>
             </router-link>
-            <router-link v-if="canAccessSettings" to="/price-manager" v-slot="{ isActive }" custom>
+            <router-link v-if="priceManagerModuleInstalled && canAccessSettings" to="/price-manager" v-slot="{ isActive }" custom>
               <a @click="$router.push('/price-manager'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 Менеджер цен
@@ -558,6 +558,7 @@ const telegramIntegrationInstalled = ref(false);
 const yookassaIntegrationInstalled = ref(false);
 const commerceMLIntegrationInstalled = ref(false);
 const importExportModuleInstalled = ref(false);
+const priceManagerModuleInstalled = ref(false);
 const favoriteInfoBlocks = ref([]);
 
 const roleLabel = computed(() => {
@@ -702,6 +703,7 @@ const loadModulesStatus = async (force = false) => {
       commerceMLIntegrationInstalled.value = commerceMLIntegration?.installed || false;
 
       importExportModuleInstalled.value = data.modules?.find(m => m.id === 'importexport')?.installed || false;
+      priceManagerModuleInstalled.value = data.modules?.find(m => m.id === 'pricemanager')?.installed || false;
 
       // Load favorite infoblocks if module is installed
       if (infoblocksModuleInstalled.value) {

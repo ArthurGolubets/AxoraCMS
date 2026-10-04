@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\TAdminAction;
+use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Services\PriceManagerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,11 @@ use Illuminate\Validation\ValidationException;
  */
 class PriceManagerController extends Controller
 {
-    public function __construct(protected PriceManagerService $prices) {}
+    public function __construct(protected PriceManagerService $prices)
+    {
+        // Available only when the "Менеджер цен" module is installed.
+        abort_unless(TModule::isInstalled('pricemanager'), 404);
+    }
 
     public function preview(Request $request): JsonResponse
     {

@@ -20,6 +20,8 @@ use HolartWeb\AxoraCMS\Console\PageBuilderInstallCommand;
 use HolartWeb\AxoraCMS\Console\PageBuilderUninstallCommand;
 use HolartWeb\AxoraCMS\Console\PagesInstallCommand;
 use HolartWeb\AxoraCMS\Console\PagesUninstallCommand;
+use HolartWeb\AxoraCMS\Console\PriceManagerInstallCommand;
+use HolartWeb\AxoraCMS\Console\PriceManagerUninstallCommand;
 use HolartWeb\AxoraCMS\Console\ScanRoutesCommand;
 use HolartWeb\AxoraCMS\Console\SeoInstallCommand;
 use HolartWeb\AxoraCMS\Console\SeoUninstallCommand;
@@ -158,6 +160,8 @@ class AxoraCMSServiceProvider extends ServiceProvider
                 YKassaCheckPaymentCommand::class,
                 ImportExportInstallCommand::class,
                 ImportExportUninstallCommand::class,
+                PriceManagerInstallCommand::class,
+                PriceManagerUninstallCommand::class,
             ]);
 
             // Schedule automatic cleanup of old page visits

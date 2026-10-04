@@ -14,6 +14,8 @@ class ModulesController extends Controller
     // Module versions - должны совпадать с версиями в Install командах
     const IMPORT_EXPORT_DESCRIPTION = 'Импорт каталога из Excel, CSV и XML с сопоставлением колонок, экспорт каталога, заказов, инфоблоков и обратной связи в фоне с прогрессом. Требует установленный модуль "Каталог и товары"';
 
+    const PRICE_MANAGER_DESCRIPTION = 'Массовое изменение цен товаров и целых категорий на процент или фиксированную сумму, с предпросмотром и округлением. Требует установленный модуль "Каталог и товары"';
+
     const MODULES_VERSIONS = [
         'shop' => '1.0.0',
         'callback' => '1.0.0',
@@ -26,6 +28,7 @@ class ModulesController extends Controller
         'yookassa' => '1.0.0',
         'commerceml' => '1.0.0',
         'importexport' => '1.0.0',
+        'pricemanager' => '1.0.0',
     ];
 
     /**
@@ -110,6 +113,14 @@ class ModulesController extends Controller
                 'name' => 'Импорт/Экспорт',
                 'description' => self::IMPORT_EXPORT_DESCRIPTION,
                 'installed' => TModule::isInstalled('importexport'),
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
+            ],
+            [
+                'id' => 'pricemanager',
+                'name' => 'Менеджер цен',
+                'description' => self::PRICE_MANAGER_DESCRIPTION,
+                'installed' => TModule::isInstalled('pricemanager'),
                 'dependencies' => ['shop'],
                 'can_install' => $this->isShopModuleInstalled(),
             ],
@@ -233,6 +244,16 @@ class ModulesController extends Controller
                 'dependencies' => ['shop'],
                 'can_install' => $this->isShopModuleInstalled(),
             ],
+            [
+                'id' => 'pricemanager',
+                'name' => 'Менеджер цен',
+                'description' => self::PRICE_MANAGER_DESCRIPTION,
+                'installed' => TModule::isInstalled('pricemanager'),
+                'install_command' => 'axoracms:pricemanager-install',
+                'uninstall_command' => 'axoracms:pricemanager-uninstall',
+                'dependencies' => ['shop'],
+                'can_install' => $this->isShopModuleInstalled(),
+            ],
         ];
 
         // Add version information to each module
@@ -325,6 +346,9 @@ class ModulesController extends Controller
                 case 'importexport':
                     $exitCode = Artisan::call('axoracms:importexport-install');
                     break;
+                case 'pricemanager':
+                    $exitCode = Artisan::call('axoracms:pricemanager-install');
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -409,6 +433,9 @@ class ModulesController extends Controller
                     break;
                 case 'importexport':
                     $exitCode = Artisan::call('axoracms:importexport-install');
+                    break;
+                case 'pricemanager':
+                    $exitCode = Artisan::call('axoracms:pricemanager-install');
                     break;
                 default:
                     return response()->json([
@@ -525,6 +552,9 @@ class ModulesController extends Controller
                     Artisan::call('axoracms:importexport-uninstall', [
                         '--preserve-db' => $preserveDatabase,
                     ]);
+                    break;
+                case 'pricemanager':
+                    Artisan::call('axoracms:pricemanager-uninstall');
                     break;
                 default:
                     return response()->json([
@@ -663,6 +693,7 @@ class ModulesController extends Controller
             'yookassa' => ['dirs' => ['integrations'], 'files' => []],
             'commerceml' => ['dirs' => ['commerceml'], 'files' => []],
             'importexport' => ['dirs' => ['importexport'], 'files' => []],
+            'pricemanager' => ['dirs' => [], 'files' => []],
             'logging' => ['dirs' => [], 'files' => ['2026_02_27_125658_create_t_admin_actions_table']],
         ];
 
