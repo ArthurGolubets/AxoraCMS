@@ -8,7 +8,11 @@ use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\AbstractCursorPaginator;
+use Illuminate\Pagination\AbstractPaginator;
+use Illuminate\Pagination\Cursor;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -92,6 +96,24 @@ class SiteCacheService
     ];
 
     private const KEY_PREFIX = 'axora-cms:cache:';
+
+    /**
+     * Classes (and their subclasses) that may be restored from cached payloads.
+     *
+     * @var array<int, class-string>
+     */
+    private const CACHEABLE_BASE_CLASSES = [
+        Model::class,
+        Collection::class,
+        AbstractPaginator::class,
+        AbstractCursorPaginator::class,
+        Cursor::class,
+        \DateTimeInterface::class,
+        \DateTimeZone::class,
+        \DateInterval::class,
+        \UnitEnum::class,
+        \stdClass::class,
+    ];
 
     /**
      * Model namespace prefix => cache groups invalidated when such a model changes.
@@ -266,19 +288,74 @@ class SiteCacheService
             return $callback();
         }
 
-        if (is_array($cached) && array_key_exists('value', $cached)) {
-            return $this->restore($cached['value']);
+        if (is_array($cached) && is_string($cached['payload'] ?? null)) {
+            [$restored, $value] = $this->unserializePayload($cached['payload']);
+
+            if ($restored) {
+                return $this->restore($value);
+            }
         }
 
         $value = $callback();
 
         try {
-            $this->store()->put($cacheKey, ['value' => $value], $this->ttlSeconds($ttlMinutes));
+            // Stored as a string: the app's cache.serializable_classes (false by default in
+            // Laravel 13) would otherwise turn cached models/collections into incomplete objects.
+            $this->store()->put($cacheKey, ['payload' => serialize($value)], $this->ttlSeconds($ttlMinutes));
         } catch (Throwable) {
-            // Unserializable value or store failure: serve the fresh value uncached.
+            // Unserializable value (closure, resource) or store failure: serve it uncached.
         }
 
         return $value;
+    }
+
+    /**
+     * Unserialize a cached payload, allowing only data classes the CMS returns
+     * (models, collections, paginators, dates, enums). A payload naming any other
+     * class is treated as a cache miss instead of being instantiated.
+     *
+     * @return array{0: bool, 1: mixed}
+     */
+    private function unserializePayload(string $payload): array
+    {
+        preg_match_all('/(?:O|C):\d+:"([^"]+)"|E:\d+:"([^":]+):/', $payload, $matches);
+
+        $allowed = [];
+        foreach (array_unique(array_filter(array_merge($matches[1], $matches[2]))) as $class) {
+            if (! class_exists($class) && ! enum_exists($class)) {
+                // Text inside a string value that only looks like a class — never instantiated.
+                continue;
+            }
+
+            if (! $this->isCacheableClass($class)) {
+                return [false, null];
+            }
+
+            $allowed[] = $class;
+        }
+
+        try {
+            $value = unserialize($payload, ['allowed_classes' => $allowed]);
+        } catch (Throwable) {
+            return [false, null];
+        }
+
+        if ($value === false && $payload !== serialize(false)) {
+            return [false, null];
+        }
+
+        return [true, $value];
+    }
+
+    private function isCacheableClass(string $class): bool
+    {
+        foreach (self::CACHEABLE_BASE_CLASSES as $base) {
+            if (is_a($class, $base, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
