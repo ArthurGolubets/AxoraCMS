@@ -5,9 +5,9 @@ namespace HolartWeb\AxoraCMS\Services;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use HolartWeb\AxoraCMS\Models\Shop\TProductVariant;
+use HolartWeb\AxoraCMS\Support\SearchTerms;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Schema;
 
 class CatalogService
 {
@@ -16,7 +16,7 @@ class CatalogService
      */
     protected function getCatalogModel(): ?string
     {
-        if (! Schema::hasTable('t_catalogs')) {
+        if (! app(SiteCacheService::class)->hasTable('t_catalogs')) {
             return null;
         }
 
@@ -28,7 +28,7 @@ class CatalogService
      */
     protected function getProductModel(): ?string
     {
-        if (! Schema::hasTable('t_products')) {
+        if (! app(SiteCacheService::class)->hasTable('t_products')) {
             return null;
         }
 
@@ -528,11 +528,7 @@ class CatalogService
             $queryBuilder->where('is_active', true);
         }
 
-        $queryBuilder->where(function ($q) use ($query) {
-            $q->where('name', 'LIKE', "%{$query}%")
-                ->orWhere('description', 'LIKE', "%{$query}%")
-                ->orWhere('sku', 'LIKE', "%{$query}%");
-        });
+        SearchTerms::apply($queryBuilder, $query, ['name', 'description', 'sku']);
 
         $queryBuilder->orderBy('name');
 
@@ -566,10 +562,7 @@ class CatalogService
             $queryBuilder->where('is_active', true);
         }
 
-        $queryBuilder->where(function ($q) use ($query) {
-            $q->where('name', 'LIKE', "%{$query}%")
-                ->orWhere('description', 'LIKE', "%{$query}%");
-        });
+        SearchTerms::apply($queryBuilder, $query, ['name', 'description']);
 
         $queryBuilder->orderBy('name');
 
@@ -627,7 +620,7 @@ class CatalogService
         bool $activeOnly = true
     ): array {
         $productModel = $this->getProductModel();
-        if (! $productModel || ! Schema::hasTable('t_product_related')) {
+        if (! $productModel || ! app(SiteCacheService::class)->hasTable('t_product_related')) {
             return [];
         }
 
@@ -667,7 +660,7 @@ class CatalogService
         }
 
         $variantClass = TProductVariant::class;
-        if (! class_exists($variantClass) || ! Schema::hasTable('t_product_variants')) {
+        if (! class_exists($variantClass) || ! app(SiteCacheService::class)->hasTable('t_product_variants')) {
             return null;
         }
 

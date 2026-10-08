@@ -2,9 +2,12 @@
 
 namespace HolartWeb\AxoraCMS\Helpers;
 
+use Closure;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlock as TInfoBlockModel;
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Throwable;
 
 /**
  * Helper class for Bitrix-like syntax: TInfoBlock('banners')->getList()
@@ -15,7 +18,7 @@ class TInfoBlock
 
     public function __construct(string $code)
     {
-        $this->infoBlock = TInfoBlockModel::getByCode($code);
+        $this->infoBlock = $this->cached('block', [$code], fn () => TInfoBlockModel::getByCode($code));
 
         if (! $this->infoBlock) {
             throw new \Exception("Info block with code '{$code}' not found");
@@ -34,6 +37,14 @@ class TInfoBlock
      * @return Collection|LengthAwarePaginator
      */
     public function getList(array $filter = [], array $order = ['sort' => 'asc'], ?int $limit = null, ?int $offset = null, ?int $perPage = null, int $page = 1)
+    {
+        return $this->cached(__FUNCTION__, func_get_args(), fn () => $this->queryList($filter, $order, $limit, $offset, $perPage, $page));
+    }
+
+    /**
+     * @return Collection|LengthAwarePaginator
+     */
+    protected function queryList(array $filter, array $order, ?int $limit, ?int $offset, ?int $perPage, int $page)
     {
         $query = $this->infoBlock->getElements();
 
@@ -83,7 +94,7 @@ class TInfoBlock
      */
     public function getById(int $id)
     {
-        return $this->infoBlock->getElement($id);
+        return $this->cached(__FUNCTION__, [$id], fn () => $this->infoBlock->getElement($id));
     }
 
     /**
@@ -91,7 +102,7 @@ class TInfoBlock
      */
     public function getByCode(string $code)
     {
-        return $this->infoBlock->getElementByCode($code);
+        return $this->cached(__FUNCTION__, [$code], fn () => $this->infoBlock->getElementByCode($code));
     }
 
     /**
@@ -139,6 +150,11 @@ class TInfoBlock
      */
     public function count(array $filter = []): int
     {
+        return $this->cached(__FUNCTION__, [$filter], fn () => $this->queryCount($filter));
+    }
+
+    protected function queryCount(array $filter): int
+    {
         $query = $this->infoBlock->getElements();
 
         // Apply filters
@@ -156,5 +172,21 @@ class TInfoBlock
         }
 
         return $query->count();
+    }
+
+    /**
+     * Serve a read through the "Кеширование" module (group "infoblocks"); a no-op when it is off.
+     *
+     * @param  array<int, mixed>  $arguments
+     */
+    protected function cached(string $method, array $arguments, Closure $callback): mixed
+    {
+        try {
+            $key = 'helper|'.($this->infoBlock->code ?? '').'|'.$method.'|'.serialize($arguments);
+        } catch (Throwable) {
+            return $callback();
+        }
+
+        return app(SiteCacheService::class)->remember(SiteCacheService::GROUP_INFOBLOCKS, $key, $callback);
     }
 }

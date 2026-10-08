@@ -235,6 +235,7 @@ import ConfirmModal from './ConfirmModal.vue';
 import CategorySelect from './CategorySelect.vue';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { searchWords, matchesAllWords } from '../utils/searchWords';
 
 const { success, error } = useModal();
 const { themeColor } = useTheme();
@@ -300,7 +301,8 @@ const catalogRows = computed(() => {
 
   const q = catalogSearch.value.trim().toLowerCase();
   if (q) {
-    return catalogs.value.filter((c) => c.name.toLowerCase().includes(q)).map((c) => decorate(c, 0));
+    const words = searchWords(q);
+    return catalogs.value.filter((c) => matchesAllWords(c.name, words)).map((c) => decorate(c, 0));
   }
 
   const rows = [];

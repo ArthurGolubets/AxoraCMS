@@ -96,7 +96,15 @@
     <!-- Products List -->
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Товары в категории</h3>
+        <div class="flex items-center gap-3">
+          <CustomCheckbox
+            v-if="catalog.products && catalog.products.length > 0"
+            :modelValue="allProductsSelected"
+            @update:modelValue="toggleSelectAllProducts"
+            title="Выбрать все товары"
+          />
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Товары в категории</h3>
+        </div>
         <button
           @click="$router.push(`/products/create?catalog_id=${catalog.id}`)"
           :style="buttonStyle"
@@ -106,6 +114,8 @@
         </button>
       </div>
 
+      <ProductBulkActionsBar :selectedIds="selectedProductIds" @clear="selectedProductIds = []" @completed="loadCatalog" />
+
       <div v-if="catalog.products && catalog.products.length > 0" class="divide-y divide-gray-200 dark:divide-gray-700">
         <div
           v-for="product in catalog.products"
@@ -114,6 +124,11 @@
           class="py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition flex items-center justify-between"
         >
           <div class="flex items-center space-x-4 flex-1">
+            <CustomCheckbox
+              :modelValue="selectedProductIds.includes(product.id)"
+              @update:modelValue="toggleProductSelect(product.id)"
+              title="Выбрать товар"
+            />
             <img
               v-if="product.main_image"
               :src="getImageUrl(product.main_image)"
@@ -156,11 +171,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
 import CatalogFiltersBlock from './CatalogFiltersBlock.vue';
+import ProductBulkActionsBar from './ProductBulkActionsBar.vue';
+import CustomCheckbox from './CustomCheckbox.vue';
 import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 const { error } = useModal();
@@ -169,6 +186,24 @@ const route = useRoute();
 
 const catalog = ref(null);
 const breadcrumbs = ref([]);
+const selectedProductIds = ref([]);
+
+const toggleProductSelect = (productId) => {
+  selectedProductIds.value = selectedProductIds.value.includes(productId)
+    ? selectedProductIds.value.filter(id => id !== productId)
+    : [...selectedProductIds.value, productId];
+};
+
+const allProductsSelected = computed(() => {
+  const products = catalog.value?.products || [];
+  return products.length > 0 && products.every(product => selectedProductIds.value.includes(product.id));
+});
+
+const toggleSelectAllProducts = () => {
+  selectedProductIds.value = allProductsSelected.value
+    ? []
+    : (catalog.value?.products || []).map(product => product.id);
+};
 
 const getImageUrl = (imageString) => {
   if (!imageString) return '';

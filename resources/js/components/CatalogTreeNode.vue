@@ -33,6 +33,16 @@
       </button>
       <div v-else class="w-5 mr-2"></div>
 
+      <!-- Select all products of this folder (including subfolders) -->
+      <div class="w-5 mr-2 flex items-center justify-center flex-shrink-0">
+        <CustomCheckbox
+          v-if="hasChildren"
+          :modelValue="allProductsSelected"
+          @update:modelValue="$emit('toggle-catalog-products-select', catalog)"
+          title="Выбрать все товары в папке (включая подпапки)"
+        />
+      </div>
+
       <!-- Folder Icon with Active/Inactive State -->
       <div class="relative mr-3 flex-shrink-0">
         <svg
@@ -165,6 +175,10 @@
         :catalog="child"
         :level="level + 1"
         :commerceml-installed="commercemlInstalled"
+        :selected-product-ids="selectedProductIds"
+        :catalog-product-ids="catalogProductIds"
+        @toggle-product-select="$emit('toggle-product-select', $event)"
+        @toggle-catalog-products-select="$emit('toggle-catalog-products-select', $event)"
         @create-subcategory="$emit('create-subcategory', $event)"
         @create-product="$emit('create-product', $event)"
         @edit="$emit('edit', $event)"
@@ -188,7 +202,14 @@
         ]"
         :style="{ paddingLeft: `${(level + 1) * 20 + 12}px` }"
       >
-        <div class="w-5 mr-2"></div>
+        <!-- Bulk selection -->
+        <div class="w-5 mr-2 flex items-center justify-center flex-shrink-0">
+          <CustomCheckbox
+            :modelValue="selectedProductIds.includes(product.id)"
+            @update:modelValue="$emit('toggle-product-select', product.id)"
+            title="Выбрать товар"
+          />
+        </div>
 
         <!-- Product Icon with Active/Inactive State -->
         <div class="relative mr-3 flex-shrink-0">
@@ -287,6 +308,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useTreeExpansion } from '../composables/useTreeExpansion';
+import CustomCheckbox from './CustomCheckbox.vue';
 
 const props = defineProps({
   catalog: {
@@ -300,7 +322,21 @@ const props = defineProps({
   commercemlInstalled: {
     type: Boolean,
     default: false
+  },
+  selectedProductIds: {
+    type: Array,
+    default: () => []
+  },
+  // Cached product ids per catalog id (whole subtree), filled when a folder is bulk-selected
+  catalogProductIds: {
+    type: Object,
+    default: () => ({})
   }
+});
+
+const allProductsSelected = computed(() => {
+  const ids = props.catalogProductIds[props.catalog.id];
+  return !!ids && ids.length > 0 && ids.every(id => props.selectedProductIds.includes(id));
 });
 
 const stockBadgeClass = (quantity) => {
@@ -321,6 +357,8 @@ defineEmits([
   'delete-product',
   'toggle-active',
   'toggle-product-active',
+  'toggle-product-select',
+  'toggle-catalog-products-select',
   'refresh'
 ]);
 

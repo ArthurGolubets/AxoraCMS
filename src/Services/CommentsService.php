@@ -5,7 +5,6 @@ namespace HolartWeb\AxoraCMS\Services;
 use HolartWeb\AxoraCMS\Models\Callback\TComments;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Schema;
 
 class CommentsService
 {
@@ -16,7 +15,7 @@ class CommentsService
      */
     protected function checkCallbackModule(): void
     {
-        if (! Schema::hasTable('t_comments')) {
+        if (! app(SiteCacheService::class)->hasTable('t_comments')) {
             throw new \Exception('Callback module is not installed');
         }
     }
@@ -220,6 +219,6 @@ class CommentsService
      */
     public function isModuleAvailable(): bool
     {
-        return Schema::hasTable('t_comments');
+        return app(SiteCacheService::class)->hasTable('t_comments');
     }
 }

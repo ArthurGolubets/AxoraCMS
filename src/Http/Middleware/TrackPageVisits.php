@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Http\Middleware;
 
 use Closure;
 use HolartWeb\AxoraCMS\Services\PageVisitService;
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -11,9 +12,12 @@ class TrackPageVisits
 {
     protected PageVisitService $pageVisitService;
 
-    public function __construct(PageVisitService $pageVisitService)
+    protected SiteCacheService $siteCache;
+
+    public function __construct(PageVisitService $pageVisitService, SiteCacheService $siteCache)
     {
         $this->pageVisitService = $pageVisitService;
+        $this->siteCache = $siteCache;
     }
 
     /**
@@ -28,20 +32,47 @@ class TrackPageVisits
             return $response;
         }
 
-        try {
-            $this->pageVisitService->track(
-                url: $request->fullUrl(),
-                routeName: $request->route()?->getName(),
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                referer: $request->header('referer')
-            );
-        } catch (\Exception $e) {
-            // Silently fail to not break the application
-            logger()->error('Failed to track page visit: '.$e->getMessage());
-        }
+        $this->trackVisit($request);
 
         return $response;
+    }
+
+    /**
+     * Record a visit of an already-checked page. The "Кеширование" module decides when:
+     * right away (default), after the response is sent to the browser, or never.
+     */
+    public function trackVisit(Request $request): void
+    {
+        $mode = $this->siteCache->visitsMode();
+
+        if ($mode === SiteCacheService::VISITS_OFF) {
+            return;
+        }
+
+        $visit = [
+            'url' => $request->fullUrl(),
+            'routeName' => $request->route()?->getName(),
+            'ipAddress' => $request->ip(),
+            'userAgent' => $request->userAgent(),
+            'referer' => $request->header('referer'),
+        ];
+
+        $record = function () use ($visit): void {
+            try {
+                $this->pageVisitService->track(...$visit);
+            } catch (\Exception $e) {
+                // Silently fail to not break the application
+                logger()->error('Failed to track page visit: '.$e->getMessage());
+            }
+        };
+
+        if ($mode === SiteCacheService::VISITS_DEFERRED) {
+            app()->terminating($record);
+
+            return;
+        }
+
+        $record();
     }
 
     /**

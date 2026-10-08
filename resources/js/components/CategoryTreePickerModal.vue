@@ -70,6 +70,7 @@
 import { ref, computed, watch, toRef } from 'vue';
 import CategoryPickerTreeNode from './CategoryPickerTreeNode.vue';
 import { useCategoryBreadcrumb } from '../composables/useCategoryBreadcrumb';
+import { searchWords, matchesAllWords } from '../utils/searchWords';
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -92,10 +93,10 @@ const roots = computed(() => props.categories.filter((c) => !c.parent_id));
 const { breadcrumbParts } = useCategoryBreadcrumb(toRef(props, 'categories'));
 
 const searchResults = computed(() => {
-  const q = search.value.trim().toLowerCase();
-  if (!q) return [];
+  const words = searchWords(search.value);
+  if (!words.length) return [];
   return props.categories
-    .filter((c) => c.name?.toLowerCase().includes(q))
+    .filter((c) => matchesAllWords(c.name, words))
     .slice(0, 200);
 });
 

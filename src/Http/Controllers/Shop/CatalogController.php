@@ -4,11 +4,15 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalogPropertyGroup;
+use HolartWeb\AxoraCMS\Models\Shop\TProduct;
+use HolartWeb\AxoraCMS\Models\Shop\TProductVariant;
 use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Support\HtmlSanitizer;
+use HolartWeb\AxoraCMS\Support\SearchTerms;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CatalogController extends Controller
@@ -73,16 +77,9 @@ class CatalogController extends Controller
         $search = $request->get('search');
 
         if ($search) {
-            $catalogs = TCatalog::where('name', 'like', "%{$search}%")
-                ->orWhereHas('products', function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('sku', 'like', "%{$search}%");
-                })
-                ->with(['children', 'products' => function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('sku', 'like', "%{$search}%")
-                        ->limit(50);
-                }])
+            $catalogs = TCatalog::where(fn ($query) => SearchTerms::apply($query, $search, ['name']))
+                ->orWhereHas('products', fn ($query) => SearchTerms::apply($query, $search, ['name', 'sku']))
+                ->with(['children', 'products' => fn ($query) => SearchTerms::apply($query, $search, ['name', 'sku'])->limit(50)])
                 ->withCount(['children', 'products'])
                 ->limit(100)
                 ->get();
@@ -360,31 +357,60 @@ class CatalogController extends Controller
     }
 
     /**
-     * Delete catalog
+     * Delete catalog. A non-empty catalog (with subcategories or products) is only
+     * deleted together with its whole subtree when "force" is passed; otherwise a 409
+     * with the subtree counts is returned so the admin can confirm the cascade.
      */
-    public function destroy($id): JsonResponse
+    public function destroy(Request $request, $id): JsonResponse
     {
         $catalog = TCatalog::findOrFail($id);
         $catalogName = $catalog->name;
 
-        if ($catalog->products()->exists()) {
+        $catalogIds = $catalog->getDescendantIds();
+        $subcategoriesCount = count($catalogIds) - 1;
+        $productIds = TProduct::whereIn('catalog_id', $catalogIds)->pluck('id');
+
+        if (($subcategoriesCount > 0 || $productIds->isNotEmpty()) && ! $request->boolean('force')) {
             return response()->json([
-                'message' => 'Невозможно удалить категорию с товарами',
-            ], 422);
+                'message' => 'Категория содержит подкатегории или товары',
+                'requires_confirmation' => true,
+                'subcategories_count' => $subcategoriesCount,
+                'products_count' => $productIds->count(),
+            ], 409);
         }
 
-        if ($catalog->hasChildren()) {
-            return response()->json([
-                'message' => 'Невозможно удалить категорию с подкатегориями',
-            ], 422);
+        DB::transaction(function () use ($catalogIds, $productIds) {
+            foreach ($productIds->chunk(500) as $chunk) {
+                TProductVariant::whereIn('product_id', $chunk)->delete();
+                TProduct::whereIn('id', $chunk)->delete();
+            }
+
+            // Descendant ids are collected parent-first, so delete in reverse (leaves first).
+            foreach (array_reverse($catalogIds) as $catalogId) {
+                TCatalog::whereKey($catalogId)->delete();
+            }
+        });
+
+        $description = 'Удалена категория "'.$catalogName.'"';
+        if ($subcategoriesCount > 0 || $productIds->isNotEmpty()) {
+            $description .= ' (подкатегорий: '.$subcategoriesCount.', товаров: '.$productIds->count().')';
         }
 
-        $catalog->delete();
-
-        TAdminAction::log('deleted', 'catalog', $id,
-            'Удалена категория "'.$catalogName.'"');
+        TAdminAction::log('deleted', 'catalog', $id, $description);
 
         return response()->json(['message' => 'Категория удалена']);
+    }
+
+    /**
+     * Get ids of all products in a catalog and its subcategories (for bulk selection)
+     */
+    public function productIds($id): JsonResponse
+    {
+        $catalog = TCatalog::findOrFail($id);
+
+        $ids = TProduct::whereIn('catalog_id', $catalog->getDescendantIds())->pluck('id');
+
+        return response()->json(['ids' => $ids]);
     }
 
     /**

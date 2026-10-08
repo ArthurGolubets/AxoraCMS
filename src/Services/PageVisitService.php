@@ -5,7 +5,6 @@ namespace HolartWeb\AxoraCMS\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class PageVisitService
 {
@@ -20,7 +19,7 @@ class PageVisitService
         ?string $referer = null
     ): void {
         // Check if tables exist
-        if (! Schema::hasTable('t_pages') || ! Schema::hasTable('t_page_visits')) {
+        if (! app(SiteCacheService::class)->hasTable('t_pages') || ! app(SiteCacheService::class)->hasTable('t_page_visits')) {
             return;
         }
 

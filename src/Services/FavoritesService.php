@@ -2,7 +2,6 @@
 
 namespace HolartWeb\AxoraCMS\Services;
 
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class FavoritesService
@@ -16,7 +15,7 @@ class FavoritesService
      */
     protected function checkCommerceModule(): void
     {
-        if (! Schema::hasTable('t_products')) {
+        if (! app(SiteCacheService::class)->hasTable('t_products')) {
             throw new \Exception('Commerce module is not installed');
         }
     }

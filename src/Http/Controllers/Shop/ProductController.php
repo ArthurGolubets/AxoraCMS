@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Http\Controllers\Shop;
 
+use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use HolartWeb\AxoraCMS\Models\Shop\TProductRelated;
 use HolartWeb\AxoraCMS\Models\Shop\TProductVariant;
@@ -9,6 +10,7 @@ use HolartWeb\AxoraCMS\Models\TAdminAction;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use HolartWeb\AxoraCMS\Support\HtmlSanitizer;
+use HolartWeb\AxoraCMS\Support\SearchTerms;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -210,11 +212,7 @@ class ProductController extends Controller
 
         // Search
         if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
+            SearchTerms::apply($query, $search, ['name', 'sku', 'description']);
         }
 
         // Filter by catalog
@@ -811,6 +809,26 @@ class ProductController extends Controller
     }
 
     /**
+     * Bulk move products to another catalog
+     */
+    public function bulkMove(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:t_products,id',
+            'catalog_id' => 'required|integer|exists:t_catalogs,id',
+        ]);
+
+        $catalog = TCatalog::findOrFail($validated['catalog_id']);
+        $count = TProduct::whereIn('id', $validated['ids'])->update(['catalog_id' => $catalog->id]);
+
+        TAdminAction::log('updated', 'product', null,
+            'Массовый перенос товаров в категорию "'.$catalog->name.'" (количество: '.$count.')');
+
+        return response()->json(['message' => 'Товары перенесены', 'moved' => $count]);
+    }
+
+    /**
      * Search products for variant creation
      */
     public function search(Request $request): JsonResponse
@@ -822,16 +840,13 @@ class ProductController extends Controller
         // (e.g. the order edit form) without preloading the whole catalog.
         $ids = array_filter(array_map('intval', explode(',', (string) $request->get('ids', ''))));
 
-        if (empty($ids) && strlen($query) < 2) {
+        if (empty($ids) && mb_strlen(trim($query)) < 2) {
             return response()->json(['products' => []]);
         }
 
         $products = TProduct::when(! empty($ids), fn ($q) => $q->whereIn('id', $ids))
             ->when(empty($ids), function ($q) use ($query) {
-                $q->where(function ($inner) use ($query) {
-                    $inner->where('name', 'like', "%{$query}%")
-                        ->orWhere('sku', 'like', "%{$query}%");
-                })->where('is_active', true);
+                SearchTerms::apply($q, $query, ['name', 'sku'])->where('is_active', true);
             })
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->with(['catalog', 'variants:id,product_id,name,sku,price'])

@@ -21,7 +21,7 @@ class OrderService
      */
     protected function checkCommerceModule(): void
     {
-        if (! Schema::hasTable('t_orders')) {
+        if (! app(SiteCacheService::class)->hasTable('t_orders')) {
             throw new \Exception('Commerce module is not installed');
         }
     }

@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Services\Mail;
 
 use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -191,7 +192,12 @@ class MailSettingsService
      */
     private function raw(): array
     {
-        $stored = TIntegrationSettings::getAll(self::INTEGRATION_TYPE);
+        // Read on every request at boot — served from the "Кеширование" module when it is on.
+        $stored = app(SiteCacheService::class)->remember(
+            SiteCacheService::GROUP_SETTINGS,
+            'mail_settings',
+            fn () => TIntegrationSettings::getAll(self::INTEGRATION_TYPE),
+        );
 
         $values = [];
 

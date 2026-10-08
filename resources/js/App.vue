@@ -325,6 +325,12 @@
                 Модули
               </a>
             </router-link>
+            <router-link v-if="cacheModuleInstalled" to="/cache" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/cache'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Кеширование
+              </a>
+            </router-link>
             <router-link v-if="loggingModuleInstalled" to="/logs" v-slot="{ isActive }" custom>
               <a @click="$router.push('/logs'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -559,6 +565,7 @@ const yookassaIntegrationInstalled = ref(false);
 const commerceMLIntegrationInstalled = ref(false);
 const importExportModuleInstalled = ref(false);
 const priceManagerModuleInstalled = ref(false);
+const cacheModuleInstalled = ref(false);
 const favoriteInfoBlocks = ref([]);
 
 const roleLabel = computed(() => {
@@ -704,6 +711,7 @@ const loadModulesStatus = async (force = false) => {
 
       importExportModuleInstalled.value = data.modules?.find(m => m.id === 'importexport')?.installed || false;
       priceManagerModuleInstalled.value = data.modules?.find(m => m.id === 'pricemanager')?.installed || false;
+      cacheModuleInstalled.value = data.modules?.find(m => m.id === 'cache')?.installed || false;
 
       // Load favorite infoblocks if module is installed
       if (infoblocksModuleInstalled.value) {

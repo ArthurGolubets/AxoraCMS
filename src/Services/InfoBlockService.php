@@ -7,7 +7,6 @@ use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement;
 use HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockSection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Schema;
 
 class InfoBlockService
 {
@@ -18,7 +17,7 @@ class InfoBlockService
      */
     protected function checkInfoBlocksModule(): void
     {
-        if (! Schema::hasTable('t_info_blocks')) {
+        if (! app(SiteCacheService::class)->hasTable('t_info_blocks')) {
             throw new \Exception('InfoBlocks module is not installed');
         }
     }

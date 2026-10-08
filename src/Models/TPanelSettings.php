@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Models;
 
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Database\Eloquent\Model;
 
 class TPanelSettings extends Model
@@ -19,6 +20,12 @@ class TPanelSettings extends Model
      */
     public static function get(string $key, mixed $default = null): mixed
     {
+        // "Кеширование" module: all settings come from one cached map instead of a query per key.
+        $cachedSettings = app(SiteCacheService::class)->settingsMap();
+        if ($cachedSettings !== null) {
+            return array_key_exists($key, $cachedSettings) ? $cachedSettings[$key] : $default;
+        }
+
         $setting = static::where('key', $key)->first();
 
         if (! $setting) {
@@ -59,7 +66,7 @@ class TPanelSettings extends Model
     /**
      * Cast value based on type.
      */
-    protected static function castValue(mixed $value, string $type): mixed
+    public static function castValue(mixed $value, string $type): mixed
     {
         return match ($type) {
             'array', 'json' => json_decode($value, true) ?? [],

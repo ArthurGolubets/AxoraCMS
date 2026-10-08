@@ -7,10 +7,22 @@ use HolartWeb\AxoraCMS\Models\TPanelCustomField;
 use HolartWeb\AxoraCMS\Models\TPanelSettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 
 class PageDataService
 {
+    protected function siteCache(): SiteCacheService
+    {
+        return app(SiteCacheService::class);
+    }
+
+    /**
+     * Cache key part identifying the current page (route name + path).
+     */
+    protected function currentPageKey(): string
+    {
+        return (Route::currentRouteName() ?? '').'|'.request()->path();
+    }
+
     /**
      * Check if database is configured and accessible
      */
@@ -49,7 +61,7 @@ class PageDataService
     {
         $id = (int) $id;
 
-        if ($id <= 0 || ! Schema::hasTable('t_menu_items')) {
+        if ($id <= 0 || ! $this->siteCache()->hasTable('t_menu_items')) {
             return [];
         }
 
@@ -131,7 +143,7 @@ class PageDataService
     private function getCustomFieldsData(): array
     {
         try {
-            if (! $this->isDatabaseAvailable() || ! Schema::hasTable('t_panel_custom_fields')) {
+            if (! $this->isDatabaseAvailable() || ! $this->siteCache()->hasTable('t_panel_custom_fields')) {
                 return [];
             }
 
@@ -151,6 +163,19 @@ class PageDataService
         if (! $currentRoute) {
             return null;
         }
+
+        return $this->siteCache()->remember(
+            SiteCacheService::GROUP_PAGES,
+            'page|'.$this->currentPageKey(),
+            fn () => $this->resolvePageData($currentRoute),
+        );
+    }
+
+    /**
+     * Resolve SEO/page data for the current route without the cache.
+     */
+    protected function resolvePageData(\Illuminate\Routing\Route $currentRoute): ?array
+    {
 
         $routeName = $currentRoute->getName();
         $uri = $currentRoute->uri();
@@ -198,7 +223,11 @@ class PageDataService
      */
     public function getSettingsData(): ?array
     {
-        return $this->getPageSettingsData();
+        return $this->siteCache()->remember(
+            SiteCacheService::GROUP_SETTINGS,
+            'project_settings',
+            fn () => $this->getPageSettingsData(),
+        );
     }
 
     /**
@@ -211,6 +240,19 @@ class PageDataService
         if (! $currentRoute) {
             return false;
         }
+
+        return $this->siteCache()->remember(
+            SiteCacheService::GROUP_PAGES,
+            'inactive|'.$this->currentPageKey(),
+            fn () => $this->resolveHasInactiveEntity($currentRoute),
+        );
+    }
+
+    /**
+     * Check the current route for an inactive page/catalog/product without the cache.
+     */
+    protected function resolveHasInactiveEntity(\Illuminate\Routing\Route $currentRoute): bool
+    {
 
         $routeName = $currentRoute->getName();
         $currentUrl = request()->path();
@@ -243,7 +285,7 @@ class PageDataService
         }
 
         try {
-            if (! Schema::hasTable('t_pages')) {
+            if (! $this->siteCache()->hasTable('t_pages')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -302,7 +344,7 @@ class PageDataService
         }
 
         try {
-            if (! Schema::hasTable('t_catalogs')) {
+            if (! $this->siteCache()->hasTable('t_catalogs')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -355,7 +397,7 @@ class PageDataService
         }
 
         try {
-            if (! Schema::hasTable('t_products')) {
+            if (! $this->siteCache()->hasTable('t_products')) {
                 return null;
             }
         } catch (\Exception $e) {
@@ -447,7 +489,7 @@ class PageDataService
         }
 
         try {
-            if (! Schema::hasTable('t_pages')) {
+            if (! $this->siteCache()->hasTable('t_pages')) {
                 return false;
             }
         } catch (\Exception $e) {
@@ -487,7 +529,7 @@ class PageDataService
         }
 
         try {
-            if (! Schema::hasTable('t_catalogs')) {
+            if (! $this->siteCache()->hasTable('t_catalogs')) {
                 return false;
             }
         } catch (\Exception $e) {
@@ -523,7 +565,7 @@ class PageDataService
         }
 
         try {
-            if (! Schema::hasTable('t_products')) {
+            if (! $this->siteCache()->hasTable('t_products')) {
                 return false;
             }
         } catch (\Exception $e) {

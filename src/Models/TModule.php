@@ -2,6 +2,7 @@
 
 namespace HolartWeb\AxoraCMS\Models;
 
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Database\Eloquent\Model;
 
 class TModule extends Model
@@ -27,6 +28,8 @@ class TModule extends Model
             ['module_name' => $moduleName],
             ['version' => $version, 'installed_at' => now()]
         );
+
+        static::refreshSiteCache();
     }
 
     /**
@@ -35,6 +38,18 @@ class TModule extends Model
     public static function uninstall(string $moduleName): void
     {
         static::where('module_name', $moduleName)->delete();
+
+        static::refreshSiteCache();
+    }
+
+    /**
+     * Module set changed: tables, routes and menus differ now — drop every cached answer.
+     */
+    protected static function refreshSiteCache(): void
+    {
+        $siteCache = app(SiteCacheService::class);
+        $siteCache->rebuildConfig();
+        $siteCache->flush();
     }
 
     /**

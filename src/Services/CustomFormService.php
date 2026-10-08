@@ -7,7 +7,6 @@ use HolartWeb\AxoraCMS\Models\Callback\TCustomFormField;
 use HolartWeb\AxoraCMS\Models\Callback\TCustomFormSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -50,7 +49,7 @@ class CustomFormService
 
     public function isAvailable(): bool
     {
-        return Schema::hasTable('t_custom_forms');
+        return app(SiteCacheService::class)->hasTable('t_custom_forms');
     }
 
     /**

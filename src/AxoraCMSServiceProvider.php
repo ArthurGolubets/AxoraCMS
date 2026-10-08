@@ -2,6 +2,9 @@
 
 namespace HolartWeb\AxoraCMS;
 
+use HolartWeb\AxoraCMS\Console\CacheClearCommand;
+use HolartWeb\AxoraCMS\Console\CacheInstallCommand;
+use HolartWeb\AxoraCMS\Console\CacheUninstallCommand;
 use HolartWeb\AxoraCMS\Console\CallbackInstallCommand;
 use HolartWeb\AxoraCMS\Console\CallbackUninstallCommand;
 use HolartWeb\AxoraCMS\Console\CleanOldPageVisitsCommand;
@@ -33,22 +36,32 @@ use HolartWeb\AxoraCMS\Console\UpdateCommand;
 use HolartWeb\AxoraCMS\Console\YKassaCheckPaymentCommand;
 use HolartWeb\AxoraCMS\Console\YookassaInstallCommand;
 use HolartWeb\AxoraCMS\Console\YookassaUninstallCommand;
+use HolartWeb\AxoraCMS\Http\Middleware\CacheFullPage;
 use HolartWeb\AxoraCMS\Http\Middleware\CheckAdminRole;
+use HolartWeb\AxoraCMS\Http\Middleware\FlushSiteCache;
 use HolartWeb\AxoraCMS\Http\Middleware\RedirectIfNotAdmin;
 use HolartWeb\AxoraCMS\Http\Middleware\SharePageData;
+use HolartWeb\AxoraCMS\Http\Middleware\TrackPageVisits;
 use HolartWeb\AxoraCMS\Models\TAdministrator;
+use HolartWeb\AxoraCMS\Services\Cache\CachedCatalogService;
+use HolartWeb\AxoraCMS\Services\Cache\CachedInfoBlockService;
 use HolartWeb\AxoraCMS\Services\CatalogService;
 use HolartWeb\AxoraCMS\Services\CommentsService;
+use HolartWeb\AxoraCMS\Services\InfoBlockService;
 use HolartWeb\AxoraCMS\Services\Mail\MailSettingsService;
 use HolartWeb\AxoraCMS\Services\PageDataService;
 use HolartWeb\AxoraCMS\Services\PageVisitService;
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class AxoraCMSServiceProvider extends ServiceProvider
@@ -73,6 +86,9 @@ class AxoraCMSServiceProvider extends ServiceProvider
             'driver' => 'eloquent',
             'model' => TAdministrator::class,
         ]);
+
+        // "Кеширование" module state is shared by every service within a request.
+        $this->app->singleton(SiteCacheService::class);
     }
 
     /**
@@ -99,8 +115,13 @@ class AxoraCMSServiceProvider extends ServiceProvider
                 return new PageVisitService;
             });
 
+            // Cached decorators: identical to the plain services while the "Кеширование" module is off.
             $this->app->singleton(CatalogService::class, function ($app) {
-                return new CatalogService;
+                return new CachedCatalogService;
+            });
+
+            $this->app->singleton(InfoBlockService::class, function ($app) {
+                return new CachedInfoBlockService;
             });
 
             $this->app->singleton(CommentsService::class, function ($app) {
@@ -162,7 +183,12 @@ class AxoraCMSServiceProvider extends ServiceProvider
                 ImportExportUninstallCommand::class,
                 PriceManagerInstallCommand::class,
                 PriceManagerUninstallCommand::class,
+                CacheInstallCommand::class,
+                CacheUninstallCommand::class,
+                CacheClearCommand::class,
             ]);
+
+            $this->registerSiteCache();
 
             // Schedule automatic cleanup of old page visits
             // Scheduled tasks will check module installation themselves
@@ -217,7 +243,7 @@ class AxoraCMSServiceProvider extends ServiceProvider
     protected function applyMailSettings(): void
     {
         try {
-            if (! Schema::hasTable('t_integration_settings')) {
+            if (! $this->app->make(SiteCacheService::class)->hasTable('t_integration_settings')) {
                 return;
             }
 
@@ -228,13 +254,75 @@ class AxoraCMSServiceProvider extends ServiceProvider
     }
 
     /**
+     * Wire the "Кеширование" module: invalidation on data changes and the full-page cache.
+     */
+    protected function registerSiteCache(): void
+    {
+        $siteCache = $this->app->make(SiteCacheService::class);
+
+        Event::listen(['eloquent.saved: HolartWeb\\AxoraCMS\\*', 'eloquent.deleted: HolartWeb\\AxoraCMS\\*'], function (string $event, array $payload) use ($siteCache) {
+            $siteCache->handleModelChange($payload[0] ?? null, str_starts_with($event, 'eloquent.deleted'));
+        });
+
+        // Module installs/uninstalls create and drop tables — forget cached table checks.
+        Event::listen(MigrationsEnded::class, fn () => $siteCache->flush([SiteCacheService::GROUP_SCHEMA]));
+
+        $this->insertFullPageCacheMiddleware();
+    }
+
+    /**
+     * Put the full-page cache into the "web" group right before SharePageData /
+     * TrackPageVisits, so a cache hit skips their queries (it still records the visit).
+     * It stays after StartSession/CSRF, which the guest and token checks rely on.
+     * Done on the HTTP kernel, which owns the groups and re-syncs them to the router.
+     */
+    protected function insertFullPageCacheMiddleware(): void
+    {
+        $insert = function (HttpKernel $kernel): void {
+            $groups = $kernel->getMiddlewareGroups();
+            $web = $groups['web'] ?? [];
+
+            if (in_array(CacheFullPage::class, $web, true)) {
+                return;
+            }
+
+            $position = count($web);
+            foreach ($web as $index => $middleware) {
+                if (in_array($middleware, [SharePageData::class, TrackPageVisits::class], true)) {
+                    $position = $index;
+                    break;
+                }
+            }
+
+            array_splice($web, $position, 0, [CacheFullPage::class]);
+            $groups['web'] = $web;
+            $kernel->setMiddlewareGroups($groups);
+        };
+
+        if ($this->app->resolved(HttpKernelContract::class)) {
+            $kernel = $this->app->make(HttpKernelContract::class);
+            if ($kernel instanceof HttpKernel) {
+                $insert($kernel);
+            }
+
+            return;
+        }
+
+        $this->app->afterResolving(HttpKernelContract::class, function ($kernel) use ($insert) {
+            if ($kernel instanceof HttpKernel) {
+                $insert($kernel);
+            }
+        });
+    }
+
+    /**
      * Register admin routes.
      */
     protected function registerAdminRoutes(): void
     {
         Route::group([
             'prefix' => config('axora-cms.route_prefix', 'admin'),
-            'middleware' => ['web'],
+            'middleware' => ['web', FlushSiteCache::class],
             'namespace' => 'HolartWeb\AxoraCMS\Http\Controllers',
         ], function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/admin.php');
@@ -248,7 +336,7 @@ class AxoraCMSServiceProvider extends ServiceProvider
     {
         Route::group([
             'prefix' => 'api',
-            'middleware' => ['web'],
+            'middleware' => ['web', FlushSiteCache::class],
             'namespace' => 'HolartWeb\AxoraCMS\Http\Controllers',
         ], function () {
             $this->loadRoutesFrom(__DIR__.'/../routes/api.php');

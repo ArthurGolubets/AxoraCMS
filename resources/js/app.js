@@ -39,6 +39,7 @@ import MenuItems from './components/Menus/MenuItems.vue';
 import FiltersList from './components/FiltersList.vue';
 import FilterView from './components/FilterView.vue';
 import PriceManager from './components/PriceManager.vue';
+import CacheSettings from './components/CacheSettings.vue';
 import ImportExportCatalog from './components/ImportExport/ImportExportCatalog.vue';
 import ImportExportEntities from './components/ImportExport/ImportExportEntities.vue';
 import PagesList from './components/Pages/PagesList.vue';
@@ -284,6 +285,11 @@ const router = createRouter({
             component: PriceManager
         },
         {
+            path: '/cache',
+            name: 'cache-settings',
+            component: CacheSettings
+        },
+        {
             path: '/filters',
             name: 'filters',
             component: FiltersList
@@ -363,10 +369,11 @@ const MODULE_GATED_ROUTES = {
     commerce: ['orders', 'order-create', 'order-edit', 'order-view', 'transactions', 'promocodes', 'orders-settings'],
     importexport: ['import-export-catalog', 'import-export-entities'],
     pricemanager: ['price-manager'],
+    cache: ['cache-settings'],
     infoblocks: ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'],
 };
 
-const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', 'price-manager', ...MODULE_GATED_ROUTES.commerce, ...MODULE_GATED_ROUTES.importexport];
+const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', 'price-manager', 'cache-settings', ...MODULE_GATED_ROUTES.commerce, ...MODULE_GATED_ROUTES.importexport];
 
 // Global navigation guard.
 // `me` and `modules/status` come from useAppConfig(), which fetches each once

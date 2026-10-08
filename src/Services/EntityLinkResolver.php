@@ -5,7 +5,6 @@ namespace HolartWeb\AxoraCMS\Services;
 use HolartWeb\AxoraCMS\Models\Shop\TCatalog;
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Resolves "entity link" field values (catalog properties / characteristic
@@ -125,7 +124,7 @@ class EntityLinkResolver
     {
         $elementClass = 'HolartWeb\AxoraCMS\Models\InfoBlocks\TInfoBlockElement';
 
-        if ($refs->isEmpty() || ! class_exists($elementClass) || ! Schema::hasTable('t_info_block_elements')) {
+        if ($refs->isEmpty() || ! class_exists($elementClass) || ! app(SiteCacheService::class)->hasTable('t_info_block_elements')) {
             return [];
         }
 

@@ -34,6 +34,9 @@
       </div>
     </div>
 
+    <!-- Bulk actions -->
+    <ProductBulkActionsBar :selectedIds="selectedIds" @clear="clearSelection" @completed="loadProducts" />
+
     <!-- Products Table -->
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div v-if="loading" class="p-8 text-center text-gray-500 dark:text-gray-400">Загрузка...</div>
@@ -41,6 +44,9 @@
       <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-900">
           <tr>
+            <th class="pl-6 pr-2 py-3 w-10">
+              <CustomCheckbox :modelValue="allOnPageSelected" @update:modelValue="toggleSelectAllOnPage" title="Выбрать все на странице" />
+            </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Изображение</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Товар</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
@@ -52,7 +58,10 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr v-for="product in products.data" :key="product.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <tr v-for="product in products.data" :key="product.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50" :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': isSelected(product.id) }">
+            <td class="pl-6 pr-2 py-4 w-10">
+              <CustomCheckbox :modelValue="isSelected(product.id)" @update:modelValue="toggleSelected(product.id)" title="Выбрать товар" />
+            </td>
             <td class="px-6 py-4">
               <img
                 v-if="product.main_image"
@@ -131,13 +140,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
 import ToggleSwitch from './ToggleSwitch.vue';
 import ImportExportDropdown from './ImportExportDropdown.vue';
 import ThemeButton from './ThemeButton.vue';
 import ImportPreviewModal from './ImportPreviewModal.vue';
+import CustomCheckbox from './CustomCheckbox.vue';
+import ProductBulkActionsBar from './ProductBulkActionsBar.vue';
 
 const { confirm, success, error } = useModal();
 const { themeColor } = useTheme();
@@ -173,9 +184,35 @@ const filters = ref({
   page: 1
 });
 
+const selectedIds = ref([]);
+const isSelected = (id) => selectedIds.value.includes(id);
+
+const toggleSelected = (id) => {
+  selectedIds.value = isSelected(id)
+    ? selectedIds.value.filter(selectedId => selectedId !== id)
+    : [...selectedIds.value, id];
+};
+
+const pageProductIds = computed(() => (products.value.data || []).map(product => product.id));
+
+const allOnPageSelected = computed(() =>
+  pageProductIds.value.length > 0 && pageProductIds.value.every(id => isSelected(id))
+);
+
+const toggleSelectAllOnPage = () => {
+  selectedIds.value = allOnPageSelected.value
+    ? selectedIds.value.filter(id => !pageProductIds.value.includes(id))
+    : [...new Set([...selectedIds.value, ...pageProductIds.value])];
+};
+
+const clearSelection = () => {
+  selectedIds.value = [];
+};
+
 const loadProducts = async (resetPage = false) => {
   if (resetPage) {
     filters.value.page = 1;
+    selectedIds.value = [];
   }
 
   loading.value = true;
@@ -268,6 +305,7 @@ const handleDelete = async (product) => {
       method: 'DELETE',
       headers: { 'X-CSRF-TOKEN': token }
     });
+    selectedIds.value = selectedIds.value.filter(id => id !== product.id);
     await success('Товар удален');
     loadProducts();
   } catch (err) {

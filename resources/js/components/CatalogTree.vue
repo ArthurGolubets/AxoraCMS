@@ -50,6 +50,14 @@
       </div>
     </div>
 
+    <!-- Bulk actions for products selected in the tree -->
+    <ProductBulkActionsBar
+      v-if="viewMode === 'tree'"
+      :selectedIds="selectedProductIds"
+      @clear="selectedProductIds = []"
+      @completed="loadTree"
+    />
+
     <!-- Tree View -->
     <div v-if="viewMode === 'tree'" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div v-if="loading" class="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -65,6 +73,10 @@
           :catalog="catalog"
           :level="0"
           :commerceml-installed="stockMeta.commerceml_installed"
+          :selected-product-ids="selectedProductIds"
+          :catalog-product-ids="catalogProductIds"
+          @toggle-product-select="toggleProductSelect"
+          @toggle-catalog-products-select="toggleCatalogProductsSelect"
           @create-subcategory="handleCreateSubcategory"
           @create-product="handleCreateProduct"
           @view="handleViewCatalog"
@@ -123,11 +135,48 @@ import CatalogTreeNode from './CatalogTreeNode.vue';
 import ImportExportDropdown from './ImportExportDropdown.vue';
 import ThemeButton from './ThemeButton.vue';
 import ImportPreviewModal from './ImportPreviewModal.vue';
+import ProductBulkActionsBar from './ProductBulkActionsBar.vue';
 
-const { confirm, success, error } = useModal();
+const { confirm, success, error, warning } = useModal();
 const router = useRouter();
 
 const catalogs = ref([]);
+const selectedProductIds = ref([]);
+
+const catalogProductIds = ref({});
+
+// Select (or unselect, if already fully selected) every product in a folder and its subfolders
+const toggleCatalogProductsSelect = async (catalog) => {
+  try {
+    const response = await fetch(`/admin/api/catalogs/${catalog.id}/product-ids`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) {
+      throw new Error('Failed to load product ids');
+    }
+    const { ids } = await response.json();
+    catalogProductIds.value = { ...catalogProductIds.value, [catalog.id]: ids };
+
+    if (!ids.length) {
+      await warning(`В папке "${catalog.name}" нет товаров`);
+      return;
+    }
+
+    const allSelected = ids.every(id => selectedProductIds.value.includes(id));
+    selectedProductIds.value = allSelected
+      ? selectedProductIds.value.filter(id => !ids.includes(id))
+      : [...new Set([...selectedProductIds.value, ...ids])];
+  } catch (err) {
+    console.error('Error selecting catalog products:', err);
+    await error('Ошибка при выборе товаров папки');
+  }
+};
+
+const toggleProductSelect = (productId) => {
+  selectedProductIds.value = selectedProductIds.value.includes(productId)
+    ? selectedProductIds.value.filter(id => id !== productId)
+    : [...selectedProductIds.value, productId];
+};
 const loading = ref(false);
 const search = ref('');
 const viewMode = ref('tree');
@@ -170,6 +219,8 @@ const flatCatalogs = computed(() => {
 
 const loadTree = async () => {
   loading.value = true;
+  // Folder contents may have changed (move/delete) — drop cached folder product ids
+  catalogProductIds.value = {};
   try {
     let url;
     if (search.value) {
@@ -258,7 +309,7 @@ const handleDeleteCatalog = async (catalog) => {
 
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    const response = await fetch(`/admin/api/catalogs/${catalog.id}`, {
+    const deleteCatalog = (force = false) => fetch(`/admin/api/catalogs/${catalog.id}${force ? '?force=1' : ''}`, {
       method: 'DELETE',
       headers: {
         'X-CSRF-TOKEN': token,
@@ -266,11 +317,29 @@ const handleDeleteCatalog = async (catalog) => {
       }
     });
 
+    let response = await deleteCatalog();
+
+    // Non-empty category: ask once more before deleting the whole subtree
+    if (response.status === 409) {
+      const data = await response.json();
+      const cascadeConfirmed = await confirm(
+        'Удалить категорию со всем содержимым?',
+        `Категория "${catalog.name}" содержит подкатегорий: ${data.subcategories_count}, товаров: ${data.products_count}. ` +
+        'Все они будут удалены безвозвратно.'
+      );
+
+      if (!cascadeConfirmed) return;
+
+      response = await deleteCatalog(true);
+    }
+
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.message || 'Failed to delete catalog');
     }
 
+    // Products of the deleted subtree may have been selected
+    selectedProductIds.value = [];
     await loadTree();
     await success('Категория удалена');
   } catch (err) {
@@ -390,6 +459,7 @@ const handleDeleteProduct = async (product) => {
       }
     });
 
+    selectedProductIds.value = selectedProductIds.value.filter(id => id !== product.id);
     await loadTree();
     await success('Товар удален');
   } catch (err) {

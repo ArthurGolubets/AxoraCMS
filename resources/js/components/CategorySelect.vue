@@ -82,6 +82,7 @@
 import { ref, computed, watch, nextTick, toRef } from 'vue';
 import CategoryTreePickerModal from './CategoryTreePickerModal.vue';
 import { useCategoryBreadcrumb } from '../composables/useCategoryBreadcrumb';
+import { searchWords, matchesAllWords } from '../utils/searchWords';
 
 const props = defineProps({
   modelValue: { type: [Number, String, null], default: null },
@@ -115,7 +116,9 @@ const results = computed(() => {
   const q = query.value.trim().toLowerCase();
   const list = props.categories;
 
-  if (!q) {
+  const words = searchWords(q);
+
+  if (!words.length) {
     return list.slice(0, 50);
   }
 
@@ -127,9 +130,9 @@ const results = computed(() => {
     const name = (cat.name || '').toLowerCase();
     if (name.startsWith(q)) {
       starts.push(cat);
-    } else if (name.includes(q)) {
+    } else if (matchesAllWords(name, words)) {
       nameMatches.push(cat);
-    } else if (breadcrumbLabel(cat.id).toLowerCase().includes(q)) {
+    } else if (matchesAllWords(breadcrumbLabel(cat.id), words)) {
       pathMatches.push(cat);
     }
   }

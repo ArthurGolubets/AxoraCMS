@@ -4,6 +4,7 @@ use HolartWeb\AxoraCMS\Http\Controllers\AdministratorController;
 use HolartWeb\AxoraCMS\Http\Controllers\AdminNotificationsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Auth\ForgotPasswordController;
 use HolartWeb\AxoraCMS\Http\Controllers\Auth\LoginController;
+use HolartWeb\AxoraCMS\Http\Controllers\CacheController;
 use HolartWeb\AxoraCMS\Http\Controllers\Callback\CustomFormsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Callback\CustomFormSubmissionsController;
 use HolartWeb\AxoraCMS\Http\Controllers\CatalogImportExportController;
@@ -23,8 +24,8 @@ use HolartWeb\AxoraCMS\Http\Controllers\SearchController;
 use HolartWeb\AxoraCMS\Http\Controllers\SettingsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Shop\PriceManagerController;
 use HolartWeb\AxoraCMS\Http\Controllers\UsersLookupController;
+use HolartWeb\AxoraCMS\Services\SiteCacheService;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 
 /*
 |--------------------------------------------------------------------------
@@ -139,8 +140,17 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('modules/{moduleId}/uninstall', [ModulesController::class, 'uninstall']);
         });
 
+        // "Кеширование" module settings
+        if (app(SiteCacheService::class)->isInstalled()) {
+            Route::middleware('admin.role:super_admin,administrator')->group(function () {
+                Route::get('cache', [CacheController::class, 'show']);
+                Route::put('cache', [CacheController::class, 'update']);
+                Route::post('cache/clear', [CacheController::class, 'clear']);
+            });
+        }
+
         // Catalog routes - only if shop module is installed
-        if (Schema::hasTable('t_catalogs')) {
+        if (app(SiteCacheService::class)->hasTable('t_catalogs')) {
             $catalogController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\CatalogController';
             $productController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\ProductController';
             $characteristicDefinitionsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\CharacteristicDefinitionsController';
@@ -175,6 +185,7 @@ Route::middleware(['admin.auth'])->group(function () {
                 Route::post('price-manager/apply', [PriceManagerController::class, 'apply']);
             });
             Route::post('products/bulk-delete', [$productController, 'bulkDestroy']);
+            Route::post('products/bulk-move', [$productController, 'bulkMove']);
             Route::get('products/search', [$productController, 'search']);
             Route::get('products/stock-meta', [$productController, 'stockMeta']);
             Route::post('products/{id}/deactivate', [$productController, 'deactivate']);
@@ -187,6 +198,7 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::put('catalogs/{id}', [$catalogController, 'update']);
             Route::delete('catalogs/{id}', [$catalogController, 'destroy']);
             Route::get('catalogs/{id}/children', [$catalogController, 'children']);
+            Route::get('catalogs/{id}/product-ids', [$catalogController, 'productIds']);
 
             // Product generic routes
             Route::get('products', [$productController, 'index']);
@@ -197,7 +209,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Callback routes - only if callback module is installed
-        if (Schema::hasTable('t_users_emails')) {
+        if (app(SiteCacheService::class)->hasTable('t_users_emails')) {
             $usersEmailsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Callback\\UsersEmailsController';
             $commentsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Callback\\CommentsController';
             $userRequestsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Callback\\UserRequestsController';
@@ -228,7 +240,7 @@ Route::middleware(['admin.auth'])->group(function () {
             Route::post('user-requests/bulk-delete', [$userRequestsController, 'bulkDestroy']);
 
             // Custom forms ("Своя форма") — tables added by a later callback migration.
-            if (Schema::hasTable('t_custom_forms')) {
+            if (app(SiteCacheService::class)->hasTable('t_custom_forms')) {
                 Route::get('custom-forms', [CustomFormsController::class, 'index']);
                 Route::post('custom-forms', [CustomFormsController::class, 'store']);
                 Route::get('custom-forms/{id}', [CustomFormsController::class, 'show'])->whereNumber('id');
@@ -246,7 +258,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Import / export module
-        if (Schema::hasTable('t_import_export_tasks')) {
+        if (app(SiteCacheService::class)->hasTable('t_import_export_tasks')) {
             Route::middleware('admin.role:super_admin,administrator')->prefix('import-export')->group(function () {
                 Route::get('meta', [ImportExportController::class, 'meta']);
                 Route::get('tasks', [ImportExportController::class, 'index']);
@@ -261,7 +273,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Commerce routes - only if commerce module is installed
-        if (Schema::hasTable('t_orders')) {
+        if (app(SiteCacheService::class)->hasTable('t_orders')) {
             $ordersController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\OrdersController';
             $promocodesController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\PromocodesController';
             $transactionsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\PaymentTransactionsController';
@@ -299,7 +311,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // InfoBlocks routes - only if infoblocks module is installed
-        if (Schema::hasTable('t_info_blocks')) {
+        if (app(SiteCacheService::class)->hasTable('t_info_blocks')) {
             $infoBlocksController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlocksController';
             $infoBlockFieldsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockFieldsController';
             $infoBlockElementsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\InfoBlocks\\InfoBlockElementsController';
@@ -340,7 +352,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Menus are only available once the menus module tables have been migrated.
-        if (Schema::hasTable('t_menus') && Schema::hasTable('t_menu_items')) {
+        if (app(SiteCacheService::class)->hasTable('t_menus') && app(SiteCacheService::class)->hasTable('t_menu_items')) {
             $menusController = MenusController::class;
             $menuItemsController = MenuItemsController::class;
 
@@ -365,7 +377,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Filter routes (only if shop module is installed)
-        if (Schema::hasTable('t_filters')) {
+        if (app(SiteCacheService::class)->hasTable('t_filters')) {
             $filterController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Shop\\FilterController';
 
             // Specific routes MUST come before generic {id} routes
@@ -387,7 +399,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Pages & SEO Module Routes (only if SEO module is installed)
-        if (Schema::hasTable('t_pages')) {
+        if (app(SiteCacheService::class)->hasTable('t_pages')) {
             $pagesController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\SEO\\PagesController';
             $statsController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\SEO\\PageStatsController';
 
@@ -410,7 +422,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // Integrations routes (only if integrations table exists)
-        if (Schema::hasTable('t_integration_settings')) {
+        if (app(SiteCacheService::class)->hasTable('t_integration_settings')) {
             $telegramController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integrations\\TelegramSettingsController';
             $yookassaController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integrations\\YookassaSettingsController';
 
@@ -424,7 +436,7 @@ Route::middleware(['admin.auth'])->group(function () {
         }
 
         // CommerceML integration routes
-        if (Schema::hasTable('t_commerceml_settings')) {
+        if (app(SiteCacheService::class)->hasTable('t_commerceml_settings')) {
             $commerceMLController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integration\\CommerceMLController';
 
             Route::get('integrations/commerceml', [$commerceMLController, 'getSettings']);

@@ -4,6 +4,7 @@ namespace HolartWeb\AxoraCMS\Http\Controllers;
 
 use HolartWeb\AxoraCMS\Models\TAdministrator;
 use HolartWeb\AxoraCMS\Models\TPanelSettings;
+use HolartWeb\AxoraCMS\Support\SearchTerms;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -45,7 +46,7 @@ class SearchController extends Controller
         // Search catalogs if module exists
         if (class_exists('HolartWeb\AxoraCMS\Models\Shop\TCatalog')) {
             $catalogClass = 'HolartWeb\AxoraCMS\Models\Shop\TCatalog';
-            $catalogs = $catalogClass::where('name', 'like', "%{$query}%")
+            $catalogs = SearchTerms::apply($catalogClass::query(), $query, ['name'])
                 ->limit(5)
                 ->get();
 
@@ -63,8 +64,7 @@ class SearchController extends Controller
         // Search products if module exists
         if (class_exists('HolartWeb\AxoraCMS\Models\Shop\TProduct')) {
             $productClass = 'HolartWeb\AxoraCMS\Models\Shop\TProduct';
-            $products = $productClass::where('name', 'like', "%{$query}%")
-                ->orWhere('sku', 'like', "%{$query}%")
+            $products = SearchTerms::apply($productClass::query(), $query, ['name', 'sku'])
                 ->with('catalog')
                 ->limit(10)
                 ->get();
