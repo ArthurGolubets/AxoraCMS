@@ -5,9 +5,13 @@ namespace HolartWeb\AxoraCMS\Http\Controllers\Commerce;
 use HolartWeb\AxoraCMS\Models\Commerce\TOrderItems;
 use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
 use HolartWeb\AxoraCMS\Models\Shop\TProduct;
+use HolartWeb\AxoraCMS\Services\Integrations\Bitrix24\Bitrix24Sync;
+use HolartWeb\AxoraCMS\Services\Integrations\Cdek\CdekShipments;
+use HolartWeb\AxoraCMS\Services\MessageManager\MessageManager;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class OrdersController extends Controller
 {
@@ -59,7 +63,7 @@ class OrdersController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:255',
-            'delivery_type' => 'required|in:pickup,courier,post',
+            'delivery_type' => ['required', Rule::in(TOrders::deliveryTypes())],
             'payment_type' => 'required|in:online,cash',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|integer',
@@ -88,6 +92,9 @@ class OrdersController extends Controller
         $orderData['delivery_price'] = $deliveryPrice;
         $orderData['promocode_discount'] = $promocodeDiscount;
         $orderData['total_price'] = $totalPrice;
+
+        $messageManager = app(MessageManager::class);
+        $messageManager->dispatchOrderDraft($orderData, $request->items);
 
         $order = TOrders::create($orderData);
 
@@ -122,6 +129,10 @@ class OrdersController extends Controller
             TOrderItems::create($itemData);
         }
 
+        $messageManager->dispatchOrder('order.created', $order);
+        app(Bitrix24Sync::class)->dispatchOrder($order);
+        app(CdekShipments::class)->handleNewOrder($order);
+
         return response()->json([
             'success' => true,
             'message' => 'Заказ создан успешно',
@@ -139,7 +150,7 @@ class OrdersController extends Controller
             'phone' => 'nullable|string|max:255',
             'payment_status' => 'nullable|in:pending,paid,failed,refunded',
             'delivery_status' => 'nullable|in:pending,processing,shipped,delivered,cancelled',
-            'delivery_type' => 'nullable|in:pickup,courier,post',
+            'delivery_type' => ['nullable', Rule::in([...TOrders::deliveryTypes(), $order->delivery_type])],
             'payment_type' => 'nullable|in:online,cash,card',
             'items' => 'nullable|array',
             'items.*.product_id' => 'required|integer',

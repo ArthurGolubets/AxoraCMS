@@ -16,6 +16,12 @@ class ModulesController extends Controller
 
     const PRICE_MANAGER_DESCRIPTION = 'Массовое изменение цен товаров и целых категорий на процент или фиксированную сумму, с предпросмотром и округлением. Требует установленный модуль "Каталог и товары"';
 
+    const CDEK_DESCRIPTION = 'Доставка СДЭК: включается в настройках заказов, оформляет отправления через очередь, показывает в заказе трек-номер и статус доставки. Требует установленный модуль "Коммерция"';
+
+    const BITRIX24_DESCRIPTION = 'Передача заказов, заявок и форм в CRM Битрикс24 через вебхук: создание лидов и сделок, контактов и компаний, сопоставление полей (включая пользовательские) и журнал отправок';
+
+    const MESSAGE_MANAGER_DESCRIPTION = 'Автоматические сообщения по событиям сайта (заказ, комментарий, заявка, форма): Telegram и Email, шаблоны писем, переменные в тексте, цепочки отправки с задержкой и журнал. При установке встроенная отправка в Telegram заменяется подписками';
+
     const CACHE_DESCRIPTION = 'Ускоряет загрузку сайта: кеширует проверки структуры БД, настройки и меню, SEO-данные страниц, каталог и инфоблоки, а для гостей — готовые HTML-страницы. Кеш сбрасывается автоматически при изменениях в админке';
 
     const MODULES_VERSIONS = [
@@ -32,6 +38,9 @@ class ModulesController extends Controller
         'importexport' => '1.0.0',
         'pricemanager' => '1.0.0',
         'cache' => '1.0.0',
+        'messagemanager' => '1.0.0',
+        'bitrix24' => '1.0.0',
+        'cdek' => '1.0.0',
     ];
 
     /**
@@ -112,6 +121,22 @@ class ModulesController extends Controller
                 'can_install' => $this->isShopModuleInstalled(),
             ],
             [
+                'id' => 'bitrix24',
+                'name' => 'Битрикс24',
+                'description' => self::BITRIX24_DESCRIPTION,
+                'installed' => TModule::isInstalled('bitrix24'),
+                'type' => 'integration',
+            ],
+            [
+                'id' => 'cdek',
+                'name' => 'СДЭК',
+                'description' => self::CDEK_DESCRIPTION,
+                'installed' => TModule::isInstalled('cdek'),
+                'type' => 'integration',
+                'dependencies' => ['commerce'],
+                'can_install' => $this->isCommerceModuleInstalled(),
+            ],
+            [
                 'id' => 'importexport',
                 'name' => 'Импорт/Экспорт',
                 'description' => self::IMPORT_EXPORT_DESCRIPTION,
@@ -132,6 +157,12 @@ class ModulesController extends Controller
                 'name' => 'Кеширование',
                 'description' => self::CACHE_DESCRIPTION,
                 'installed' => TModule::isInstalled('cache'),
+            ],
+            [
+                'id' => 'messagemanager',
+                'name' => 'Менеджер сообщений',
+                'description' => self::MESSAGE_MANAGER_DESCRIPTION,
+                'installed' => TModule::isInstalled('messagemanager'),
             ],
         ];
 
@@ -244,6 +275,26 @@ class ModulesController extends Controller
                 'can_install' => $this->isShopModuleInstalled(),
             ],
             [
+                'id' => 'bitrix24',
+                'name' => 'Битрикс24',
+                'description' => self::BITRIX24_DESCRIPTION,
+                'installed' => TModule::isInstalled('bitrix24'),
+                'install_command' => 'axoracms:bitrix24-install',
+                'uninstall_command' => 'axoracms:bitrix24-uninstall',
+                'type' => 'integration',
+            ],
+            [
+                'id' => 'cdek',
+                'name' => 'СДЭК',
+                'description' => self::CDEK_DESCRIPTION,
+                'installed' => TModule::isInstalled('cdek'),
+                'install_command' => 'axoracms:cdek-install',
+                'uninstall_command' => 'axoracms:cdek-uninstall',
+                'type' => 'integration',
+                'dependencies' => ['commerce'],
+                'can_install' => $this->isCommerceModuleInstalled(),
+            ],
+            [
                 'id' => 'importexport',
                 'name' => 'Импорт/Экспорт',
                 'description' => self::IMPORT_EXPORT_DESCRIPTION,
@@ -270,6 +321,14 @@ class ModulesController extends Controller
                 'installed' => TModule::isInstalled('cache'),
                 'install_command' => 'axoracms:cache-install',
                 'uninstall_command' => 'axoracms:cache-uninstall',
+            ],
+            [
+                'id' => 'messagemanager',
+                'name' => 'Менеджер сообщений',
+                'description' => self::MESSAGE_MANAGER_DESCRIPTION,
+                'installed' => TModule::isInstalled('messagemanager'),
+                'install_command' => 'axoracms:messagemanager-install',
+                'uninstall_command' => 'axoracms:messagemanager-uninstall',
             ],
         ];
 
@@ -369,6 +428,15 @@ class ModulesController extends Controller
                 case 'cache':
                     $exitCode = Artisan::call('axoracms:cache-install');
                     break;
+                case 'messagemanager':
+                    $exitCode = Artisan::call('axoracms:messagemanager-install');
+                    break;
+                case 'bitrix24':
+                    $exitCode = Artisan::call('axoracms:bitrix24-install');
+                    break;
+                case 'cdek':
+                    $exitCode = Artisan::call('axoracms:cdek-install');
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -460,6 +528,15 @@ class ModulesController extends Controller
                 case 'cache':
                     $exitCode = Artisan::call('axoracms:cache-install');
                     break;
+                case 'messagemanager':
+                    $exitCode = Artisan::call('axoracms:messagemanager-install');
+                    break;
+                case 'bitrix24':
+                    $exitCode = Artisan::call('axoracms:bitrix24-install');
+                    break;
+                case 'cdek':
+                    $exitCode = Artisan::call('axoracms:cdek-install');
+                    break;
                 default:
                     return response()->json([
                         'success' => false,
@@ -489,6 +566,8 @@ class ModulesController extends Controller
                 'pagebuilder' => 'Конструктор страниц',
                 'telegram' => 'Telegram',
                 'yookassa' => 'ЮКassa',
+                'bitrix24' => 'Битрикс24',
+                'cdek' => 'СДЭК',
             ];
             $moduleName = $moduleNames[$moduleId] ?? $moduleId;
             TAdminAction::log('updated', 'module', null, 'Обновлен модуль: '.$moduleName);
@@ -581,6 +660,21 @@ class ModulesController extends Controller
                     break;
                 case 'cache':
                     Artisan::call('axoracms:cache-uninstall', [
+                        '--preserve-db' => $preserveDatabase,
+                    ]);
+                    break;
+                case 'messagemanager':
+                    Artisan::call('axoracms:messagemanager-uninstall', [
+                        '--preserve-db' => $preserveDatabase,
+                    ]);
+                    break;
+                case 'bitrix24':
+                    Artisan::call('axoracms:bitrix24-uninstall', [
+                        '--preserve-db' => $preserveDatabase,
+                    ]);
+                    break;
+                case 'cdek':
+                    Artisan::call('axoracms:cdek-uninstall', [
                         '--preserve-db' => $preserveDatabase,
                     ]);
                     break;
@@ -723,6 +817,9 @@ class ModulesController extends Controller
             'importexport' => ['dirs' => ['importexport'], 'files' => []],
             'pricemanager' => ['dirs' => [], 'files' => []],
             'cache' => ['dirs' => [], 'files' => []],
+            'messagemanager' => ['dirs' => ['messagemanager'], 'files' => []],
+            'bitrix24' => ['dirs' => ['integrations', 'bitrix24'], 'files' => []],
+            'cdek' => ['dirs' => ['integrations', 'cdek'], 'files' => []],
             'logging' => ['dirs' => [], 'files' => ['2026_02_27_125658_create_t_admin_actions_table']],
         ];
 

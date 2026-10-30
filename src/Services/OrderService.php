@@ -7,6 +7,9 @@ use HolartWeb\AxoraCMS\Models\Commerce\TOrders;
 use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Services\Integrations\TelegramService;
 use HolartWeb\AxoraCMS\Services\Integrations\YookassaService;
+use HolartWeb\AxoraCMS\Services\Integrations\Bitrix24\Bitrix24Sync;
+use HolartWeb\AxoraCMS\Services\Integrations\Cdek\CdekShipments;
+use HolartWeb\AxoraCMS\Services\MessageManager\MessageManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -43,7 +46,9 @@ class OrderService
             throw new \Exception('Order must contain at least one item');
         }
 
-        return DB::transaction(function () use ($orderData, $items, $userId) {
+        $messageManager = app(MessageManager::class);
+
+        $order = DB::transaction(function () use ($orderData, $items, $userId, $messageManager) {
             // Calculate totals
             $productsDataString = '';
 
@@ -55,6 +60,16 @@ class OrderService
             $deliveryPrice = $orderData['delivery_price'] ?? 0;
             $promocodeDiscount = $orderData['promocode_discount'] ?? 0;
             $totalPrice = $goodsPrice + $deliveryPrice - $promocodeDiscount;
+
+            $messageManager->dispatchOrderDraft(array_merge($orderData, [
+                'user_id' => $userId,
+                'goods_price' => $goodsPrice,
+                'delivery_price' => $deliveryPrice,
+                'promocode_discount' => $promocodeDiscount,
+                'total_price' => $totalPrice,
+                'payment_status' => $orderData['payment_status'] ?? TOrders::STATUS_PENDING,
+                'delivery_status' => $orderData['delivery_status'] ?? TOrders::DELIVERY_PENDING,
+            ]), $items);
 
             // Create order
             $order = TOrders::create(array_merge($orderData, [
@@ -91,7 +106,8 @@ class OrderService
                 TOrderItems::create($row);
             }
 
-            if (TModule::isInstalled('telegram')) {
+            // With the "Менеджер сообщений" module the Telegram text is a subscription to "order.created".
+            if (TModule::isInstalled('telegram') && ! MessageManager::isActive()) {
                 $orderDataString = 'Заказ №'.$order->id."\n";
                 $orderDataString .= 'Имя: '.$order->name."\n";
                 $orderDataString .= 'Телефон: '.$order->phone."\n";
@@ -105,6 +121,12 @@ class OrderService
 
             return $order->load('items');
         });
+
+        $messageManager->dispatchOrder('order.created', $order);
+        app(Bitrix24Sync::class)->dispatchOrder($order);
+        app(CdekShipments::class)->handleNewOrder($order);
+
+        return $order;
     }
 
     /**

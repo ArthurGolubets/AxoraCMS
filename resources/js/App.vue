@@ -242,7 +242,7 @@
         </div>
 
         <!-- Integrations Group (only if integrations are installed) -->
-        <div v-if="telegramIntegrationInstalled || yookassaIntegrationInstalled || commerceMLIntegrationInstalled" class="mb-1">
+        <div v-if="telegramIntegrationInstalled || yookassaIntegrationInstalled || commerceMLIntegrationInstalled || ((bitrix24IntegrationInstalled || cdekIntegrationInstalled) && canAccessSettings)" class="mb-1">
           <button @click="toggleMenuGroup('integrations')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Интеграции' : ''">
             <div class="flex items-center">
               <svg class="w-5 h-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
@@ -269,6 +269,18 @@
                 CommerceML
               </a>
             </router-link>
+            <router-link v-if="cdekIntegrationInstalled && canAccessSettings" to="/integrations/cdek" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/integrations/cdek'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                СДЭК
+              </a>
+            </router-link>
+            <router-link v-if="bitrix24IntegrationInstalled && canAccessSettings" to="/integrations/bitrix24" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/integrations/bitrix24'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                Битрикс24
+              </a>
+            </router-link>
           </div>
         </div>
 
@@ -292,6 +304,37 @@
               <a @click="$router.push('/import-export/entities'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 Экспорт сущностей
+              </a>
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Message manager (module "messagemanager") -->
+        <div v-if="messageManagerModuleInstalled && canAccessSettings" class="mb-1">
+          <button @click="toggleMenuGroup('message_manager')" class="w-full flex items-center px-3 py-2.5 text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors" :class="isCollapsed ? 'justify-center' : 'justify-between'" :title="isCollapsed ? 'Оповещения' : ''">
+            <div class="flex items-center">
+              <svg class="w-5 h-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              <span v-if="!isCollapsed">Оповещения</span>
+            </div>
+            <svg v-if="!isCollapsed" class="w-4 h-4 transition-transform" :class="{ 'rotate-180': menuGroups.message_manager }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div v-if="menuGroups.message_manager && !isCollapsed" class="ml-3 mt-1 space-y-1">
+            <router-link to="/message-manager" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/message-manager'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Правила отправки
+              </a>
+            </router-link>
+            <router-link to="/message-templates" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/message-templates'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Шаблоны писем
+              </a>
+            </router-link>
+            <router-link to="/message-logs" v-slot="{ isActive }" custom>
+              <a @click="$router.push('/message-logs'); isMobileMenuOpen = false" class="flex items-center px-3 py-2 text-sm rounded-md transition-colors cursor-pointer" :class="isActive ? 'text-white font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" :style="isActive ? `background-color: ${themeColor}` : ''">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                История отправки
               </a>
             </router-link>
           </div>
@@ -524,6 +567,7 @@ const menuGroups = ref({
   pages_seo: false,
   integrations: false,
   import_export: false,
+  message_manager: false,
   settings: false,
 });
 
@@ -562,10 +606,13 @@ const pageBuilderModuleInstalled = ref(false);
 const showModules = ref(true);
 const telegramIntegrationInstalled = ref(false);
 const yookassaIntegrationInstalled = ref(false);
+const bitrix24IntegrationInstalled = ref(false);
+const cdekIntegrationInstalled = ref(false);
 const commerceMLIntegrationInstalled = ref(false);
 const importExportModuleInstalled = ref(false);
 const priceManagerModuleInstalled = ref(false);
 const cacheModuleInstalled = ref(false);
+const messageManagerModuleInstalled = ref(false);
 const favoriteInfoBlocks = ref([]);
 
 const roleLabel = computed(() => {
@@ -705,6 +752,8 @@ const loadModulesStatus = async (force = false) => {
 
       const yookassaIntegration = data.modules?.find(m => m.id === 'yookassa');
       yookassaIntegrationInstalled.value = yookassaIntegration?.installed || false;
+      bitrix24IntegrationInstalled.value = data.modules?.find(m => m.id === 'bitrix24')?.installed || false;
+      cdekIntegrationInstalled.value = data.modules?.find(m => m.id === 'cdek')?.installed || false;
 
       const commerceMLIntegration = data.modules?.find(m => m.id === 'commerceml');
       commerceMLIntegrationInstalled.value = commerceMLIntegration?.installed || false;
@@ -712,6 +761,7 @@ const loadModulesStatus = async (force = false) => {
       importExportModuleInstalled.value = data.modules?.find(m => m.id === 'importexport')?.installed || false;
       priceManagerModuleInstalled.value = data.modules?.find(m => m.id === 'pricemanager')?.installed || false;
       cacheModuleInstalled.value = data.modules?.find(m => m.id === 'cache')?.installed || false;
+      messageManagerModuleInstalled.value = data.modules?.find(m => m.id === 'messagemanager')?.installed || false;
 
       // Load favorite infoblocks if module is installed
       if (infoblocksModuleInstalled.value) {

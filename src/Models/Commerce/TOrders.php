@@ -3,6 +3,7 @@
 namespace HolartWeb\AxoraCMS\Models\Commerce;
 
 use App\Models\TUser;
+use HolartWeb\AxoraCMS\Models\TModule;
 use HolartWeb\AxoraCMS\Services\AdminNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,6 +69,8 @@ class TOrders extends Model
 
     const DELIVERY_POST = 'post';
 
+    const DELIVERY_CDEK = 'cdek';
+
     // Константы для payment_type
     const PAYMENT_ONLINE = 'online';
 
@@ -94,6 +97,22 @@ class TOrders extends Model
     const DELIVERY_DELIVERED = 'delivered';
 
     const DELIVERY_CANCELLED = 'cancelled';
+
+    /**
+     * Доступные типы доставки: СДЭК появляется вместе с модулем.
+     *
+     * @return array<int, string>
+     */
+    public static function deliveryTypes(): array
+    {
+        $types = [self::DELIVERY_PICKUP, self::DELIVERY_COURIER, self::DELIVERY_POST];
+
+        if (TModule::isInstalled('cdek')) {
+            $types[] = self::DELIVERY_CDEK;
+        }
+
+        return $types;
+    }
 
     /**
      * Товары в заказе

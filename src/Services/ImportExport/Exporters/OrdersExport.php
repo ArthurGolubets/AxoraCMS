@@ -12,7 +12,7 @@ use HolartWeb\AxoraCMS\Models\TModule;
  */
 class OrdersExport extends AbstractExportSource
 {
-    protected const DELIVERY_TYPES = ['pickup' => 'Самовывоз', 'courier' => 'Курьер', 'post' => 'Почта'];
+    protected const DELIVERY_TYPES = ['pickup' => 'Самовывоз', 'courier' => 'Курьер', 'cdek' => 'СДЭК', 'post' => 'Почта'];
 
     protected const PAYMENT_TYPES = ['online' => 'Онлайн', 'cash' => 'Наличные', 'card' => 'Картой'];
 

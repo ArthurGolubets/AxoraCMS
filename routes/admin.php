@@ -15,6 +15,9 @@ use HolartWeb\AxoraCMS\Http\Controllers\ImageUploadController;
 use HolartWeb\AxoraCMS\Http\Controllers\ImportExport\ImportExportController;
 use HolartWeb\AxoraCMS\Http\Controllers\LogsController;
 use HolartWeb\AxoraCMS\Http\Controllers\MailSettingsController;
+use HolartWeb\AxoraCMS\Http\Controllers\MessageManager\MessageToolsController;
+use HolartWeb\AxoraCMS\Http\Controllers\MessageManager\SubscriptionsController as MessageSubscriptionsController;
+use HolartWeb\AxoraCMS\Http\Controllers\MessageManager\TemplatesController as MessageTemplatesController;
 use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenuItemsController;
 use HolartWeb\AxoraCMS\Http\Controllers\Menus\MenusController;
 use HolartWeb\AxoraCMS\Http\Controllers\ModulesController;
@@ -272,6 +275,32 @@ Route::middleware(['admin.auth'])->group(function () {
             });
         }
 
+        // Message manager module
+        if (app(SiteCacheService::class)->hasTable('t_message_subscriptions')) {
+            Route::middleware('admin.role:super_admin,administrator')->prefix('message-manager')->group(function () {
+                Route::get('meta', [MessageSubscriptionsController::class, 'meta']);
+                Route::get('subscriptions', [MessageSubscriptionsController::class, 'index']);
+                Route::post('subscriptions', [MessageSubscriptionsController::class, 'store']);
+                Route::get('subscriptions/{id}', [MessageSubscriptionsController::class, 'show'])->whereNumber('id');
+                Route::put('subscriptions/{id}', [MessageSubscriptionsController::class, 'update'])->whereNumber('id');
+                Route::delete('subscriptions/{id}', [MessageSubscriptionsController::class, 'destroy'])->whereNumber('id');
+                Route::post('subscriptions/{id}/toggle', [MessageSubscriptionsController::class, 'toggle'])->whereNumber('id');
+                Route::post('subscriptions/{id}/duplicate', [MessageSubscriptionsController::class, 'duplicate'])->whereNumber('id');
+
+                Route::get('templates', [MessageTemplatesController::class, 'index']);
+                Route::post('templates', [MessageTemplatesController::class, 'store']);
+                Route::get('templates/{id}', [MessageTemplatesController::class, 'show'])->whereNumber('id');
+                Route::put('templates/{id}', [MessageTemplatesController::class, 'update'])->whereNumber('id');
+                Route::delete('templates/{id}', [MessageTemplatesController::class, 'destroy'])->whereNumber('id');
+                Route::post('templates/{id}/duplicate', [MessageTemplatesController::class, 'duplicate'])->whereNumber('id');
+
+                Route::post('preview', [MessageToolsController::class, 'preview']);
+                Route::post('test', [MessageToolsController::class, 'test']);
+                Route::get('logs', [MessageToolsController::class, 'logs']);
+                Route::delete('logs', [MessageToolsController::class, 'clearLogs']);
+            });
+        }
+
         // Commerce routes - only if commerce module is installed
         if (app(SiteCacheService::class)->hasTable('t_orders')) {
             $ordersController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Commerce\\OrdersController';
@@ -433,6 +462,46 @@ Route::middleware(['admin.auth'])->group(function () {
             // Yookassa integration
             Route::get('integrations/yookassa', [$yookassaController, 'index']);
             Route::post('integrations/yookassa', [$yookassaController, 'update']);
+        }
+
+        // Bitrix24 integration
+        if (app(SiteCacheService::class)->hasTable('t_bitrix24_rules')) {
+            $bitrix24Settings = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integrations\\Bitrix24SettingsController';
+            $bitrix24Rules = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integrations\\Bitrix24RulesController';
+
+            Route::middleware('admin.role:super_admin,administrator')->prefix('integrations/bitrix24')->group(function () use ($bitrix24Settings, $bitrix24Rules) {
+                Route::get('/', [$bitrix24Settings, 'index']);
+                Route::post('/', [$bitrix24Settings, 'update']);
+                Route::post('test', [$bitrix24Settings, 'test']);
+                Route::get('fields', [$bitrix24Settings, 'fields']);
+                Route::get('logs', [$bitrix24Settings, 'logs']);
+                Route::delete('logs', [$bitrix24Settings, 'clearLogs']);
+                Route::post('logs/{id}/retry', [$bitrix24Settings, 'retry'])->whereNumber('id');
+
+                Route::get('meta', [$bitrix24Rules, 'meta']);
+                Route::get('rules', [$bitrix24Rules, 'index']);
+                Route::post('rules', [$bitrix24Rules, 'store']);
+                Route::get('rules/{id}', [$bitrix24Rules, 'show'])->whereNumber('id');
+                Route::put('rules/{id}', [$bitrix24Rules, 'update'])->whereNumber('id');
+                Route::delete('rules/{id}', [$bitrix24Rules, 'destroy'])->whereNumber('id');
+                Route::post('rules/{id}/toggle', [$bitrix24Rules, 'toggle'])->whereNumber('id');
+            });
+        }
+
+        // CDEK integration
+        if (app(SiteCacheService::class)->hasTable('t_cdek_shipments')) {
+            $cdekController = 'HolartWeb\\AxoraCMS\\Http\\Controllers\\Integrations\\CdekController';
+
+            Route::middleware('admin.role:super_admin,administrator')->prefix('integrations/cdek')->group(function () use ($cdekController) {
+                Route::get('/', [$cdekController, 'index']);
+                Route::post('/', [$cdekController, 'update']);
+                Route::post('test', [$cdekController, 'test']);
+                Route::get('cities', [$cdekController, 'cities']);
+                Route::get('points', [$cdekController, 'points']);
+                Route::get('orders/{orderId}', [$cdekController, 'shipment'])->whereNumber('orderId');
+                Route::post('orders/{orderId}', [$cdekController, 'createShipment'])->whereNumber('orderId');
+                Route::post('orders/{orderId}/refresh', [$cdekController, 'refreshShipment'])->whereNumber('orderId');
+            });
         }
 
         // CommerceML integration routes

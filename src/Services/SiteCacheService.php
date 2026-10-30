@@ -139,6 +139,9 @@ class SiteCacheService
      */
     private const IGNORED_MODELS = [
         'HolartWeb\\AxoraCMS\\Models\\SEO\\TPageVisit',
+        'HolartWeb\\AxoraCMS\\Models\\MessageManager\\TMessageLog',
+        'HolartWeb\\AxoraCMS\\Models\\Integrations\\TBitrix24Log',
+        'HolartWeb\\AxoraCMS\\Models\\Integrations\\TCdekShipment',
     ];
 
     /**

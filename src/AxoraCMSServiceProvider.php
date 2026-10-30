@@ -2,11 +2,16 @@
 
 namespace HolartWeb\AxoraCMS;
 
+use HolartWeb\AxoraCMS\Console\Bitrix24InstallCommand;
+use HolartWeb\AxoraCMS\Console\Bitrix24UninstallCommand;
 use HolartWeb\AxoraCMS\Console\CacheClearCommand;
 use HolartWeb\AxoraCMS\Console\CacheInstallCommand;
 use HolartWeb\AxoraCMS\Console\CacheUninstallCommand;
 use HolartWeb\AxoraCMS\Console\CallbackInstallCommand;
 use HolartWeb\AxoraCMS\Console\CallbackUninstallCommand;
+use HolartWeb\AxoraCMS\Console\CdekInstallCommand;
+use HolartWeb\AxoraCMS\Console\CdekSyncCommand;
+use HolartWeb\AxoraCMS\Console\CdekUninstallCommand;
 use HolartWeb\AxoraCMS\Console\CleanOldPageVisitsCommand;
 use HolartWeb\AxoraCMS\Console\CommerceInstallCommand;
 use HolartWeb\AxoraCMS\Console\CommerceMLInstallCommand;
@@ -19,6 +24,8 @@ use HolartWeb\AxoraCMS\Console\InfoBlocksUninstallCommand;
 use HolartWeb\AxoraCMS\Console\InstallCommand;
 use HolartWeb\AxoraCMS\Console\LoggingInstallCommand;
 use HolartWeb\AxoraCMS\Console\LoggingUninstallCommand;
+use HolartWeb\AxoraCMS\Console\MessageManagerInstallCommand;
+use HolartWeb\AxoraCMS\Console\MessageManagerUninstallCommand;
 use HolartWeb\AxoraCMS\Console\PageBuilderInstallCommand;
 use HolartWeb\AxoraCMS\Console\PageBuilderUninstallCommand;
 use HolartWeb\AxoraCMS\Console\PagesInstallCommand;
@@ -52,6 +59,8 @@ use HolartWeb\AxoraCMS\Services\Mail\MailSettingsService;
 use HolartWeb\AxoraCMS\Services\PageDataService;
 use HolartWeb\AxoraCMS\Services\PageVisitService;
 use HolartWeb\AxoraCMS\Services\SiteCacheService;
+use HolartWeb\AxoraCMS\Support\Bitrix24Hooks;
+use HolartWeb\AxoraCMS\Support\MessageManagerHooks;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
@@ -186,9 +195,19 @@ class AxoraCMSServiceProvider extends ServiceProvider
                 CacheInstallCommand::class,
                 CacheUninstallCommand::class,
                 CacheClearCommand::class,
+                MessageManagerInstallCommand::class,
+                MessageManagerUninstallCommand::class,
+                Bitrix24InstallCommand::class,
+                Bitrix24UninstallCommand::class,
+                CdekInstallCommand::class,
+                CdekUninstallCommand::class,
+                CdekSyncCommand::class,
             ]);
 
             $this->registerSiteCache();
+
+            MessageManagerHooks::register();
+            Bitrix24Hooks::register();
 
             // Schedule automatic cleanup of old page visits
             // Scheduled tasks will check module installation themselves
@@ -199,6 +218,7 @@ class AxoraCMSServiceProvider extends ServiceProvider
                     // These commands handle DB checks internally
                     $schedule->command('axoracms:clean-page-visits')->daily();
                     $schedule->command('axoracms:ykassa-check-payment')->everyMinute();
+                    $schedule->command('axoracms:cdek-sync')->everyThirtyMinutes();
                 });
             }
 

@@ -62,6 +62,16 @@
             <input v-model="settings.delivery_courier_price" type="number" step="0.01" class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md" placeholder="300">
           </div>
 
+          <div v-if="settings.cdek_available">
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-sm text-gray-700 dark:text-gray-300">Включить доставку СДЭК</span>
+              <button @click="settings.delivery_cdek_enabled = !settings.delivery_cdek_enabled" type="button" :class="settings.delivery_cdek_enabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                <span :class="settings.delivery_cdek_enabled ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" />
+              </button>
+            </label>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Подключение и тарифы настраиваются в разделе «Интеграции» → «СДЭК»</p>
+          </div>
+
           <div>
             <label class="flex items-center justify-between cursor-pointer">
               <span class="text-sm text-gray-700 dark:text-gray-300">Включить доставку почтой</span>

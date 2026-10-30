@@ -193,6 +193,9 @@
           </div>
         </div>
 
+        <!-- CDEK shipment (module "cdek") -->
+        <CdekOrderBlock v-if="cdekAvailable && order.delivery_type === 'cdek'" :order-id="order.id" @order-changed="loadOrder" />
+
         <!-- Payment Info -->
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Оплата</h3>
@@ -244,6 +247,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { useCdekDelivery } from '../composables/useCdekDelivery';
+import CdekOrderBlock from './Integrations/Cdek/CdekOrderBlock.vue';
 
 const route = useRoute();
 const { success, error } = useModal();
@@ -366,11 +371,14 @@ const formatDate = (date) => {
   });
 };
 
+const { cdekAvailable } = useCdekDelivery();
+
 const getDeliveryTypeLabel = (type) => {
   const labels = {
     pickup: 'Самовывоз',
     courier: 'Курьер',
-    post: 'Почта'
+    post: 'Почта',
+    cdek: 'СДЭК'
   };
   return labels[type] || type;
 };

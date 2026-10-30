@@ -35,6 +35,7 @@ class OrdersDataController extends Controller
         }
 
         $settings['available_providers'] = array_values(array_unique($availableProviders));
+        $settings['cdek_available'] = Schema::hasTable('t_modules') && TModule::isInstalled('cdek');
 
         return response()->json($settings);
     }
@@ -66,7 +67,8 @@ class OrdersDataController extends Controller
             ], 422);
         }
 
-        foreach ($request->settings as $key => $value) {
+        // Reported by index() for the page, not a setting.
+        foreach (array_diff_key($request->settings, ['cdek_available' => true]) as $key => $value) {
             $type = $this->detectType($value);
             TOrdersData::setValue($key, $value, $type);
         }

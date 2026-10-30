@@ -267,6 +267,7 @@
                   <option value="pickup">Самовывоз</option>
                   <option value="courier">Курьер</option>
                   <option value="post">Почта</option>
+                  <option v-if="cdekEnabled" value="cdek">СДЭК</option>
                 </select>
               </div>
 
@@ -343,6 +344,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { useCdekDelivery } from '../composables/useCdekDelivery';
 
 const router = useRouter();
 const { success, error } = useModal();
@@ -353,6 +355,8 @@ const customFields = ref([]);
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_MIN_CHARS = 2;
 const SEARCH_LIMIT = 20;
+
+const { cdekEnabled } = useCdekDelivery();
 
 const form = ref({
   name: '',

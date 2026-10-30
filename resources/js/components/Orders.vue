@@ -28,6 +28,7 @@
             <option value="pickup">Самовывоз</option>
             <option value="courier">Курьер</option>
             <option value="post">Почта</option>
+            <option v-if="cdekAvailable" value="cdek">СДЭК</option>
           </select>
         </div>
         <div>
@@ -98,6 +99,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useModal } from '../composables/useModal';
 import { useTheme } from '../composables/useTheme';
+import { useCdekDelivery } from '../composables/useCdekDelivery';
 
 const router = useRouter();
 const { success, error, confirm } = useModal();
@@ -214,11 +216,14 @@ const getDeliveryStatusClass = (status) => {
   return classes[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
 };
 
+const { cdekAvailable } = useCdekDelivery();
+
 const getDeliveryTypeLabel = (type) => {
   const labels = {
     pickup: 'Самовывоз',
     courier: 'Курьер',
-    post: 'Почта'
+    post: 'Почта',
+    cdek: 'СДЭК'
   };
   return labels[type] || type;
 };

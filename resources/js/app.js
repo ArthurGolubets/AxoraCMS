@@ -40,6 +40,11 @@ import FiltersList from './components/FiltersList.vue';
 import FilterView from './components/FilterView.vue';
 import PriceManager from './components/PriceManager.vue';
 import CacheSettings from './components/CacheSettings.vue';
+import SubscriptionsList from './components/MessageManager/SubscriptionsList.vue';
+import SubscriptionForm from './components/MessageManager/SubscriptionForm.vue';
+import MessageTemplates from './components/MessageManager/MessageTemplates.vue';
+import EmailTemplatePage from './components/MessageManager/EmailTemplatePage.vue';
+import MessageLogs from './components/MessageManager/MessageLogs.vue';
 import ImportExportCatalog from './components/ImportExport/ImportExportCatalog.vue';
 import ImportExportEntities from './components/ImportExport/ImportExportEntities.vue';
 import PagesList from './components/Pages/PagesList.vue';
@@ -47,6 +52,9 @@ import PageForm from './components/Pages/PageForm.vue';
 import ContentSettings from './views/ContentSettings.vue';
 import TelegramSettings from './components/Integrations/TelegramSettings.vue';
 import YookassaSettings from './components/Integrations/YookassaSettings.vue';
+import CdekSettings from './components/Integrations/Cdek/CdekSettings.vue';
+import Bitrix24Settings from './components/Integrations/Bitrix24/Bitrix24Settings.vue';
+import Bitrix24RuleForm from './components/Integrations/Bitrix24/Bitrix24RuleForm.vue';
 import CommerceMLSettings from './components/Integrations/CommerceMLSettings.vue';
 import CustomFormsList from './components/CustomForms/CustomFormsList.vue';
 import CustomFormEdit from './components/CustomForms/CustomFormEdit.vue';
@@ -285,6 +293,41 @@ const router = createRouter({
             component: PriceManager
         },
         {
+            path: '/message-manager',
+            name: 'message-manager',
+            component: SubscriptionsList
+        },
+        {
+            path: '/message-manager/create',
+            name: 'message-manager-create',
+            component: SubscriptionForm
+        },
+        {
+            path: '/message-manager/:id(\\d+)/edit',
+            name: 'message-manager-edit',
+            component: SubscriptionForm
+        },
+        {
+            path: '/message-templates',
+            name: 'message-templates',
+            component: MessageTemplates
+        },
+        {
+            path: '/message-templates/create',
+            name: 'message-template-create',
+            component: EmailTemplatePage
+        },
+        {
+            path: '/message-templates/:id(\\d+)/edit',
+            name: 'message-template-edit',
+            component: EmailTemplatePage
+        },
+        {
+            path: '/message-logs',
+            name: 'message-logs',
+            component: MessageLogs
+        },
+        {
             path: '/cache',
             name: 'cache-settings',
             component: CacheSettings
@@ -340,6 +383,26 @@ const router = createRouter({
             component: YookassaSettings
         },
         {
+            path: '/integrations/cdek',
+            name: 'cdek-settings',
+            component: CdekSettings
+        },
+        {
+            path: '/integrations/bitrix24',
+            name: 'bitrix24-settings',
+            component: Bitrix24Settings
+        },
+        {
+            path: '/integrations/bitrix24/rules/create',
+            name: 'bitrix24-rule-create',
+            component: Bitrix24RuleForm
+        },
+        {
+            path: '/integrations/bitrix24/rules/:id(\\d+)/edit',
+            name: 'bitrix24-rule-edit',
+            component: Bitrix24RuleForm
+        },
+        {
             path: '/integrations/commerceml',
             name: 'commerceml-settings',
             component: CommerceMLSettings
@@ -370,10 +433,13 @@ const MODULE_GATED_ROUTES = {
     importexport: ['import-export-catalog', 'import-export-entities'],
     pricemanager: ['price-manager'],
     cache: ['cache-settings'],
+    cdek: ['cdek-settings'],
+    bitrix24: ['bitrix24-settings', 'bitrix24-rule-create', 'bitrix24-rule-edit'],
+    messagemanager: ['message-manager', 'message-manager-create', 'message-manager-edit', 'message-templates', 'message-template-create', 'message-template-edit', 'message-logs'],
     infoblocks: ['infoblocks', 'infoblock-create', 'infoblock-edit', 'infoblock-fields', 'infoblock-elements', 'infoblock-sections', 'infoblock-element-create', 'infoblock-element-edit'],
 };
 
-const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', 'price-manager', 'cache-settings', ...MODULE_GATED_ROUTES.commerce, ...MODULE_GATED_ROUTES.importexport];
+const PRIVILEGED_ONLY_ROUTES = ['settings', 'environment', 'logs', 'modules', 'administrators', 'price-manager', 'cache-settings', ...MODULE_GATED_ROUTES.commerce, ...MODULE_GATED_ROUTES.importexport, ...MODULE_GATED_ROUTES.messagemanager, ...MODULE_GATED_ROUTES.bitrix24, ...MODULE_GATED_ROUTES.cdek];
 
 // Global navigation guard.
 // `me` and `modules/status` come from useAppConfig(), which fetches each once

@@ -5,6 +5,7 @@ namespace HolartWeb\AxoraCMS\Services\Integrations;
 use HolartWeb\AxoraCMS\Models\Commerce\TPaymentTransaction;
 use HolartWeb\AxoraCMS\Models\Integrations\TIntegrationSettings;
 use HolartWeb\AxoraCMS\Models\TModule;
+use HolartWeb\AxoraCMS\Services\MessageManager\MessageManager;
 use YooKassa\Client;
 use YooKassa\Model\Payment\ConfirmationType;
 use YooKassa\Request\Payments\CreatePaymentRequest;
@@ -141,8 +142,8 @@ class YookassaService
                 $transaction->status = TPaymentTransaction::STATUS_SUCCESS;
                 $transaction->save();
 
-                // Send Telegram notification if module is installed
-                if (TModule::isInstalled('telegram')) {
+                // Send Telegram notification if module is installed (replaced by subscriptions of the "Менеджер сообщений" module)
+                if (TModule::isInstalled('telegram') && ! MessageManager::isActive()) {
                     $order = $transaction->order;
                     $message = "✅ Заказ №{$order->id} успешно оплачен\n\n";
                     $message .= "Сумма: {$order->total_price} руб.\n";
@@ -161,8 +162,8 @@ class YookassaService
                 $transaction->order->payment_status = 'failed';
                 $transaction->order->save();
 
-                // Send Telegram notification if module is installed
-                if (TModule::isInstalled('telegram')) {
+                // Send Telegram notification if module is installed (replaced by subscriptions of the "Менеджер сообщений" module)
+                if (TModule::isInstalled('telegram') && ! MessageManager::isActive()) {
                     $order = $transaction->order;
                     $message = "❌ Оплата заказа №{$order->id} отменена\n\n";
                     $message .= "Сумма: {$order->total_price} руб.\n";
