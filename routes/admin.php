@@ -75,7 +75,6 @@ Route::middleware(['admin.auth'])->group(function () {
 
         // Dashboard metrics routes
         Route::get('dashboard/metrics', [DashboardMetricsController::class, 'index']);
-        Route::get('dashboard/metrics/{type}', [DashboardMetricsController::class, 'show']);
 
         // Dashboard widgets routes
         Route::get('dashboard/widgets', [DashboardWidgetsController::class, 'index']);

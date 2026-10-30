@@ -168,12 +168,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, shallowRef } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import draggable from 'vuedraggable';
 import StatWidget from './dashboard/StatWidget.vue';
 import ListWidget from './dashboard/ListWidget.vue';
-import WidgetCard from './dashboard/WidgetCard.vue';
 import ChartWidget from './dashboard/ChartWidget.vue';
 import PageVisitsWidget from './dashboard/PageVisitsWidget.vue';
 import ConfirmModal from './ConfirmModal.vue';
@@ -189,12 +188,23 @@ const userRole = ref('');
 const editMode = ref(false);
 const confirmModal = ref(null);
 
-const maxSubscriptionCount = computed(() => {
-  if (!metrics.value.subscriptions_chart || metrics.value.subscriptions_chart.length === 0) {
-    return 1;
-  }
-  return Math.max(...metrics.value.subscriptions_chart.map(item => item.count));
-});
+const LIST_WIDGETS = {
+  attention: { title: 'Требует внимания', emptyText: 'Всё обработано' },
+  recent_logs: { title: 'Последние действия' },
+  recent_orders: { title: 'Последние заказы' },
+  orders_by_status: { title: 'Заказы по статусам' },
+  top_products: { title: 'Топ товаров за 30 дней', emptyText: 'За 30 дней продаж не было' },
+  low_stock: { title: 'Заканчивающиеся товары', emptyText: 'Остатков хватает' },
+  promocodes_usage: { title: 'Популярные промокоды' },
+  recent_requests: { title: 'Последние обращения' },
+};
+
+const CHART_WIDGETS = {
+  revenue_chart: { title: 'Выручка за 30 дней', lineColor: 'text-green-500', areaColor: 'fill-green-500' },
+  orders_chart: { title: 'Заказы за 30 дней', lineColor: 'text-blue-500', areaColor: 'fill-blue-500' },
+  subscriptions_chart: { title: 'Подписки за 30 дней', lineColor: 'text-purple-500', areaColor: 'fill-purple-500' },
+  visits_chart: { title: 'Посещения за 30 дней', lineColor: 'text-indigo-500', areaColor: 'fill-indigo-500' },
+};
 
 function getWidgetComponent(widget) {
   const type = widget.widget_type;
@@ -205,12 +215,12 @@ function getWidgetComponent(widget) {
   }
 
   // List widgets
-  if (['popular_pages', 'recent_logs', 'recent_orders', 'promocodes_usage', 'recent_requests'].includes(type)) {
+  if (LIST_WIDGETS[type]) {
     return ListWidget;
   }
 
   // Chart widgets
-  if (['subscriptions_chart', 'orders_chart', 'revenue_chart', 'pages_views_chart'].includes(type)) {
+  if (CHART_WIDGETS[type]) {
     return ChartWidget;
   }
 
@@ -221,59 +231,106 @@ function getWidgetComponent(widget) {
 function getWidgetProps(widget) {
   const type = widget.widget_type;
 
+  const data = metrics.value;
+
   // Stat widgets
   const statWidgets = {
     users_stats: {
       title: 'Администраторы',
-      value: metrics.value.users_stats?.total || 0,
-      subtitle: `Активных: ${metrics.value.users_stats?.active || 0}`,
+      value: data.users_stats?.total || 0,
+      subtitle: `Активных: ${data.users_stats?.active || 0}`,
       icon: 'users',
       color: 'blue'
     },
+    orders_today: {
+      title: 'Заказы сегодня',
+      value: data.orders_today?.count || 0,
+      subtitle: `На сумму ${formatCurrency(data.orders_today?.sum || 0)}`,
+      trend: data.orders_today?.change ?? null,
+      icon: 'shopping',
+      color: 'blue'
+    },
+    revenue_period: {
+      title: 'Выручка за 30 дней',
+      value: formatCurrency(data.revenue_period?.value || 0),
+      trend: data.revenue_period?.change ?? null,
+      icon: 'currency',
+      color: 'green'
+    },
+    average_check: {
+      title: 'Средний чек',
+      value: formatCurrency(data.average_check?.value || 0),
+      subtitle: `Оплаченных заказов: ${data.average_check?.orders || 0}`,
+      trend: data.average_check?.change ?? null,
+      icon: 'tag',
+      color: 'purple'
+    },
+    conversion: {
+      title: 'Конверсия за 30 дней',
+      value: data.conversion?.value === null || data.conversion?.value === undefined ? '—' : `${data.conversion.value}%`,
+      subtitle: `Заказов: ${data.conversion?.orders || 0} из ${data.conversion?.visitors || 0} посетителей`,
+      icon: 'chart',
+      color: 'indigo'
+    },
     orders_stats: {
       title: 'Все заказы',
-      value: metrics.value.orders_stats?.total || 0,
+      value: data.orders_stats?.total || 0,
       icon: 'shopping',
       color: 'green'
     },
     orders_new: {
       title: 'Новые заказы',
-      value: metrics.value.orders_stats?.new || 0,
+      value: data.orders_stats?.new || 0,
       icon: 'bell',
       color: 'yellow'
     },
     orders_revenue: {
-      title: 'Выручка',
-      value: formatCurrency(metrics.value.orders_stats?.revenue || 0),
+      title: 'Выручка за всё время',
+      value: formatCurrency(data.orders_stats?.revenue || 0),
       icon: 'currency',
       color: 'green'
     },
     orders_pending_payment: {
       title: 'Ожидают оплаты',
-      value: formatCurrency(metrics.value.orders_stats?.pending_payment || 0),
+      value: formatCurrency(data.orders_stats?.pending_payment || 0),
       icon: 'currency',
       color: 'yellow'
     },
+    catalog_stats: {
+      title: 'Товары',
+      value: data.catalog_stats?.total || 0,
+      subtitle: `Активных: ${data.catalog_stats?.active || 0}, категорий: ${data.catalog_stats?.categories || 0}`,
+      icon: 'list',
+      color: 'blue'
+    },
     subscriptions_count: {
       title: 'Подписки',
-      value: metrics.value.subscriptions_count?.total || 0,
-      subtitle: `Активных: ${metrics.value.subscriptions_count?.active || 0}`,
+      value: data.subscriptions_count?.total || 0,
+      subtitle: `Активных: ${data.subscriptions_count?.active || 0}`,
       icon: 'mail',
       color: 'purple'
     },
     reviews_count: {
       title: 'Отзывы',
-      value: metrics.value.reviews_count?.total || 0,
-      subtitle: `Модерированных: ${metrics.value.reviews_count?.moderated || 0}`,
+      value: data.reviews_count?.total || 0,
+      subtitle: `На модерации: ${data.reviews_count?.pending || 0}`,
       icon: 'star',
       color: 'yellow'
     },
     requests_count: {
       title: 'Обращения',
-      value: metrics.value.requests_count?.total || 0,
-      subtitle: `Сегодня: ${metrics.value.requests_count?.today || 0}`,
+      value: data.requests_count?.total || 0,
+      subtitle: `Сегодня: ${data.requests_count?.today || 0}`,
       icon: 'bell',
       color: 'indigo'
+    },
+    visits_today: {
+      title: 'Посещения сегодня',
+      value: data.visits_today?.today || 0,
+      subtitle: `Посетителей: ${data.visits_today?.visitors || 0}`,
+      trend: data.visits_today?.change ?? null,
+      icon: 'chart',
+      color: 'blue'
     }
   };
 
@@ -281,47 +338,10 @@ function getWidgetProps(widget) {
     return statWidgets[type];
   }
 
-  // List widgets
-  if (type === 'popular_pages') {
+  if (LIST_WIDGETS[type]) {
     return {
-      title: 'Популярные страницы',
-      items: metrics.value.popular_pages || [],
-      loading: loadingMetrics.value,
-      width: widget.width
-    };
-  }
-
-  if (type === 'recent_logs') {
-    return {
-      title: 'Последние действия',
-      items: metrics.value.recent_logs || [],
-      loading: loadingMetrics.value,
-      width: widget.width
-    };
-  }
-
-  if (type === 'recent_orders') {
-    return {
-      title: 'Последние заказы',
-      items: metrics.value.recent_orders || [],
-      loading: loadingMetrics.value,
-      width: widget.width
-    };
-  }
-
-  if (type === 'promocodes_usage') {
-    return {
-      title: 'Популярные промокоды',
-      items: metrics.value.promocodes_usage || [],
-      loading: loadingMetrics.value,
-      width: widget.width
-    };
-  }
-
-  if (type === 'recent_requests') {
-    return {
-      title: 'Последние обращения',
-      items: metrics.value.recent_requests || [],
+      ...LIST_WIDGETS[type],
+      items: data[type] || [],
       loading: loadingMetrics.value,
       width: widget.width
     };
@@ -345,44 +365,11 @@ function getWidgetProps(widget) {
     };
   }
 
-  if (type === 'subscriptions_chart') {
+  if (CHART_WIDGETS[type]) {
     return {
-      title: 'График подписок (30 дней)',
-      chartData: metrics.value.subscriptions_chart || [],
+      ...CHART_WIDGETS[type],
+      chartData: data[type] || [],
       chartType: 'line',
-      lineColor: 'text-purple-500',
-      areaColor: 'fill-purple-500',
-      loading: loadingMetrics.value,
-    };
-  }
-
-  if (type === 'orders_chart') {
-    return {
-      title: 'График заказов (30 дней)',
-      chartData: metrics.value.orders_chart || [],
-      chartType: 'line',
-      lineColor: 'text-blue-500',
-      areaColor: 'fill-blue-500',
-      loading: loadingMetrics.value,
-    };
-  }
-
-  if (type === 'revenue_chart') {
-    return {
-      title: 'График выручки (30 дней)',
-      chartData: metrics.value.revenue_chart || [],
-      chartType: 'line',
-      lineColor: 'text-green-500',
-      areaColor: 'fill-green-500',
-      loading: loadingMetrics.value,
-    };
-  }
-
-  if (type === 'pages_views_chart') {
-    return {
-      title: 'Топ-10 страниц по просмотрам',
-      chartData: metrics.value.pages_views_chart || [],
-      chartType: 'bar',
       loading: loadingMetrics.value,
     };
   }
@@ -440,7 +427,8 @@ async function loadWidgets() {
 async function loadMetrics() {
   loadingMetrics.value = true;
   try {
-    const response = await axios.get('/admin/api/dashboard/metrics');
+    const types = [...new Set(widgets.value.map(widget => widget.widget_type))].join(',');
+    const response = await axios.get('/admin/api/dashboard/metrics', { params: { types } });
     if (response.data.success) {
       metrics.value = response.data.data;
     }
@@ -470,6 +458,7 @@ async function addWidget(widgetType) {
     });
     if (response.data.success) {
       await loadWidgets();
+      await loadMetrics();
     }
   } catch (error) {
     console.error('Ошибка добавления виджета:', error);
@@ -559,11 +548,8 @@ function getColSpanClass(width) {
 onMounted(async () => {
   loading.value = true;
   await loadUserRole();
-  await Promise.all([
-    loadWidgets(),
-    loadMetrics(),
-    loadAvailableTypes(),
-  ]);
+  await Promise.all([loadWidgets(), loadAvailableTypes()]);
+  await loadMetrics();
   loading.value = false;
 });
 </script>

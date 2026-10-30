@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class DashboardWidgetsController extends Controller
 {
@@ -17,11 +18,6 @@ class DashboardWidgetsController extends Controller
     public function index(): JsonResponse
     {
         $admin = Auth::guard('admin')->user();
-
-        $widgets = TDashboardWidget::where('admin_id', $admin->id)
-            ->where('is_visible', true)
-            ->orderBy('position')
-            ->get();
 
         // If dashboard not initialized yet, create default widgets
         if (! $admin->dashboard_initialized) {
@@ -36,12 +32,17 @@ class DashboardWidgetsController extends Controller
             // Mark dashboard as initialized
             $admin->dashboard_initialized = true;
             $admin->save();
-
-            $widgets = TDashboardWidget::where('admin_id', $admin->id)
-                ->where('is_visible', true)
-                ->orderBy('position')
-                ->get();
         }
+
+        // Widgets of removed modules and retired types stay in the table, but are not shown.
+        $available = TDashboardWidget::getAvailableTypes();
+
+        $widgets = TDashboardWidget::where('admin_id', $admin->id)
+            ->where('is_visible', true)
+            ->orderBy('position')
+            ->get()
+            ->filter(fn (TDashboardWidget $widget) => isset($available[$widget->widget_type]))
+            ->values();
 
         return response()->json([
             'success' => true,
@@ -66,7 +67,7 @@ class DashboardWidgetsController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'widget_type' => 'required|string|max:50',
+            'widget_type' => ['required', 'string', Rule::in(array_keys(TDashboardWidget::getAvailableTypes()))],
             'position' => 'nullable|integer|min:0',
             'width' => 'nullable|integer|min:1|max:12',
             'settings' => 'nullable|array',

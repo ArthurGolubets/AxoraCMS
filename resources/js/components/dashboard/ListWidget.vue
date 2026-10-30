@@ -13,7 +13,7 @@
         <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
         </svg>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Нет данных</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ emptyText }}</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -97,16 +97,14 @@
                 </div>
               </div>
             </div>
-            <div v-else-if="item.title || item.slug" class="space-y-1">
-              <!-- Pages or other items with title/slug -->
-              <div class="flex items-center justify-between">
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.title }}</p>
-                  <p v-if="item.slug" class="text-xs text-gray-500 dark:text-gray-400">/{{ item.slug }}</p>
-                </div>
-                <span v-if="item.views" class="text-sm font-semibold text-blue-600 dark:text-blue-400 ml-3">{{ item.views }}</span>
+            <component :is="item.link ? 'router-link' : 'div'" v-else-if="item.label" :to="item.link" class="flex items-center justify-between gap-3" :class="item.link ? 'hover:opacity-75' : ''">
+              <!-- Simple row: label, hint, value -->
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ item.label }}</p>
+                <p v-if="item.hint" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.hint }}</p>
               </div>
-            </div>
+              <span class="text-sm font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">{{ item.price ? formatPrice(item.value) : item.value }}</span>
+            </component>
             <div v-else>
               <!-- Fallback to JSON -->
               <pre class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ item }}</pre>
@@ -136,6 +134,10 @@ defineProps({
   width: {
     type: Number,
     default: 6,
+  },
+  emptyText: {
+    type: String,
+    default: 'Нет данных',
   },
 });
 
